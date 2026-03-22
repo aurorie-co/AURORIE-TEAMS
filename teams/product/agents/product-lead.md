@@ -28,9 +28,9 @@ Read task description and `input_context` from the task file.
 If `input_context` contains a line starting with `artifact: `, read that file before routing.
 
 ## Output
-Specialist artifact names:
-- product-pm → `prd.md` (feature PRD) or `user-stories.md` (backlog)
-- product-ux → `ux-brief.md`
-
-Write `product-summary.md` to `.claude/workspace/artifacts/product/<task-id>/`.
+After all specialists complete:
+1. Read each specialist's output artifact:
+   - product-pm → `prd.md` (feature PRD) or `user-stories.md` (backlog)
+   - product-ux → `ux-brief.md`
+2. Write `product-summary.md` to `.claude/workspace/artifacts/product/<task-id>/`.
 Return a plain-text summary (max 400 words) via the Agent tool response.
