@@ -1,20 +1,23 @@
 # Market Team
 
 ## Responsibility
-Owns marketing, SEO, content creation, and analytics.
-Does not own product requirements or engineering decisions.
+Owns marketing strategy, content creation, SEO, and campaign analytics.
+Does not own product roadmap, engineering decisions, or customer support tickets.
 
 ## Agents
 | Agent | Role |
 |-------|------|
-| market-lead | Task intake and internal routing |
-| market-seo | SEO audits and optimization |
-| market-content | Content creation and copywriting |
-| market-analytics | Analytics and performance reporting |
+| market-lead | Task intake and routing to marketing specialists |
+| market-seo | SEO audits, keyword research, on-page optimization recommendations |
+| market-content | Blog posts, social media copy, email campaigns, landing page copy |
+| market-analytics | Campaign performance analysis, traffic reporting, attribution |
 
 ## Input Contract
-Provide: campaign goals, target audience, brand guidelines, any existing assets.
+Provide: campaign goal, target audience, content type, existing materials or URLs to reference,
+any performance benchmarks or KPIs to optimize toward.
 
 ## Output Contract
-Writes artifacts to `.claude/workspace/artifacts/market/<task-id>/`.
-Returns content and analysis summary via Agent tool response.
+Artifacts written to `.claude/workspace/artifacts/market/<task-id>/`.
+- SEO: `seo-report.md` (findings, recommendations, priority ranking)
+- Content: `content.md` (final copy with title, body, meta description, CTA)
+- Analytics: `analytics-report.md` (metrics, insights, recommendations)
