@@ -1,19 +1,22 @@
 # Research Team
 
 ## Responsibility
-Owns research, synthesis, and information gathering tasks.
-Does not own product decisions or marketing execution.
+Owns information gathering, competitive intelligence, market research, and synthesis.
+Does not own strategic decisions, product roadmap, or marketing execution.
 
 ## Agents
 | Agent | Role |
 |-------|------|
-| research-lead | Task intake and internal routing |
-| research-web | Web research and information gathering |
-| research-synthesizer | Synthesis and report writing |
+| research-lead | Task intake, research scoping, and routing |
+| research-web | Web research, source gathering, competitive data collection |
+| research-synthesizer | Report synthesis, comparison matrices, executive summaries |
 
 ## Input Contract
-Provide: research question, scope, any existing findings, preferred output format.
+Provide: the research question, context (why this is needed, what decision it informs),
+any known sources to include or exclude, desired output format and depth.
 
 ## Output Contract
-Writes artifacts to `.claude/workspace/artifacts/research/<task-id>/`.
-Returns research reports via Agent tool response.
+Artifacts written to `.claude/workspace/artifacts/research/<task-id>/`.
+- Raw findings: `research-notes.md` (sourced, structured raw findings)
+- Synthesis: `research-report.md` (synthesized findings, analysis, recommendations)
+- Comparison: `comparison-matrix.md` (structured side-by-side comparison)

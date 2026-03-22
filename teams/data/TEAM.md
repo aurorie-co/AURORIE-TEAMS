@@ -1,20 +1,24 @@
 # Data Team
 
 ## Responsibility
-Owns data analysis, pipeline development, and reporting.
-Does not own product decisions or engineering architecture.
+Owns data analysis, reporting, pipeline engineering, and visualization.
+Does not own product decisions, marketing campaigns, or application code.
 
 ## Agents
 | Agent | Role |
 |-------|------|
-| data-lead | Task intake and internal routing |
-| data-analyst | Data analysis and insights |
-| data-pipeline | Data pipeline development |
-| data-reporting | Dashboard and report creation |
+| data-lead | Task intake, analysis scoping, and routing |
+| data-analyst | Ad-hoc analysis, hypothesis testing, metric deep dives |
+| data-pipeline | ETL design, data quality, pipeline documentation |
+| data-reporting | Dashboard specs, recurring reports, visualization guidance |
 
 ## Input Contract
-Provide: data sources, analysis goals, metrics definitions, access credentials context.
+Provide: the question to answer, available data sources, time period, relevant dimensions/filters.
+For pipeline tasks: source schema, target schema, transformation logic, SLA requirements.
+For reports: audience, frequency, key metrics, existing dashboard URLs if any.
 
 ## Output Contract
-Writes artifacts to `.claude/workspace/artifacts/data/<task-id>/`.
-Returns analysis and reports via Agent tool response.
+Artifacts written to `.claude/workspace/artifacts/data/<task-id>/`.
+- Analysis: `analysis.md` (findings, methodology, insights, recommendations)
+- Pipeline: `pipeline-design.md` (architecture, transformations, data quality checks)
+- Report: `report-spec.md` (metric definitions, chart specs, refresh schedule)
