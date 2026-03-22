@@ -2,44 +2,46 @@
 set -euo pipefail
 
 PASS=0; FAIL=0
+# Note: use (( VAR += 1 )) not (( VAR++ )) — post-increment returns old value,
+# which is exit code 1 when VAR was 0, causing set -e to abort.
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 assert_eq() {
   local desc="$1" expected="$2" actual="$3"
   if [[ "$expected" == "$actual" ]]; then
-    echo "  ✓ $desc"; ((PASS++))
+    echo "  ✓ $desc"; (( PASS += 1 ))
   else
     echo "  ✗ $desc" >&2
     echo "    expected: '$expected'" >&2
     echo "    got:      '$actual'" >&2
-    ((FAIL++))
+    (( FAIL += 1 ))
   fi
 }
 
 assert_file_exists() {
   local desc="$1" path="$2"
   if [[ -e "$path" ]]; then
-    echo "  ✓ $desc"; ((PASS++))
+    echo "  ✓ $desc"; (( PASS += 1 ))
   else
-    echo "  ✗ $desc (missing: $path)" >&2; ((FAIL++))
+    echo "  ✗ $desc (missing: $path)" >&2; (( FAIL += 1 ))
   fi
 }
 
 assert_file_absent() {
   local desc="$1" path="$2"
   if [[ ! -e "$path" ]]; then
-    echo "  ✓ $desc"; ((PASS++))
+    echo "  ✓ $desc"; (( PASS += 1 ))
   else
-    echo "  ✗ $desc (should not exist: $path)" >&2; ((FAIL++))
+    echo "  ✗ $desc (should not exist: $path)" >&2; (( FAIL += 1 ))
   fi
 }
 
 assert_file_contains() {
   local desc="$1" path="$2" pattern="$3"
   if grep -qF "$pattern" "$path" 2>/dev/null; then
-    echo "  ✓ $desc"; ((PASS++))
+    echo "  ✓ $desc"; (( PASS += 1 ))
   else
-    echo "  ✗ $desc (pattern '$pattern' not found in $path)" >&2; ((FAIL++))
+    echo "  ✗ $desc (pattern '$pattern' not found in $path)" >&2; (( FAIL += 1 ))
   fi
 }
 
