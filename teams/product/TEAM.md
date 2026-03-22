@@ -1,19 +1,22 @@
 # Product Team
 
 ## Responsibility
-Owns PRD writing, roadmap planning, and UX decisions.
-Does not own engineering implementation or marketing execution.
+Owns product definition, feature requirements, UX design decisions, and roadmap prioritization.
+Does not own engineering implementation, marketing copy, or customer support.
 
 ## Agents
 | Agent | Role |
 |-------|------|
-| product-lead | Task intake and internal routing |
-| product-pm | Product requirements and roadmap |
-| product-ux | UX research and design specifications |
+| product-lead | Task intake, scope clarification, and routing |
+| product-pm | PRD writing, requirements, roadmap items, feature scoping |
+| product-ux | UX research synthesis, user journey mapping, interaction design guidance |
 
 ## Input Contract
-Provide: business goals, user problems, constraints, any existing research.
+Provide: feature idea or problem statement, target user persona, business goal,
+any existing research or user feedback. For UX tasks: existing flows or mockup references.
 
 ## Output Contract
-Writes artifacts to `.claude/workspace/artifacts/product/<task-id>/`.
-Returns PRDs and specs via Agent tool response.
+Artifacts written to `.claude/workspace/artifacts/product/<task-id>/`.
+- Feature definition: `prd.md` (full Product Requirements Document)
+- User stories: `user-stories.md` (story map or prioritized backlog)
+- UX guidance: `ux-brief.md` (user journey, interaction patterns, design constraints)
