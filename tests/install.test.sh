@@ -56,7 +56,7 @@ echo "=== Test: default install ==="
 "$REPO_ROOT/install.sh" > /dev/null
 
 assert_file_exists "orchestrator.md installed"      ".claude/agents/orchestrator.md"
-assert_file_exists "engineer-lead.md installed"     ".claude/agents/engineer-lead.md"
+assert_file_exists "aurorie-engineer-lead.md installed"     ".claude/agents/aurorie-engineer-lead.md"
 assert_file_exists "tdd skill installed"            ".claude/skills/tdd/SKILL.md"
 assert_file_exists "file-handoff skill installed"   ".claude/skills/file-handoff/SKILL.md"
 assert_file_exists "engineer workflow installed"    ".claude/workflows/engineer.md"

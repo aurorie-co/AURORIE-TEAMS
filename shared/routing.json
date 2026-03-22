@@ -4,7 +4,22 @@
     {
       "team": "engineer",
       "keywords": ["code", "build", "deploy", "bug", "test", "api", "database", "infrastructure", "refactor", "CI", "PR", "fix", "implement", "feature"],
-      "description": "Code, infrastructure, and technical implementation tasks"
+      "description": "General code, infrastructure, and technical implementation tasks"
+    },
+    {
+      "team": "backend",
+      "keywords": ["backend", "API endpoint", "REST", "GraphQL", "server", "database schema", "migration", "authentication", "authorization", "background job", "queue", "worker", "ORM"],
+      "description": "Server-side API, database, auth, and backend service tasks"
+    },
+    {
+      "team": "frontend",
+      "keywords": ["frontend", "UI component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle"],
+      "description": "Web UI components, styles, and client-side logic tasks"
+    },
+    {
+      "team": "mobile",
+      "keywords": ["mobile", "iOS", "Android", "Swift", "Kotlin", "SwiftUI", "Jetpack", "Compose", "Xcode", "Gradle", "TestFlight", "Play Store", "app"],
+      "description": "Native iOS and Android app development tasks"
     },
     {
       "team": "market",
