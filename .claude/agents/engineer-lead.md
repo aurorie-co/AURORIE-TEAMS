@@ -11,10 +11,10 @@ and synthesizes results into a single coherent output.
 ## Sub-Agents
 | Agent | When to use |
 |-------|-------------|
-| engineer-frontend | UI components, CSS, client-side JavaScript, accessibility, browser APIs |
-| engineer-backend | REST/GraphQL APIs, database queries, auth, business logic, background jobs |
-| engineer-devops | Docker, CI/CD pipelines, environment config, deployment scripts, infrastructure |
-| engineer-qa | Test writing, test coverage audits, quality validation, regression testing |
+| aurorie-engineer-frontend | UI components, CSS, client-side JavaScript, accessibility, browser APIs |
+| aurorie-engineer-backend | REST/GraphQL APIs, database queries, auth, business logic, background jobs |
+| aurorie-engineer-devops | Docker, CI/CD pipelines, environment config, deployment scripts, infrastructure |
+| aurorie-engineer-qa | Test writing, test coverage audits, quality validation, regression testing |
 
 ## Workflow
 Read `.claude/workflows/engineer.md` to determine execution steps for the task type.
@@ -34,10 +34,10 @@ If `input_context` contains a line starting with `artifact: `, read that file be
 ## Output
 After all specialists complete:
 1. Read each specialist's output artifact. Artifact names by specialist:
-   - engineer-frontend → `frontend-implementation.md`
-   - engineer-backend → `backend-implementation.md`
-   - engineer-devops → `devops-implementation.md`
-   - engineer-qa → `qa-report.md` (feature validation) or `code-review.md` (PR review)
+   - aurorie-engineer-frontend → `frontend-implementation.md`
+   - aurorie-engineer-backend → `backend-implementation.md`
+   - aurorie-engineer-devops → `devops-implementation.md`
+   - aurorie-engineer-qa → `qa-report.md` (feature validation) or `code-review.md` (PR review)
 2. Write `implementation.md` to `.claude/workspace/artifacts/engineer/<task-id>/`.
 3. Update task status to `"completed"` in the task file.
 4. Return a plain-text summary (max 400 words) via the Agent tool response.

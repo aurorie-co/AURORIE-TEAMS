@@ -35,11 +35,11 @@ aurorie-teams/
 │   │   ├── TEAM.md                     # human documentation only (not read by agents at runtime)
 │   │   ├── workflow.md
 │   │   ├── agents/
-│   │   │   ├── engineer-lead.md
-│   │   │   ├── engineer-frontend.md
-│   │   │   ├── engineer-backend.md
-│   │   │   ├── engineer-devops.md
-│   │   │   └── engineer-qa.md
+│   │   │   ├── aurorie-engineer-lead.md
+│   │   │   ├── aurorie-engineer-frontend.md
+│   │   │   ├── aurorie-engineer-backend.md
+│   │   │   ├── aurorie-engineer-devops.md
+│   │   │   └── aurorie-engineer-qa.md
 │   │   ├── skills/
 │   │   │   ├── tdd/SKILL.md
 │   │   │   ├── code-review/SKILL.md
@@ -50,10 +50,10 @@ aurorie-teams/
 │   │   ├── TEAM.md
 │   │   ├── workflow.md
 │   │   ├── agents/
-│   │   │   ├── market-lead.md
-│   │   │   ├── market-seo.md
-│   │   │   ├── market-content.md
-│   │   │   └── market-analytics.md
+│   │   │   ├── aurorie-market-lead.md
+│   │   │   ├── aurorie-market-seo.md
+│   │   │   ├── aurorie-market-content.md
+│   │   │   └── aurorie-market-analytics.md
 │   │   ├── skills/
 │   │   │   ├── content-engine/SKILL.md
 │   │   │   └── seo-audit/SKILL.md
@@ -63,9 +63,9 @@ aurorie-teams/
 │   │   ├── TEAM.md
 │   │   ├── workflow.md
 │   │   ├── agents/
-│   │   │   ├── product-lead.md
-│   │   │   ├── product-pm.md
-│   │   │   └── product-ux.md
+│   │   │   ├── aurorie-product-lead.md
+│   │   │   ├── aurorie-product-pm.md
+│   │   │   └── aurorie-product-ux.md
 │   │   ├── skills/
 │   │   │   ├── prd-writing/SKILL.md
 │   │   │   └── user-story/SKILL.md
@@ -75,10 +75,10 @@ aurorie-teams/
 │   │   ├── TEAM.md
 │   │   ├── workflow.md
 │   │   ├── agents/
-│   │   │   ├── data-lead.md
-│   │   │   ├── data-analyst.md
-│   │   │   ├── data-pipeline.md
-│   │   │   └── data-reporting.md
+│   │   │   ├── aurorie-data-lead.md
+│   │   │   ├── aurorie-data-analyst.md
+│   │   │   ├── aurorie-data-pipeline.md
+│   │   │   └── aurorie-data-reporting.md
 │   │   ├── skills/
 │   │   │   ├── sql-patterns/SKILL.md
 │   │   │   └── visualization/SKILL.md
@@ -88,9 +88,9 @@ aurorie-teams/
 │   │   ├── TEAM.md
 │   │   ├── workflow.md
 │   │   ├── agents/
-│   │   │   ├── research-lead.md
-│   │   │   ├── research-web.md
-│   │   │   └── research-synthesizer.md
+│   │   │   ├── aurorie-research-lead.md
+│   │   │   ├── aurorie-research-web.md
+│   │   │   └── aurorie-research-synthesizer.md
 │   │   ├── skills/
 │   │   │   ├── deep-research/SKILL.md
 │   │   │   └── exa-search/SKILL.md
@@ -100,10 +100,10 @@ aurorie-teams/
 │       ├── TEAM.md
 │       ├── workflow.md
 │       ├── agents/
-│       │   ├── support-lead.md
-│       │   ├── support-triage.md
-│       │   ├── support-responder.md
-│       │   └── support-escalation.md
+│       │   ├── aurorie-support-lead.md
+│       │   ├── aurorie-support-triage.md
+│       │   ├── aurorie-support-responder.md
+│       │   └── aurorie-support-escalation.md
 │       ├── skills/
 │       │   └── customer-comms/SKILL.md
 │       └── mcp.json
@@ -134,7 +134,7 @@ my-project/
     ├── .aurorie-teams-version          # installed version string, e.g. "1.0.0"
     ├── agents/
     │   ├── orchestrator.md
-    │   ├── engineer-lead.md
+    │   ├── aurorie-engineer-lead.md
     │   └── ... (all team agents)
     ├── skills/
     │   ├── tdd/SKILL.md
@@ -388,7 +388,7 @@ manages parallel and sequential dispatch, and synthesizes results for the user.
 For tasks where one team's output feeds another (e.g., product writes PRD → engineer implements):
 - These are expressed as multi-step CLAUDE.md workflows, not single orchestrator invocations.
 - Each step invokes the orchestrator (or a team lead directly) with an `input_context` referencing the previous team's artifact.
-- Example: "Step 1: invoke product-lead. Step 2: invoke engineer-lead with artifact: path from step 1."
+- Example: "Step 1: invoke aurorie-product-lead. Step 2: invoke aurorie-engineer-lead with artifact: path from step 1."
 
 ## Failure Handling
 If a team lead returns a failure summary: surface it to the user immediately. Do not retry automatically.
@@ -491,9 +491,9 @@ Routing rules are defined in `.claude/routing.json` (edit to customize).
 Define multi-step cross-team workflows here. Example:
 
 ### Feature Development
-1. Invoke `product-lead` to produce a PRD for the feature.
+1. Invoke `aurorie-product-lead` to produce a PRD for the feature.
    After step 1 completes, read the actual `task-id` from `.claude/workspace/tasks/` to get the real artifact path.
-2. Invoke `engineer-lead` with:
+2. Invoke `aurorie-engineer-lead` with:
    `input_context: "artifact: .claude/workspace/artifacts/product/<actual-task-id-from-step-1>/prd.md"`
    Replace `<actual-task-id-from-step-1>` with the UUID written by step 1.
 
@@ -663,9 +663,9 @@ The repo maintains a `CHANGELOG.md` at the root. Each version entry notes change
 
 | Team | Lead | Specialist Agents | Core Skills | MCP |
 |------|------|-------------------|-------------|-----|
-| engineer | engineer-lead | frontend, backend, devops, qa | tdd, code-review, deployment | github, filesystem |
-| market | market-lead | seo, content, analytics | content-engine, seo-audit | browser |
-| product | product-lead | pm, ux | prd-writing, user-story | — |
-| data | data-lead | analyst, pipeline, reporting | sql-patterns, visualization | database |
-| research | research-lead | web, synthesizer | deep-research, exa-search | firecrawl, exa |
-| support | support-lead | triage, responder, escalation | customer-comms | email, slack |
+| engineer | aurorie-engineer-lead | frontend, backend, devops, qa | tdd, code-review, deployment | github, filesystem |
+| market | aurorie-market-lead | seo, content, analytics | content-engine, seo-audit | browser |
+| product | aurorie-product-lead | pm, ux | prd-writing, user-story | — |
+| data | aurorie-data-lead | analyst, pipeline, reporting | sql-patterns, visualization | database |
+| research | aurorie-research-lead | web, synthesizer | deep-research, exa-search | firecrawl, exa |
+| support | aurorie-support-lead | triage, responder, escalation | customer-comms | email, slack |

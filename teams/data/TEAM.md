@@ -7,10 +7,10 @@ Does not own product decisions, marketing campaigns, or application code.
 ## Agents
 | Agent | Role |
 |-------|------|
-| data-lead | Task intake, analysis scoping, and routing |
-| data-analyst | Ad-hoc analysis, hypothesis testing, metric deep dives |
-| data-pipeline | ETL design, data quality, pipeline documentation |
-| data-reporting | Dashboard specs, recurring reports, visualization guidance |
+| aurorie-data-lead | Task intake, analysis scoping, and routing |
+| aurorie-data-analyst | Ad-hoc analysis, hypothesis testing, metric deep dives |
+| aurorie-data-pipeline | ETL design, data quality, pipeline documentation |
+| aurorie-data-reporting | Dashboard specs, recurring reports, visualization guidance |
 
 ## Input Contract
 Provide: the question to answer, available data sources, time period, relevant dimensions/filters.

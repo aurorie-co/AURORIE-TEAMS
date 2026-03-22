@@ -7,9 +7,9 @@ Does not own strategic decisions, product roadmap, or marketing execution.
 ## Agents
 | Agent | Role |
 |-------|------|
-| research-lead | Task intake, research scoping, and routing |
-| research-web | Web research, source gathering, competitive data collection |
-| research-synthesizer | Report synthesis, comparison matrices, executive summaries |
+| aurorie-research-lead | Task intake, research scoping, and routing |
+| aurorie-research-web | Web research, source gathering, competitive data collection |
+| aurorie-research-synthesizer | Report synthesis, comparison matrices, executive summaries |
 
 ## Input Contract
 Provide: the research question, context (why this is needed, what decision it informs),

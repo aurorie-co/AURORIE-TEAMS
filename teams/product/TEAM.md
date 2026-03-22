@@ -7,9 +7,9 @@ Does not own engineering implementation, marketing copy, or customer support.
 ## Agents
 | Agent | Role |
 |-------|------|
-| product-lead | Task intake, scope clarification, and routing |
-| product-pm | PRD writing, requirements, roadmap items, feature scoping |
-| product-ux | UX research synthesis, user journey mapping, interaction design guidance |
+| aurorie-product-lead | Task intake, scope clarification, and routing |
+| aurorie-product-pm | PRD writing, requirements, roadmap items, feature scoping |
+| aurorie-product-ux | UX research synthesis, user journey mapping, interaction design guidance |
 
 ## Input Contract
 Provide: feature idea or problem statement, target user persona, business goal,

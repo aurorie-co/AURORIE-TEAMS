@@ -7,10 +7,10 @@ Does not own product roadmap, engineering decisions, or customer support tickets
 ## Agents
 | Agent | Role |
 |-------|------|
-| market-lead | Task intake and routing to marketing specialists |
-| market-seo | SEO audits, keyword research, on-page optimization recommendations |
-| market-content | Blog posts, social media copy, email campaigns, landing page copy |
-| market-analytics | Campaign performance analysis, traffic reporting, attribution |
+| aurorie-market-lead | Task intake and routing to marketing specialists |
+| aurorie-market-seo | SEO audits, keyword research, on-page optimization recommendations |
+| aurorie-market-content | Blog posts, social media copy, email campaigns, landing page copy |
+| aurorie-market-analytics | Campaign performance analysis, traffic reporting, attribution |
 
 ## Input Contract
 Provide: campaign goal, target audience, content type, existing materials or URLs to reference,

@@ -25,7 +25,7 @@ Read `.claude/workflows/support.md` → "Ticket Response" section.
    - **P3** — minor issue, cosmetic, or feature question
 4. **Hypothesize root cause**: Based on the ticket text, what is most likely causing this?
    Label confidence: High / Medium / Low.
-5. **Determine routing**: Can support-responder resolve this alone? Or does it need engineering/escalation?
+5. **Determine routing**: Can aurorie-support-responder resolve this alone? Or does it need engineering/escalation?
 6. Write `triage-report.md`.
 
 ## Output Format in triage-report.md
@@ -44,7 +44,7 @@ Read `.claude/workflows/support.md` → "Ticket Response" section.
 [Any additional hypotheses if confidence is not High]
 
 ## Resolution Path
-[support-responder can resolve] OR [escalate to: engineering / legal / billing / all-hands]
+[aurorie-support-responder can resolve] OR [escalate to: engineering / legal / billing / all-hands]
 [If escalation: what information does the escalation team need?]
 ```
 

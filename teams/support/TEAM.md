@@ -7,10 +7,10 @@ Does not own product decisions, engineering fixes, or billing policy changes.
 ## Agents
 | Agent | Role |
 |-------|------|
-| support-lead | Task intake, issue routing, and response quality review |
-| support-triage | Issue classification, priority scoring, and category assignment |
-| support-responder | Customer-facing response drafting and tone review |
-| support-escalation | Cross-team coordination for complex or high-priority issues |
+| aurorie-support-lead | Task intake, issue routing, and response quality review |
+| aurorie-support-triage | Issue classification, priority scoring, and category assignment |
+| aurorie-support-responder | Customer-facing response drafting and tone review |
+| aurorie-support-escalation | Cross-team coordination for complex or high-priority issues |
 
 ## Input Contract
 Provide: customer message or ticket text, account context (plan, tenure, recent activity if relevant),

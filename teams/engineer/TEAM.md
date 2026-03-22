@@ -7,11 +7,11 @@ Does not own product requirements, business strategy, or customer communications
 ## Agents
 | Agent | Role |
 |-------|------|
-| engineer-lead | Task intake, decomposition, and internal routing |
-| engineer-frontend | UI components, styling, client-side logic, accessibility |
-| engineer-backend | APIs, databases, business logic, authentication |
-| engineer-devops | CI/CD, Docker, deployment, infrastructure-as-code |
-| engineer-qa | Test strategy, automated testing, quality validation |
+| aurorie-engineer-lead | Task intake, decomposition, and internal routing |
+| aurorie-engineer-frontend | UI components, styling, client-side logic, accessibility |
+| aurorie-engineer-backend | APIs, databases, business logic, authentication |
+| aurorie-engineer-devops | CI/CD, Docker, deployment, infrastructure-as-code |
+| aurorie-engineer-qa | Test strategy, automated testing, quality validation |
 
 ## Input Contract
 Provide: task description, acceptance criteria, relevant file paths or codebase context.

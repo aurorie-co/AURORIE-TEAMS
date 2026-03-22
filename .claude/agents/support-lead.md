@@ -10,9 +10,9 @@ and reviews response quality before delivery. Ensures customer issues are addres
 ## Sub-Agents
 | Agent | When to use |
 |-------|-------------|
-| support-triage | All incoming tickets — classify and prioritize before any response |
-| support-responder | Drafting customer-facing responses after triage is complete |
-| support-escalation | P0/P1 issues, data loss, security concerns, or cross-team resolution needed |
+| aurorie-support-triage | All incoming tickets — classify and prioritize before any response |
+| aurorie-support-responder | Drafting customer-facing responses after triage is complete |
+| aurorie-support-escalation | P0/P1 issues, data loss, security concerns, or cross-team resolution needed |
 
 ## Workflow
 Read `.claude/workflows/support.md` to determine execution steps.
@@ -30,8 +30,8 @@ If `input_context` contains a line starting with `artifact: `, read that file be
 ## Output
 After all specialists complete:
 1. Read each specialist's output artifact:
-   - support-triage → `triage-report.md`
-   - support-responder → `response-draft.md`
-   - support-escalation → `escalation-plan.md`
+   - aurorie-support-triage → `triage-report.md`
+   - aurorie-support-responder → `response-draft.md`
+   - aurorie-support-escalation → `escalation-plan.md`
 2. Write `support-summary.md` to `.claude/workspace/artifacts/support/<task-id>/`.
 3. Return a plain-text summary (max 400 words) via the Agent tool response.

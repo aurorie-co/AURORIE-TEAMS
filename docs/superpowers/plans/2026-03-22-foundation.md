@@ -151,11 +151,11 @@ Does not own product requirements or business strategy.
 ## Agents
 | Agent | Role |
 |-------|------|
-| engineer-lead | Task intake and internal routing |
-| engineer-frontend | UI components, styles, client-side logic |
-| engineer-backend | APIs, databases, business logic |
-| engineer-devops | CI/CD, deployment, infrastructure |
-| engineer-qa | Testing, quality assurance |
+| aurorie-engineer-lead | Task intake and internal routing |
+| aurorie-engineer-frontend | UI components, styles, client-side logic |
+| aurorie-engineer-backend | APIs, databases, business logic |
+| aurorie-engineer-devops | CI/CD, deployment, infrastructure |
+| aurorie-engineer-qa | Testing, quality assurance |
 
 ## Input Contract
 Provide: task description, acceptance criteria, any relevant codebase context.
@@ -182,18 +182,18 @@ Repeat for each team with appropriate content (1 paragraph each):
 Trigger: new feature request or code change task
 
 Steps:
-1. engineer-lead reviews requirements and creates task breakdown
-2. Assign to engineer-backend and/or engineer-frontend based on scope
-3. engineer-qa validates acceptance criteria
+1. aurorie-engineer-lead reviews requirements and creates task breakdown
+2. Assign to aurorie-engineer-backend and/or aurorie-engineer-frontend based on scope
+3. aurorie-engineer-qa validates acceptance criteria
 4. Write output to `.claude/workspace/artifacts/engineer/<task-id>/`
 
 ## Bug Fix
 Trigger: bug report or failing test
 
 Steps:
-1. engineer-lead identifies affected component
+1. aurorie-engineer-lead identifies affected component
 2. Assign to relevant specialist
-3. engineer-qa verifies fix
+3. aurorie-engineer-qa verifies fix
 4. Write output to `.claude/workspace/artifacts/engineer/<task-id>/`
 ```
 
@@ -201,7 +201,7 @@ Repeat minimal workflow.md for: market, product, data, research, support.
 
 - [ ] **Step 4: Write stub agent files**
 
-`teams/engineer/agents/engineer-lead.md`:
+`teams/engineer/agents/aurorie-engineer-lead.md`:
 ```markdown
 # Engineer Lead
 
@@ -214,10 +214,10 @@ Receives engineering tasks, decomposes them, and routes to specialist agents.
 ## Sub-Agents
 | Agent | When to use |
 |-------|-------------|
-| engineer-frontend | UI, components, styles |
-| engineer-backend | APIs, databases, business logic |
-| engineer-devops | CI/CD, deployment, infra |
-| engineer-qa | Testing and validation |
+| aurorie-engineer-frontend | UI, components, styles |
+| aurorie-engineer-backend | APIs, databases, business logic |
+| aurorie-engineer-devops | CI/CD, deployment, infra |
+| aurorie-engineer-qa | Testing and validation |
 
 ## Workflow
 Read `.claude/workflows/engineer.md` to determine execution steps.
@@ -232,12 +232,12 @@ Return a plain-text summary (max 400 words) via the Agent tool response.
 ```
 
 Create minimal specialist stubs (role + skills + input/output sections, no sub-agents):
-- `engineer`: `engineer-frontend.md`, `engineer-backend.md`, `engineer-devops.md`, `engineer-qa.md`
-- `market`: `market-lead.md`, `market-seo.md`, `market-content.md`, `market-analytics.md`
-- `product`: `product-lead.md`, `product-pm.md`, `product-ux.md`
-- `data`: `data-lead.md`, `data-analyst.md`, `data-pipeline.md`, `data-reporting.md`
-- `research`: `research-lead.md`, `research-web.md`, `research-synthesizer.md`
-- `support`: `support-lead.md`, `support-triage.md`, `support-responder.md`, `support-escalation.md`
+- `engineer`: `aurorie-engineer-frontend.md`, `aurorie-engineer-backend.md`, `aurorie-engineer-devops.md`, `aurorie-engineer-qa.md`
+- `market`: `aurorie-market-lead.md`, `aurorie-market-seo.md`, `aurorie-market-content.md`, `aurorie-market-analytics.md`
+- `product`: `aurorie-product-lead.md`, `aurorie-product-pm.md`, `aurorie-product-ux.md`
+- `data`: `aurorie-data-lead.md`, `aurorie-data-analyst.md`, `aurorie-data-pipeline.md`, `aurorie-data-reporting.md`
+- `research`: `aurorie-research-lead.md`, `aurorie-research-web.md`, `aurorie-research-synthesizer.md`
+- `support`: `aurorie-support-lead.md`, `aurorie-support-triage.md`, `aurorie-support-responder.md`, `aurorie-support-escalation.md`
 
 - [ ] **Step 5: Write stub skill directories**
 
@@ -482,16 +482,16 @@ Routing rules are in `.claude/routing.json` — edit to customize which keywords
 route to which team.
 
 To invoke: use the `orchestrator` agent for most tasks, or invoke a team lead
-directly (e.g., `engineer-lead`) for single-team work.
+directly (e.g., `aurorie-engineer-lead`) for single-team work.
 
 ## Sequential Workflows
 
 Define multi-step cross-team workflows here. Example:
 
 ### Feature Development (Product → Engineer)
-1. Invoke `product-lead` to write a PRD.
+1. Invoke `aurorie-product-lead` to write a PRD.
    When complete, find the actual task-id in `.claude/workspace/tasks/` and note the artifact path.
-2. Invoke `engineer-lead` with:
+2. Invoke `aurorie-engineer-lead` with:
    `input_context: "artifact: .claude/workspace/artifacts/product/<actual-task-id>/prd.md\nImplement the features described in the PRD."`
    Replace `<actual-task-id>` with the UUID written by step 1.
 
@@ -588,7 +588,7 @@ echo "=== Test: default install ==="
 "$REPO_ROOT/install.sh" > /dev/null
 
 assert_file_exists "orchestrator.md installed"      ".claude/agents/orchestrator.md"
-assert_file_exists "engineer-lead.md installed"     ".claude/agents/engineer-lead.md"
+assert_file_exists "aurorie-engineer-lead.md installed"     ".claude/agents/aurorie-engineer-lead.md"
 assert_file_exists "tdd skill installed"            ".claude/skills/tdd/SKILL.md"
 assert_file_exists "file-handoff skill installed"   ".claude/skills/file-handoff/SKILL.md"
 assert_file_exists "engineer workflow installed"    ".claude/workflows/engineer.md"
