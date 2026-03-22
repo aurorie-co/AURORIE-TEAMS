@@ -2,23 +2,18 @@
   "version": "1",
   "rules": [
     {
-      "team": "engineer",
-      "keywords": ["code", "build", "deploy", "bug", "test", "api", "database", "infrastructure", "refactor", "CI", "PR", "fix", "implement", "feature"],
-      "description": "General code, infrastructure, and technical implementation tasks"
-    },
-    {
       "team": "backend",
-      "keywords": ["backend", "API endpoint", "REST", "GraphQL", "server", "database schema", "migration", "authentication", "authorization", "background job", "queue", "worker", "ORM"],
+      "keywords": ["backend", "API", "endpoint", "REST", "GraphQL", "server", "database", "schema", "migration", "authentication", "authorization", "JWT", "session", "background job", "queue", "worker", "ORM", "SQL", "refactor", "bug fix", "implement"],
       "description": "Server-side API, database, auth, and backend service tasks"
     },
     {
       "team": "frontend",
-      "keywords": ["frontend", "UI component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle"],
+      "keywords": ["frontend", "UI", "component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle", "web app"],
       "description": "Web UI components, styles, and client-side logic tasks"
     },
     {
       "team": "mobile",
-      "keywords": ["mobile", "iOS", "Android", "Swift", "Kotlin", "SwiftUI", "Jetpack", "Compose", "Xcode", "Gradle", "TestFlight", "Play Store", "app"],
+      "keywords": ["mobile", "iOS", "Android", "Swift", "Kotlin", "SwiftUI", "Jetpack", "Compose", "Xcode", "Gradle", "TestFlight", "Play Store", "app", "native"],
       "description": "Native iOS and Android app development tasks"
     },
     {
@@ -33,7 +28,7 @@
     },
     {
       "team": "data",
-      "keywords": ["data", "report", "dashboard", "SQL", "metrics", "pipeline", "analysis", "chart", "query", "insight"],
+      "keywords": ["data", "report", "dashboard", "metrics", "pipeline", "analysis", "chart", "query", "insight"],
       "description": "Data analysis, reporting, and pipeline tasks"
     },
     {

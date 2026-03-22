@@ -44,7 +44,7 @@ mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/workflows" \
 
 # ── install agents (always overwrite) ────────────────────────────────────────
 cp "$REPO_ROOT/shared/agents/orchestrator.md" "$TARGET/agents/"
-for team in engineer backend frontend mobile market product data research support; do
+for team in backend frontend mobile market product data research support; do
   for agent_file in "$REPO_ROOT/teams/$team/agents/"*.md; do
     cp "$agent_file" "$TARGET/agents/"
   done
@@ -53,7 +53,7 @@ echo "  ✓ agents installed"
 
 # ── install skills (always overwrite) ────────────────────────────────────────
 cp -r "$REPO_ROOT/shared/skills/"* "$TARGET/skills/"
-for team in engineer backend frontend mobile market product data research support; do
+for team in backend frontend mobile market product data research support; do
   cp -r "$REPO_ROOT/teams/$team/skills/"* "$TARGET/skills/"
 done
 echo "  ✓ skills installed"
@@ -61,7 +61,7 @@ echo "  ✓ skills installed"
 # ── collect workflow + routing files that exist locally ───────────────────────
 OVERWRITE_CANDIDATES=()
 if [[ "$FORCE_WORKFLOWS" == true ]]; then
-  for team in engineer backend frontend mobile market product data research support; do
+  for team in backend frontend mobile market product data research support; do
     dest="$TARGET/workflows/$team.md"
     [[ -f "$dest" ]] && OVERWRITE_CANDIDATES+=("$dest")
   done
@@ -90,7 +90,7 @@ if [[ ${#OVERWRITE_CANDIDATES[@]} -gt 0 ]]; then
 fi
 
 # ── install workflows ─────────────────────────────────────────────────────────
-for team in engineer backend frontend mobile market product data research support; do
+for team in backend frontend mobile market product data research support; do
   src="$REPO_ROOT/teams/$team/workflow.md"
   dest="$TARGET/workflows/$team.md"
   if [[ "$FORCE_WORKFLOWS" == true ]]; then
@@ -119,7 +119,7 @@ merged_mcp="{}"
 
 # collect all mcp.json paths: shared first, then teams alphabetically (hardcoded for safety)
 mcp_files=("$REPO_ROOT/shared/mcp.json")
-for team in engineer backend frontend mobile market product data research support; do
+for team in backend frontend mobile market product data research support; do
   mcp_file="$REPO_ROOT/teams/$team/mcp.json"
   [[ -f "$mcp_file" ]] && mcp_files+=("$mcp_file")
 done
@@ -183,7 +183,7 @@ if [[ "$DETECT_ORPHANS" == true ]]; then
 
   # build list of expected agent basenames
   repo_agents=("orchestrator.md")
-  for team in engineer backend frontend mobile market product data research support; do
+  for team in backend frontend mobile market product data research support; do
     for f in "$REPO_ROOT/teams/$team/agents/"*.md; do
       [[ -f "$f" ]] && repo_agents+=("$(basename "$f")")
     done
@@ -210,7 +210,7 @@ if [[ "$DETECT_ORPHANS" == true ]]; then
   for s in "$REPO_ROOT/shared/skills/"*/; do
     [[ -d "$s" ]] && repo_skills+=("$(basename "$s")")
   done
-  for team in engineer backend frontend mobile market product data research support; do
+  for team in backend frontend mobile market product data research support; do
     for s in "$REPO_ROOT/teams/$team/skills/"*/; do
       [[ -d "$s" ]] && repo_skills+=("$(basename "$s")")
     done
