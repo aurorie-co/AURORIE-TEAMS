@@ -28,8 +28,8 @@
     },
     {
       "team": "data",
-      "keywords": ["data", "report", "dashboard", "metrics", "pipeline", "analysis", "chart", "query", "insight"],
-      "description": "Data analysis, reporting, and pipeline tasks"
+      "keywords": ["data", "report", "dashboard", "metrics", "pipeline", "analysis", "chart", "query", "insight", "investigate", "root cause", "why did", "discrepancy", "anomaly", "numbers look wrong", "data quality"],
+      "description": "Data analysis, reporting, pipeline tasks, and data quality investigations"
     },
     {
       "team": "research",

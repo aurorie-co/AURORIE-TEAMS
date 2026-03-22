@@ -20,5 +20,6 @@ For reports: audience, frequency, key metrics, existing dashboard URLs if any.
 ## Output Contract
 Artifacts written to `.claude/workspace/artifacts/data/<task-id>/`.
 - Analysis: `analysis.md` (findings, methodology, insights, recommendations)
-- Pipeline: `pipeline-design.md` (architecture, transformations, data quality checks)
+- Pipeline: `pipeline-design.md` (layer model, transformations, quality checks, SLA)
 - Report: `report-spec.md` (metric definitions, chart specs, refresh schedule)
+- All workflows: `summary.md` (written by lead — key outcome, confidence/status, recommended action)

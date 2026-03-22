@@ -18,19 +18,26 @@ Read `.claude/workflows/backend.md` → "Deployment" section.
 1. Read the task. Identify: new pipeline, config change, deploy to environment, or infra creation.
 2. Check existing infra files: `Dockerfile`, `docker-compose.yml`, `.github/workflows/`, `terraform/`, etc.
 3. Apply `deployment` skill: pre-deploy checklist → implement change → verify.
-4. For pipeline changes: test on a non-production branch first; confirm build passes before merging.
-5. For Dockerfiles: multi-stage builds where relevant; pin base image versions; minimize layer size.
-6. For environment configs: use env var references (`${VAR_NAME}`), never hardcode secrets.
-7. For infrastructure-as-code: ensure idempotency (running twice produces the same result).
-8. Write `devops-implementation.md` with: what changed, how to apply (commands), verification steps, rollback instructions.
+4. For pipeline changes: apply `deployment-patterns` skill. Test on a non-production branch first; confirm build passes before merging.
+5. For Dockerfiles: apply `docker-patterns` skill. Multi-stage builds; pin base image versions; minimize layer size; run as non-root.
+6. For deployment strategy: prefer progressive rollouts (canary → percentage → full). Never big-bang production deploys. Document automated rollback triggers.
+7. For environment configs: use env var references (`${VAR_NAME}`), never hardcode secrets. Use a secrets manager (Vault, AWS SSM, etc.) for production.
+8. For infrastructure-as-code: ensure idempotency (running twice produces the same result). Track all infra in version control.
+9. For monitoring: define golden signals for the service (latency, traffic, errors, saturation). Set up SLO-based burn-rate alerts, not just threshold alerts. Configure Prometheus/Grafana or equivalent.
+10. For incidents: document runbooks for known failure modes. Track MTTR. Conduct blameless post-incident reviews.
+11. Write `devops-implementation.md` with: what changed, how to apply (commands), verification steps, rollback instructions, and monitoring confirmation.
 
 ## Quality Checklist
-- [ ] No secrets in files — all sensitive values via environment variables
-- [ ] Docker images use pinned base image versions (not `latest`)
-- [ ] Pipeline includes lint, test, and build steps before deploy
+- [ ] No secrets in files — all sensitive values via environment variables or secrets manager
+- [ ] Docker images use pinned base image versions (not `latest`) and run as non-root
+- [ ] Pipeline includes security scan → lint → test → build → deploy stages in order
 - [ ] Deployment is idempotent (safe to re-run)
-- [ ] Rollback procedure documented
+- [ ] Progressive rollout strategy applied (canary/blue-green/rolling) — no big-bang deploys
+- [ ] Automated rollback procedure defined and tested
 - [ ] Staging verified before production deploy
+- [ ] SLO-based burn-rate alerts configured (not just raw threshold alerts)
+- [ ] Golden signals monitored: latency (p95/p99), error rate, traffic, saturation
+- [ ] Runbook created for known failure modes
 
 ## Input
 Read task description and `input_context` from the task file.
