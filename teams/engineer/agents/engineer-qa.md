@@ -43,5 +43,8 @@ Read task description and `input_context` from the task file.
 If `input_context` contains a line starting with `artifact: `, read that file.
 
 ## Output
-Write `qa-report.md` to `.claude/workspace/artifacts/engineer/<task-id>/`.
+- Feature validation / regression testing: write `qa-report.md`
+- PR code review: write `code-review.md`
+
+Write the appropriate file to `.claude/workspace/artifacts/engineer/<task-id>/`.
 Return a plain-text summary (max 400 words) via the Agent tool response.

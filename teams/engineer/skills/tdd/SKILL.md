@@ -49,7 +49,7 @@ One behavior at a time. Add the next test only after the current one passes.
 - **E2E tests**: test from the user's perspective; use sparingly (slow, brittle).
 - Each test should have exactly one reason to fail.
 - Test names should describe behavior: `test_user_cannot_login_with_wrong_password`, not `test_login_2`.
-- Avoid `assertTrue(result)` — use specific assertions (`assertEqual`, `assertIn`, `assertRaises`).
+- Avoid generic boolean assertions (`assertTrue`, `expect(x).toBeTruthy()`) — use specific assertions that describe what you expect (`assertEqual`/`toBe`, `assertIn`/`toContain`, `assertRaises`/`toThrow`). Use the assertion style of your project's test framework.
 
 ## Coverage Expectations
 - New features: 80%+ line coverage on the new code.

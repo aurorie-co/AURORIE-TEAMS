@@ -33,7 +33,11 @@ If `input_context` contains a line starting with `artifact: `, read that file be
 
 ## Output
 After all specialists complete:
-1. Read each specialist's output artifact.
+1. Read each specialist's output artifact. Artifact names by specialist:
+   - engineer-frontend → `frontend-implementation.md`
+   - engineer-backend → `backend-implementation.md`
+   - engineer-devops → `devops-implementation.md`
+   - engineer-qa → `qa-report.md` (feature validation) or `code-review.md` (PR review)
 2. Write `implementation.md` to `.claude/workspace/artifacts/engineer/<task-id>/`.
 3. Update task status to `"completed"` in the task file.
 4. Return a plain-text summary (max 400 words) via the Agent tool response.
