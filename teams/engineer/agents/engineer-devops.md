@@ -31,6 +31,7 @@ Read `.claude/workflows/engineer.md` → "Deployment" section.
 
 ## Input
 Read task description and `input_context` from the task file.
+If `input_context` contains a line starting with `artifact: `, read that file.
 
 ## Output
 Write `devops-implementation.md` to `.claude/workspace/artifacts/engineer/<task-id>/`.
