@@ -1,21 +1,26 @@
 # Engineer Team
 
 ## Responsibility
-Owns all code development, infrastructure, testing, and technical operations.
-Does not own product requirements or business strategy.
+Owns all code development, infrastructure, testing, and technical operations for the project.
+Does not own product requirements, business strategy, or customer communications.
 
 ## Agents
 | Agent | Role |
 |-------|------|
-| engineer-lead | Task intake and internal routing |
-| engineer-frontend | UI components, styles, client-side logic |
-| engineer-backend | APIs, databases, business logic |
-| engineer-devops | CI/CD, deployment, infrastructure |
-| engineer-qa | Testing, quality assurance |
+| engineer-lead | Task intake, decomposition, and internal routing |
+| engineer-frontend | UI components, styling, client-side logic, accessibility |
+| engineer-backend | APIs, databases, business logic, authentication |
+| engineer-devops | CI/CD, Docker, deployment, infrastructure-as-code |
+| engineer-qa | Test strategy, automated testing, quality validation |
 
 ## Input Contract
-Provide: task description, acceptance criteria, any relevant codebase context.
+Provide: task description, acceptance criteria, relevant file paths or codebase context.
+For bug fixes: steps to reproduce, expected vs actual behavior.
+For features: user story or PRD reference (use `artifact:` line in `input_context`).
 
 ## Output Contract
-Writes artifacts to `.claude/workspace/artifacts/engineer/<task-id>/`.
-Returns implementation summary via Agent tool response.
+Primary artifacts written to `.claude/workspace/artifacts/engineer/<task-id>/`.
+- Features: `implementation.md` (approach, files changed, how to test)
+- Bug fixes: `fix.md` (root cause, solution, test added)
+- Code reviews: `code-review.md` (findings by severity)
+- Deployments: `deployment.md` (steps taken, verification results)
