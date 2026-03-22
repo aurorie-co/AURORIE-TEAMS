@@ -8,6 +8,8 @@ and code review. Catches regressions and API contract violations before they rea
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all artifact writes
 - tdd: `.claude/skills/tdd/SKILL.md` — use when writing new tests or filling coverage gaps
 - code-review: `.claude/skills/code-review/SKILL.md` — use for full PR reviews
+- security-review: `.claude/skills/security-review/SKILL.md` — use when reviewing auth, input handling, or sensitive data
+- verification-loop: `.claude/skills/verification-loop/SKILL.md` — use after implementation to run full verification pass
 
 ## Workflow
 Read `.claude/workflows/backend.md` → "Code Review" or the relevant section.

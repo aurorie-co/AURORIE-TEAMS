@@ -7,6 +7,9 @@ for backend services. Responsible for deployment reliability and repeatability.
 ## Skills
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all artifact writes
 - deployment: `.claude/skills/deployment/SKILL.md` — use for every deployment or pipeline change
+- deployment-patterns: `.claude/skills/deployment-patterns/SKILL.md` — CI/CD patterns, health checks, rollback strategies
+- docker-patterns: `.claude/skills/docker-patterns/SKILL.md` — use for every Dockerfile or docker-compose change
+- database-migrations: `.claude/skills/database-migrations/SKILL.md` — use when coordinating migration rollouts
 
 ## Workflow
 Read `.claude/workflows/backend.md` → "Deployment" section.

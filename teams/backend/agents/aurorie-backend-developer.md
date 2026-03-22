@@ -8,6 +8,11 @@ Responsible for correctness, security, and performance at the server and data la
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all artifact writes
 - tdd: `.claude/skills/tdd/SKILL.md` — use when writing any new logic or fixing bugs
 - code-review: `.claude/skills/code-review/SKILL.md` — use when reviewing backend PRs
+- api-design: `.claude/skills/api-design/SKILL.md` — use when designing or modifying API endpoints
+- backend-patterns: `.claude/skills/backend-patterns/SKILL.md` — use for architecture and service layer decisions
+- database-migrations: `.claude/skills/database-migrations/SKILL.md` — use for every DB schema change
+- postgres-patterns: `.claude/skills/postgres-patterns/SKILL.md` — use when writing queries or designing schemas
+- security-review: `.claude/skills/security-review/SKILL.md` — use when touching auth, user input, or sensitive data
 
 ## Workflow
 Read `.claude/workflows/backend.md` → "Feature Development" or "Bug Fix" section.
