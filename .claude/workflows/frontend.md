@@ -39,6 +39,7 @@ Trigger: web deploy, CDN update, preview environment setup
 Steps:
 1. aurorie-frontend-lead confirms environment (preview / staging / production) and scope.
 2. aurorie-frontend-devops applies `deployment` skill: pre-deploy checklist → build → deploy → verify. Measures and records bundle size delta.
-3. aurorie-frontend-qa runs visual smoke test and Core Web Vitals check post-deploy.
-4. aurorie-frontend-devops writes `devops-implementation.md`: what was deployed, bundle size delta, CDN cache strategy, verification status, rollback instructions.
-5. aurorie-frontend-lead writes `summary.md`: environment deployed to, QA smoke test outcome, bundle size impact, rollback reference.
+3. aurorie-frontend-qa runs visual smoke test and Core Web Vitals check post-deploy. Writes `qa-smoke.md`: environment tested, browser/viewport, Core Web Vitals (LCP/CLS), critical flows pass/fail.
+4. aurorie-frontend-lead reviews `qa-smoke.md`. If any failures: do NOT proceed — return `FAILED: ` with QA findings and rollback instructions. If all pass: continue.
+5. aurorie-frontend-devops writes `devops-implementation.md`: what was deployed, bundle size delta, CDN cache strategy, verification status, rollback instructions.
+6. aurorie-frontend-lead writes `summary.md`: environment deployed to, QA smoke test outcome (reference `qa-smoke.md`), bundle size impact, rollback reference.
