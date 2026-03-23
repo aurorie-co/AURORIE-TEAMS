@@ -68,6 +68,8 @@ assert_file_exists "settings.json generated"        ".claude/settings.json"
 assert_file_exists "CLAUDE.md generated"            "CLAUDE.md"
 assert_file_exists ".aurorie-teams-version written" ".claude/.aurorie-teams-version"
 assert_file_contains ".gitignore has workspace entry" ".gitignore" ".claude/workspace/"
+assert_file_contains "github MCP in settings.json"  ".claude/settings.json" '"github"'
+assert_file_contains "exa MCP in settings.json"     ".claude/settings.json" '"exa"'
 
 echo ""
 echo "=== Test: routing.json skipped on second install ==="
