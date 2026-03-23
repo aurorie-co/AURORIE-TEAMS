@@ -73,6 +73,8 @@ assert_file_contains "exa MCP in settings.json"     ".claude/settings.json" '"ex
 assert_file_contains "firecrawl MCP in settings.json"  ".claude/settings.json" '"firecrawl"'
 assert_file_contains "puppeteer MCP in settings.json"  ".claude/settings.json" '"puppeteer"'
 assert_file_contains "playwright MCP in settings.json" ".claude/settings.json" '"playwright"'
+assert_file_contains "postgres MCP in settings.json" ".claude/settings.json" '"postgres"'
+assert_file_contains "sqlite MCP in settings.json"   ".claude/settings.json" '"sqlite"'
 
 echo ""
 echo "=== Test: routing.json skipped on second install ==="
