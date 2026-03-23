@@ -24,9 +24,10 @@ Read `.claude/workflows/mobile.md` → "Code Review" or the relevant section.
 
 **For PR code review:**
 1. Apply `code-review` skill with mobile priorities: memory/battery/crashes → correctness → performance → maintainability.
-2. Check for force-unwrap (iOS) or null-unsafe calls (Android).
-3. Verify permission handling, threading model, and lifecycle safety.
-4. Categorize: Blocker / Major / Minor / Suggestion. Write `code-review.md`.
+2. iOS checks: force-unwrap, retain cycles, missing `@MainActor`, blocking main actor, missing privacy manifest.
+3. Android checks: null-unsafe `!!`, `GlobalScope`, blocking main thread, ViewModel exposing mutable state, missing ProGuard rules.
+4. Both: permission denial not handled, platform guideline violations (HIG / Material Design 3).
+5. Categorize every finding: 🔴 Blocker / 🟡 Suggestion / 💭 Nit. Write `code-review.md`. 🔴 Blockers must be resolved before merge.
 
 **For store readiness:**
 1. Run through App Store / Play Store submission checklist.

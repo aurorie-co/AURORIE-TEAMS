@@ -22,6 +22,7 @@ For features: design spec or UX brief (use `artifact:` line in `input_context`).
 Artifacts written to `.claude/workspace/artifacts/mobile/<task-id>/`.
 - iOS features: `ios-implementation.md` (files changed, APIs used, test coverage)
 - Android features: `android-implementation.md` (files changed, APIs used, test coverage)
-- Bug fixes: `fix.md` (platform, root cause, solution, test added)
-- Code reviews: `code-review.md` (findings by severity)
-- Deployments: `devops-implementation.md` (pipeline changes, distribution steps, rollback)
+- Bug fixes: `fix.md` (platform, root cause, solution, test added) + `qa-report.md`
+- Code reviews: `code-review.md` (findings by severity, 🔴/🟡/💭)
+- Deployments: `devops-implementation.md` (build number, signing, distribution, app size delta, rollback)
+- All workflows: `summary.md` (written by lead — outcome, QA status, platform notes)
