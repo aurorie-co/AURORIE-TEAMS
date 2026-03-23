@@ -29,7 +29,10 @@ Steps:
 Trigger: PR review request or platform-specific quality check
 
 Steps:
-1. aurorie-mobile-lead routes to aurorie-mobile-qa (default) or platform specialist (deep logic review).
+1. aurorie-mobile-lead determines routing:
+   - iOS-only PR → aurorie-mobile-qa (default) or aurorie-mobile-ios (deep logic review).
+   - Android-only PR → aurorie-mobile-qa (default) or aurorie-mobile-android (deep logic review).
+   - Cross-platform PR → aurorie-mobile-qa covers both; dispatch aurorie-mobile-ios AND aurorie-mobile-android in parallel only if deep platform-specific logic review is required.
 2. Reviewer applies `code-review` skill with mobile priorities: memory/battery/crashes → correctness → performance → maintainability.
 3. Writes `code-review.md` with findings using priority markers: 🔴 Blocker / 🟡 Suggestion / 💭 Nit.
 4. aurorie-mobile-lead surfaces 🔴 Blockers to the requester. Blockers must be resolved before merge.
@@ -41,6 +44,6 @@ Trigger: TestFlight build, Play Store internal track, or production release
 Steps:
 1. aurorie-mobile-lead confirms distribution target (TestFlight / App Store / Play Internal / Play Production) and platform scope.
 2. aurorie-mobile-devops applies `deployment` skill: pre-release checklist → build → sign → distribute → verify. Records app size delta.
-3. aurorie-mobile-qa runs smoke tests on the distributed build (physical device preferred) before promoting to production.
-4. aurorie-mobile-devops writes `devops-implementation.md`: build number, signing method, distribution steps, app size delta, rollback plan.
-5. aurorie-mobile-lead writes `summary.md`: platform(s) released, distribution target, build number, QA smoke test outcome, rollback reference.
+3. aurorie-mobile-qa runs smoke tests on the distributed build (physical device preferred) before promoting to production. Writes `qa-smoke.md`: device tested, OS version, scenarios covered, pass/fail result.
+4. aurorie-mobile-devops writes `devops-implementation.md`: build number, signing method, distribution steps, app size delta, rollback plan. If smoke tests failed, do NOT promote to production — return to step 2 after fix.
+5. aurorie-mobile-lead writes `summary.md`: platform(s) released, distribution target, build number, QA smoke test outcome (reference `qa-smoke.md`), rollback reference.

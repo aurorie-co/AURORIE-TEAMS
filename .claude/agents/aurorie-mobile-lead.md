@@ -19,11 +19,27 @@ and synthesizes results into a single coherent output.
 Read `.claude/workflows/mobile.md` to determine execution steps.
 
 ## Routing Logic
-- "iOS", "Swift", "SwiftUI", "UIKit", "Xcode", "iPhone", "iPad" → aurorie-mobile-ios
-- "Android", "Kotlin", "Compose", "Jetpack", "Gradle", "Play Store" → aurorie-mobile-android
-- "both platforms", "cross-platform parity" → dispatch aurorie-mobile-ios AND aurorie-mobile-android in parallel
-- "Fastlane", "CI", "TestFlight", "signing", "distribution", "build pipeline" → aurorie-mobile-devops
-- "test", "coverage", "regression", "review", "store readiness" → aurorie-mobile-qa
+
+Determine workflow type first, then platform:
+
+**1. Deployment** — keywords: "Fastlane", "CI", "TestFlight", "App Store submit", "Play Store", "signing", "distribution", "build pipeline", "release"
+→ aurorie-mobile-devops (build/sign/distribute) + aurorie-mobile-qa (smoke test)
+
+**2. Code Review** — keywords: "review", "PR", "pull request", "code review", "audit"
+→ iOS-only: aurorie-mobile-qa (default) or aurorie-mobile-ios (deep logic)
+→ Android-only: aurorie-mobile-qa (default) or aurorie-mobile-android (deep logic)
+→ Both: aurorie-mobile-qa; add specialists only if deep platform logic review needed
+
+**3. Bug Fix** — keywords: "crash", "bug", "regression", "wrong behavior", "fix", "broken"
+→ iOS: aurorie-mobile-ios; Android: aurorie-mobile-android; both: parallel dispatch
+
+**4. Feature Development** — keywords: new screen, new feature, implement, build
+→ iOS: aurorie-mobile-ios; Android: aurorie-mobile-android; both: parallel dispatch; then aurorie-mobile-qa validates
+
+**Platform signals** (apply within each workflow type):
+- iOS: "Swift", "SwiftUI", "UIKit", "Xcode", "iPhone", "iPad", "iOS"
+- Android: "Kotlin", "Compose", "Jetpack", "Gradle", "Android"
+- Both: "cross-platform", "both platforms", "parity"
 
 ## Input
 Read task description and `input_context` from the task file.
@@ -32,10 +48,10 @@ If `input_context` contains a line starting with `artifact: `, read that file be
 ## Output
 After all specialists complete:
 1. Read each specialist's output artifact:
-   - aurorie-mobile-ios → `ios-implementation.md`
-   - aurorie-mobile-android → `android-implementation.md`
+   - aurorie-mobile-ios → `ios-implementation.md` (feature) or `fix.md` (bug fix)
+   - aurorie-mobile-android → `android-implementation.md` (feature) or `fix.md` (bug fix)
    - aurorie-mobile-devops → `devops-implementation.md`
-   - aurorie-mobile-qa → `qa-report.md` (validation) or `code-review.md` (PR review)
+   - aurorie-mobile-qa → `qa-report.md` (validation), `code-review.md` (PR review), or `qa-smoke.md` (deployment smoke test)
 2. Write `summary.md` to `.claude/workspace/artifacts/mobile/<task-id>/`.
 3. Return a plain-text summary (max 400 words) via the Agent tool response.
 
