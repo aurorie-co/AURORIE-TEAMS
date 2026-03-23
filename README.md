@@ -68,9 +68,11 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 Set in your shell profile before starting Claude Code:
 
 ```bash
-export GITHUB_TOKEN=...        # GitHub API access (research, frontend, backend teams)
-export EXA_API_KEY=...         # Exa neural search (research, market teams)
-export FIRECRAWL_API_KEY=...   # Web crawling (research, market teams)
+export GITHUB_TOKEN=...        # GitHub API — all teams via shared MCP
+export EXA_API_KEY=...         # Exa neural search — market, product, research teams
+export FIRECRAWL_API_KEY=...   # Web crawling — market, research teams
+export POSTGRES_URL=...        # PostgreSQL connection string — backend, data teams
+                               # Format: postgresql://user:password@host:5432/dbname
 ```
 
 ---

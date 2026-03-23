@@ -70,9 +70,11 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 在启动 Claude Code 前配置到 shell profile 中：
 
 ```bash
-export GITHUB_TOKEN=...        # GitHub API（research、frontend、backend 团队使用）
-export EXA_API_KEY=...         # Exa 神经搜索（research、market 团队使用）
-export FIRECRAWL_API_KEY=...   # Web 爬取（research、market 团队使用）
+export GITHUB_TOKEN=...        # GitHub API — 所有团队通过 shared MCP 使用
+export EXA_API_KEY=...         # Exa 神经搜索 — market、product、research 团队
+export FIRECRAWL_API_KEY=...   # Web 爬取 — market、research 团队
+export POSTGRES_URL=...        # PostgreSQL 连接串 — backend、data 团队
+                               # 格式：postgresql://user:password@host:5432/dbname
 ```
 
 ---
