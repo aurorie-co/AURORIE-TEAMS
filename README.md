@@ -77,6 +77,24 @@ export POSTGRES_URL=...        # PostgreSQL connection string — backend, data 
 
 ---
 
+## MCP Servers
+
+MCP servers are pre-configured per team and merged into `.claude/settings.json` at install time. Only the servers a team genuinely needs are included.
+
+| Server | Package | Teams |
+|--------|---------|-------|
+| `github` | `@modelcontextprotocol/server-github` | All teams (shared) |
+| `exa` | `exa-mcp-server` | market, product, research (shared) |
+| `firecrawl` | `firecrawl-mcp` | market, research |
+| `puppeteer` | `@modelcontextprotocol/server-puppeteer` | market |
+| `playwright` | `@playwright/mcp` | frontend |
+| `postgres` | `@modelcontextprotocol/server-postgres` | backend, data |
+| `sqlite` | `@modelcontextprotocol/server-sqlite` | data |
+
+`filesystem` is intentionally excluded — agents use Claude Code's built-in Read/Write/Edit/Glob/Grep tools instead.
+
+---
+
 ## Tutorial
 
 ### 1. Invoking a team via the orchestrator
@@ -206,6 +224,31 @@ Please rewrite the post to recover rankings.
 2. SEO identifies keyword gaps vs. competitors
 3. Content rewrites the post incorporating both reports
 4. Lead writes `summary.md` with original issue, changes made, and expected recovery
+
+---
+
+### 7. Example: Deep Research (research team)
+
+**Request:**
+```
+@aurorie-research-lead
+Research the AI code generation tools market: key competitors (GitHub Copilot, Cursor, Tabnine),
+their pricing, differentiation, and user sentiment.
+Goal: inform our product roadmap decisions.
+```
+
+**What happens:**
+1. `aurorie-research-web` searches the web via Exa/Firecrawl, collecting raw data
+2. `aurorie-research-synthesizer` synthesizes raw data into a structured report
+3. Lead reviews and writes `summary.md` with key insights and recommended actions
+
+**Artifacts produced:**
+```
+.claude/workspace/artifacts/research/<task-id>/
+  research-notes.md   ← raw sources, data points, quotes
+  research-report.md  ← synthesized findings, competitive landscape
+  summary.md          ← lead's key insights and recommended actions
+```
 
 ---
 

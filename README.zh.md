@@ -79,6 +79,24 @@ export POSTGRES_URL=...        # PostgreSQL 连接串 — backend、data 团队
 
 ---
 
+## MCP 服务器
+
+MCP 服务器按团队预配置，安装时合并到 `.claude/settings.json`。只包含团队核心工作所需的服务器。
+
+| 服务器 | 包名 | 适用团队 |
+|--------|------|---------|
+| `github` | `@modelcontextprotocol/server-github` | 所有团队（共享） |
+| `exa` | `exa-mcp-server` | market、product、research（共享） |
+| `firecrawl` | `firecrawl-mcp` | market、research |
+| `puppeteer` | `@modelcontextprotocol/server-puppeteer` | market |
+| `playwright` | `@playwright/mcp` | frontend |
+| `postgres` | `@modelcontextprotocol/server-postgres` | backend、data |
+| `sqlite` | `@modelcontextprotocol/server-sqlite` | data |
+
+`filesystem` 服务器被有意排除——agent 通过 Claude Code 内置的 Read/Write/Edit/Glob/Grep 工具访问文件系统。
+
+---
+
 ## 使用教程
 
 ### 1. 通过 orchestrator 调用团队
