@@ -18,6 +18,7 @@ any prior support history for this issue, and initial priority if known.
 
 ## Output Contract
 Artifacts written to `.claude/workspace/artifacts/support/<task-id>/`.
-- Triage: `triage-report.md` (category, priority, root cause hypothesis, routing decision)
-- Response: `response-draft.md` (customer-facing response, tone notes, recommended send channel)
-- Escalation: `escalation-plan.md` (issue summary, teams to involve, resolution steps, SLA)
+- Ticket Response: `triage-report.md` + `response-draft.md`
+- Escalation Handling: `triage-report.md` + `escalation-plan.md` + `response-draft.md`
+- Bulk / Pattern Response: `triage-report.md` + `response-draft.md`
+- All workflows: `summary.md` (written by lead — ticket category, resolution approach, open follow-ups)
