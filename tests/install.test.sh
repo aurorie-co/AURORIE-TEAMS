@@ -70,6 +70,9 @@ assert_file_exists ".aurorie-teams-version written" ".claude/.aurorie-teams-vers
 assert_file_contains ".gitignore has workspace entry" ".gitignore" ".claude/workspace/"
 assert_file_contains "github MCP in settings.json"  ".claude/settings.json" '"github"'
 assert_file_contains "exa MCP in settings.json"     ".claude/settings.json" '"exa"'
+assert_file_contains "firecrawl MCP in settings.json"  ".claude/settings.json" '"firecrawl"'
+assert_file_contains "puppeteer MCP in settings.json"  ".claude/settings.json" '"puppeteer"'
+assert_file_contains "playwright MCP in settings.json" ".claude/settings.json" '"playwright"'
 
 echo ""
 echo "=== Test: routing.json skipped on second install ==="
