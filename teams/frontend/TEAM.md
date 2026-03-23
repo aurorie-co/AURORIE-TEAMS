@@ -19,7 +19,8 @@ For features: UX brief or PRD reference.
 
 ## Output Contract
 Artifacts written to `.claude/workspace/artifacts/frontend/<task-id>/`.
-- Features: `frontend-implementation.md` (files changed, component API, test coverage)
-- Bug fixes: `fix.md` (root cause, solution, test added)
+- Features: `frontend-implementation.md` (files changed, component API, test coverage) + `qa-report.md`
+- Bug fixes: `fix.md` (root cause, solution, test added) + `qa-report.md`
 - Code reviews: `code-review.md` (findings by severity)
-- Deployments: `devops-implementation.md` (steps, verification, rollback)
+- Deployments: `devops-implementation.md` (steps, bundle size delta, verification, rollback)
+- All workflows: `summary.md` (written by lead — outcome, QA status, recommended action)
