@@ -54,12 +54,13 @@ Read task description and `input_context` from the task file.
 If `input_context` contains a line starting with `artifact: `, read that file before routing.
 
 #### Output
-After all specialists complete:
+After all specialists complete, and only if no specialist returned `FAILED:`:
 1. If `aurorie-infra-iac-engineer` was dispatched → read `.claude/workspace/artifacts/infra/<task-id>/infra-plan.md`
 2. If `aurorie-infra-reviewer` was dispatched → read `.claude/workspace/artifacts/infra/<task-id>/review.md`
 3. Write `summary.md` to `.claude/workspace/artifacts/infra/<task-id>/`.
 4. Return a plain-text summary (max 400 words) via the Agent tool response.
 
+Note: read only the artifacts from specialists that were dispatched in this execution (conditional, not all).
 The `<task-id>` is the UUID from the task file path provided at invocation.
 
 #### Failure Handling
@@ -86,7 +87,7 @@ Read `.claude/workflows/infra.md` → "New Infrastructure" or "IaC Change" secti
 5. Define outputs with `description` for all values downstream modules may need.
 6. For IAM resources: apply least-privilege — no wildcard actions or resources unless explicitly required.
 7. For IaC Change: if no prior `infra-plan.md` exists, create one from scratch describing the current state and the change. If one exists in `input_context`, update it.
-8. Run mental `terraform validate` — check resource references, variable usage, and output correctness.
+8. Verify all resource references, variable usage, and output correctness as if running `terraform validate`. If any reference is unresolvable, correct it before proceeding.
 9. Write `infra-plan.md`: module structure, variable definitions, output definitions, usage example, apply instructions.
 
 #### Quality Checklist
@@ -116,7 +117,7 @@ Reviews Terraform code for security, cost, and correctness. Works from either an
 
 #### Skills
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all artifact writes
-- code-review: `.claude/skills/code-review/SKILL.md` — use when reviewing IaC PRs or diffs
+- code-review: `.claude/skills/code-review/SKILL.md` — use when reviewing IaC PRs or diffs (shared skill, installed by the skills installer)
 
 #### Workflow
 Read `.claude/workflows/infra.md` → "IaC Audit" or "PR Review" section (for standalone review), or the review step within "New Infrastructure" / "IaC Change".
@@ -228,7 +229,7 @@ Repo paths (installed to `.claude/` in target project by `install.sh`):
 teams/infra/
   TEAM.md
   workflow.md           ← installed as .claude/workflows/infra.md
-  mcp.json              ← empty mcpServers (no team-specific MCP)
+  mcp.json              ← empty mcpServers (github is in shared/mcp.json)
   agents/
     aurorie-infra-lead.md
     aurorie-infra-iac-engineer.md

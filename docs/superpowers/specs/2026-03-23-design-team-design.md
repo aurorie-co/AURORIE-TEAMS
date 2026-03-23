@@ -48,21 +48,21 @@ Read `.claude/workflows/design.md` to determine execution steps.
 - "design system", "token", "component spec", "typography scale", "spacing", "accessibility", "WCAG" → `aurorie-design-system`
 - "brand", "logo", "visual identity", "brand guide", "marketing asset", "banner", "social image" → `aurorie-design-brand`
 - "review", "audit", "consistency check":
-  - system/UI consistency or accessibility → `aurorie-design-system`
-  - brand consistency → `aurorie-design-brand`
-  - full design review → both specialists sequentially
+  - system/UI consistency or accessibility → `aurorie-design-system` only
+  - brand consistency → `aurorie-design-brand` only
+  - full design review, or scope ambiguous → both specialists sequentially (default)
 
 #### Input
 Read task description and `input_context` from the task file.
 If `input_context` contains a line starting with `artifact: `, read that file before routing.
 
 #### Output
-The lead knows which workflow it dispatched, so it knows which filename to read. Read from `.claude/workspace/artifacts/design/<task-id>/`:
+The lead knows which workflow it dispatched, so it knows which filename to read. Read only artifacts from specialists that were dispatched in this execution (conditional, not all). Read from `.claude/workspace/artifacts/design/<task-id>/`:
 - Design System workflow: `aurorie-design-system` → `design-system.md`
 - Brand Guidelines workflow: `aurorie-design-brand` → `brand-guide.md`
 - Design Review workflow: `aurorie-design-system` (if dispatched) → `review-system.md`; `aurorie-design-brand` (if dispatched) → `review-brand.md`
 
-After reading dispatched artifacts:
+After reading dispatched artifacts, and only if no specialist returned `FAILED:`:
 1. Write `summary.md` to `.claude/workspace/artifacts/design/<task-id>/`.
 2. Return a plain-text summary (max 400 words) via the Agent tool response.
 
@@ -139,6 +139,7 @@ Read `.claude/workflows/design.md` → "Brand Guidelines" or "Design Review" sec
 - [ ] At least one "do not do" example per major guideline
 - [ ] Asset specs include dimensions, file format, and color mode (RGB vs CMYK)
 - [ ] Typography hierarchy covers at least: heading, subheading, body, caption, label
+- [ ] Brand primary and secondary colors meet WCAG 2.1 AA contrast (4.5:1) when used as foreground on white or black backgrounds
 
 #### Input
 Read task description and `input_context` from the task file.
@@ -172,13 +173,17 @@ Trigger: create or update brand identity, visual language, or marketing asset sp
 ### Design Review
 Trigger: audit existing design for system consistency, brand compliance, or accessibility issues
 
-1. `aurorie-design-lead` reads task. Identifies review scope:
+Note: Design Review surfaces findings for human action — unlike New Infrastructure/IaC Change, there is no in-loop creator to fix the design, so there is no retry loop. Findings are surfaced in summary.md for the team to act on.
+
+1. `aurorie-design-lead` reads task and `input_context`. If `artifact:` references design specs or materials, reads them. Identifies review scope:
    - System/UI consistency or accessibility → dispatch `aurorie-design-system` only
    - Brand consistency → dispatch `aurorie-design-brand` only
-   - Full design review → dispatch `aurorie-design-system`, then `aurorie-design-brand`
-2. `aurorie-design-system` (if dispatched): reviews for token consistency, missing states, WCAG compliance. Writes `review-system.md` using 🔴 Blocker / 🟡 Suggestion / 💭 Nit.
-3. `aurorie-design-brand` (if dispatched): reviews for brand compliance, logo usage, off-palette colors, typography violations. Writes `review-brand.md` using 🔴 Blocker / 🟡 Suggestion / 💭 Nit.
-4. `aurorie-design-lead` reads dispatched artifacts (`review-system.md` and/or `review-brand.md`). Writes `summary.md`: total findings by severity, priority items, recommended fix order, overall design health verdict.
+   - Full design review, or scope ambiguous → dispatch both sequentially
+2. Dispatch `aurorie-design-system` (if in scope), passing along any `artifact:` context from the task.
+3. `aurorie-design-system` reviews for token consistency, missing states, WCAG compliance. Writes `review-system.md` using 🔴 Blocker / 🟡 Suggestion / 💭 Nit.
+4. Dispatch `aurorie-design-brand` (if in scope), passing along any `artifact:` context from the task.
+5. `aurorie-design-brand` reviews for brand compliance, logo usage, off-palette colors, typography violations. Writes `review-brand.md` using 🔴 Blocker / 🟡 Suggestion / 💭 Nit.
+6. `aurorie-design-lead` reads dispatched artifacts (`review-system.md` and/or `review-brand.md`). Writes `summary.md`: total findings by severity, priority items, recommended fix order, overall design health verdict.
 
 ---
 
@@ -223,7 +228,7 @@ Repo paths (installed to `.claude/` in target project by `install.sh`):
 teams/design/
   TEAM.md
   workflow.md           ← installed as .claude/workflows/design.md
-  mcp.json              ← empty mcpServers (no team-specific MCP)
+  mcp.json              ← empty mcpServers (github and exa are in shared/mcp.json)
   agents/
     aurorie-design-lead.md
     aurorie-design-system.md
