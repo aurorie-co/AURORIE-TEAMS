@@ -15,12 +15,12 @@ Define which MCP servers each team needs, following a minimal principle: only ad
 
 ## shared/mcp.json
 
-Used by 5 teams (backend, frontend, mobile, product, research).
+| Server | Package | Auth | Teams |
+|--------|---------|------|-------|
+| `github` | `@modelcontextprotocol/server-github` | `GITHUB_TOKEN` | backend, frontend, mobile, product, research (5 teams) |
+| `exa` | `exa-mcp-server` | `EXA_API_KEY` | market, product, research (3 teams) |
 
-| Server | Package | Auth |
-|--------|---------|------|
-| `github` | `@modelcontextprotocol/server-github` | `GITHUB_TOKEN` |
-| `filesystem` | `@modelcontextprotocol/server-filesystem` | none |
+Note: `filesystem` is intentionally excluded — Claude Code agents have native file access via built-in Read/Write/Edit/Glob/Grep tools. Adding the filesystem MCP server would be redundant.
 
 ```json
 {
@@ -30,10 +30,10 @@ Used by 5 teams (backend, frontend, mobile, product, research).
       "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" }
     },
-    "filesystem": {
+    "exa": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "."],
-      "env": {}
+      "args": ["-y", "exa-mcp-server"],
+      "env": { "EXA_API_KEY": "${EXA_API_KEY}" }
     }
   }
 }
@@ -44,19 +44,38 @@ Used by 5 teams (backend, frontend, mobile, product, research).
 ## Per-Team MCP Assignments
 
 ### market
-SEO agent needs to crawl competitor pages (content extraction) and render JS-heavy pages (visual SEO checks).
+SEO agent needs to crawl competitor pages (content extraction) and render JS-heavy pages (visual SEO checks and screenshots).
 
 | Server | Package | Why |
 |--------|---------|-----|
 | `firecrawl` | `firecrawl-mcp` | Content extraction for SEO audits and competitor page analysis |
 | `puppeteer` | `@modelcontextprotocol/server-puppeteer` | Render JS-heavy pages, screenshots for visual SEO inspection |
 
-### product
-Researcher agent needs neural search for competitive and market research.
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "env": {}
+    }
+  }
+}
+```
 
-| Server | Package | Why |
-|--------|---------|-----|
-| `exa` | `exa-mcp-server` | Neural search for competitor product research and market analysis |
+### product
+`exa` promoted to shared (3 teams). No team-specific MCP needed.
+
+```json
+{
+  "mcpServers": {}
+}
+```
 
 ### frontend
 QA agent needs to run E2E browser tests.
@@ -65,12 +84,36 @@ QA agent needs to run E2E browser tests.
 |--------|---------|-----|
 | `playwright` | `@playwright/mcp` | Browser automation for E2E and visual regression testing |
 
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
 ### backend
-Developer and QA agents need direct database access.
+Developer and QA agents need direct database access. The `@modelcontextprotocol/server-postgres` package accepts the connection string as a positional CLI argument.
 
 | Server | Package | Why |
 |--------|---------|-----|
 | `postgres` | `@modelcontextprotocol/server-postgres` | Database operations, schema inspection, query validation |
+
+```json
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL}"],
+      "env": {}
+    }
+  }
+}
+```
 
 ### data
 Analyst and pipeline agents need database access for production queries and local analysis.
@@ -80,14 +123,41 @@ Analyst and pipeline agents need database access for production queries and loca
 | `postgres` | `@modelcontextprotocol/server-postgres` | Production database queries, pipeline validation |
 | `sqlite` | `@modelcontextprotocol/server-sqlite` | Local data analysis, lightweight ad-hoc queries |
 
+```json
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL}"],
+      "env": {}
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite"],
+      "env": {}
+    }
+  }
+}
+```
+
 ### research
-Web agent needs web search and crawling. Puppeteer added as fallback for JS-rendered pages firecrawl cannot access.
+Web agent uses firecrawl for crawling and exa (now in shared) for neural search.
 
 | Server | Package | Why |
 |--------|---------|-----|
-| `firecrawl` | `firecrawl-mcp` | Web crawling and content extraction (existing) |
-| `exa` | `exa-mcp-server` | Neural search for research queries (existing) |
-| `puppeteer` | `@modelcontextprotocol/server-puppeteer` | Fallback for JS-rendered pages firecrawl cannot reach |
+| `firecrawl` | `firecrawl-mcp` | Web crawling and content extraction |
+
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    }
+  }
+}
+```
 
 ### mobile
 No team-specific MCP needed. `github` via shared covers devops and code review workflows.
@@ -99,22 +169,24 @@ No MCP needed. Ticket content is provided via `input_context` — no external to
 
 ## Environment Variables
 
-| Variable | Used by | Required |
-|----------|---------|---------|
-| `GITHUB_TOKEN` | shared (all teams) | Yes, for GitHub MCP |
-| `FIRECRAWL_API_KEY` | market, research | Yes, for firecrawl |
-| `EXA_API_KEY` | product, research | Yes, for exa |
-| `POSTGRES_URL` | backend, data | Yes, for postgres |
+| Variable | Used by | How injected |
+|----------|---------|-------------|
+| `GITHUB_TOKEN` | shared — all teams | `env` block in MCP config |
+| `EXA_API_KEY` | shared — market, product, research | `env` block in MCP config |
+| `FIRECRAWL_API_KEY` | market, research | `env` block in MCP config |
+| `POSTGRES_URL` | backend, data | positional CLI arg (not env block) |
 
-`playwright`, `puppeteer`, and `sqlite` require no API keys — they run locally.
+`playwright`, `puppeteer`, and `sqlite` require no API keys and run locally.
+
+**Runtime note for `puppeteer`:** Requires Chrome or Chromium to be installed on the host machine. On Linux CI environments, install with `apt-get install -y chromium-browser` or equivalent. On macOS, Chrome must be present at the standard install path or `PUPPETEER_EXECUTABLE_PATH` must be set.
 
 ---
 
 ## What Does Not Change
 
-- `install.sh` merge logic — no changes needed, already handles per-team mcp.json correctly
-- `.claude/settings.json` in the repo — this file is generated at install time, not committed
-- Agent definitions — MCP availability is transparent to agents; they use tools naturally
+- `install.sh` merge logic — no changes needed; already handles per-team mcp.json correctly
+- Agent definitions — MCP availability is transparent to agents; they invoke tools naturally
+- `.claude/settings.json` in the repo — generated at install time, not committed
 
 ---
 

@@ -1,5 +1,10 @@
 # aurorie-teams
 
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
+![Agents](https://img.shields.io/badge/agents-34-informational?style=flat-square)
+![Teams](https://img.shields.io/badge/teams-10-informational?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+
 Company-wide Claude Code multi-agent configuration library.
 34 agents across 10 teams, ready to install into any project.
 
@@ -7,12 +12,65 @@ Company-wide Claude Code multi-agent configuration library.
 
 ---
 
+## Quick Start
+
+```bash
+# 1. Clone the library
+git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
+
+# 2. Install into your project
+cd /path/to/your-project && /tmp/aurorie-teams/install.sh
+
+# 3. Invoke the orchestrator
+# In Claude Code: @orchestrator Write a blog post about our new API release.
+```
+
+---
+
 ## Overview
 
 aurorie-teams gives your Claude Code environment a full company org chart — each team has a lead agent that routes tasks to specialists, coordinates outputs, and writes a final `summary.md`. Teams operate independently or chain together for cross-functional workflows.
 
+### Architecture
+
+```mermaid
+graph TD
+    U([User Request]) --> O[orchestrator<br/>reads routing.json]
+    O --> ML[market-lead]
+    O --> PL[product-lead]
+    O --> RL[research-lead]
+    O --> SL[support-lead]
+    O --> FL[frontend-lead]
+    O --> BL[backend-lead]
+    O --> IL[infra-lead]
+    O --> DL[design-lead]
+    O --> DAL[data-lead]
+    O --> MOL[mobile-lead]
+
+    ML --> MS1[seo]
+    ML --> MS2[content]
+    ML --> MS3[analytics]
+
+    PL --> PS1[pm]
+    PL --> PS2[ux]
+    PL --> PS3[researcher]
+
+    FL --> FS1[developer]
+    FL --> FS2[qa]
+    FL --> FS3[devops]
+
+    MS2 --> A1[(artifact)]
+    PS1 --> A2[(artifact)]
+    FS1 --> A3[(artifact)]
+
+    style O fill:#1a1a2e,color:#fff,stroke:#4a4a8a
+    style U fill:#16213e,color:#fff,stroke:#4a4a8a
+```
+
+### Teams
+
 | Team | Agents | What it does |
-|------|--------|-------------|
+|------|--------|--------------|
 | `market` | lead, seo, content, analytics | Blog posts, SEO audits, campaign analytics, content rewrites |
 | `product` | lead, pm, ux, researcher | PRDs, UX briefs, market research, roadmap planning |
 | `research` | lead, web, synthesizer | Deep research, competitor analysis, synthesized reports |
@@ -28,10 +86,12 @@ aurorie-teams gives your Claude Code environment a full company org chart — ea
 
 ## Requirements
 
-- macOS or Linux (bash 3.2+)
-- `jq` — `brew install jq` / `apt install jq`
-- `uuidgen` or `python3`
-- Node.js (for `npx`-based MCP servers)
+| Dependency | Install |
+|------------|---------|
+| macOS or Linux (bash 3.2+) | — |
+| `jq` | `brew install jq` / `apt install jq` |
+| `uuidgen` or `python3` | pre-installed on most systems |
+| Node.js | for `npx`-based MCP servers |
 
 ---
 
@@ -137,7 +197,7 @@ Include SEO optimization.
 ```
 
 **What happens:**
-1. `aurorie-market-lead` reads the brief, detects "landing page" → always dispatches SEO first
+1. `aurorie-market-lead` reads the brief, detects "landing page" — always dispatches SEO first
 2. `aurorie-market-seo` audits keywords, writes `seo-report.md`
 3. `aurorie-market-content` drafts the landing page using the SEO report, writes `content.md`
 4. Lead reviews and writes `summary.md`
@@ -145,9 +205,9 @@ Include SEO optimization.
 **Artifacts produced:**
 ```
 .claude/workspace/artifacts/market/<task-id>/
-  seo-report.md       ← keyword research, on-page recommendations
-  content.md          ← landing page copy
-  summary.md          ← lead's final synthesis
+  seo-report.md       <- keyword research, on-page recommendations
+  content.md          <- landing page copy
+  summary.md          <- lead's final synthesis
 ```
 
 ---
@@ -171,9 +231,9 @@ Account: Pro plan, 2 years tenure. No prior tickets about exports.
 **Artifacts produced:**
 ```
 .claude/workspace/artifacts/support/<task-id>/
-  triage-report.md    ← category, priority, root cause hypothesis
-  response-draft.md   ← customer-facing response, tone notes, send channel
-  summary.md          ← lead's synthesis
+  triage-report.md    <- category, priority, root cause hypothesis
+  response-draft.md   <- customer-facing response, tone notes, send channel
+  summary.md          <- lead's synthesis
 ```
 
 ---
@@ -247,9 +307,9 @@ Goal: inform our product roadmap decisions.
 **Artifacts produced:**
 ```
 .claude/workspace/artifacts/research/<task-id>/
-  research-notes.md   ← raw sources, data points, quotes
-  research-report.md  ← synthesized findings, competitive landscape
-  summary.md          ← lead's key insights and recommended actions
+  research-notes.md   <- raw sources, data points, quotes
+  research-report.md  <- synthesized findings, competitive landscape
+  summary.md          <- lead's key insights and recommended actions
 ```
 
 ---
@@ -264,7 +324,7 @@ Changes to `.claude/workflows/` and `.claude/routing.json` are preserved on upgr
 
 ---
 
-## How it works
+## How It Works
 
 Every team follows the same pattern:
 
@@ -272,8 +332,8 @@ Every team follows the same pattern:
 User request
     └── orchestrator (reads routing.json)
             └── team lead (reads workflow, dispatches specialists)
-                    ├── specialist A → artifact A
-                    ├── specialist B → artifact B
+                    ├── specialist A --> artifact A
+                    ├── specialist B --> artifact B
                     └── lead writes summary.md
 ```
 
