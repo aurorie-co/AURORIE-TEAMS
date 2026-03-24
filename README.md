@@ -1,7 +1,7 @@
 # aurorie-teams
 
 Company-wide Claude Code multi-agent configuration library.
-28 agents across 8 teams, ready to install into any project.
+34 agents across 10 teams, ready to install into any project.
 
 **Languages:** English | [中文](README.zh.md)
 
@@ -20,6 +20,8 @@ aurorie-teams gives your Claude Code environment a full company org chart — ea
 | `frontend` | lead, developer, qa, devops | UI implementation, component review, frontend CI/CD |
 | `mobile` | lead, ios, android, qa, devops | Mobile feature dev, cross-platform review, release pipeline |
 | `backend` | lead, developer, qa, devops | API development, database, backend infrastructure |
+| `infra` | lead, iac-engineer, reviewer | Terraform modules, IaC review, PR review, infrastructure audits |
+| `design` | lead, system, brand | Design tokens, component specs, WCAG accessibility, brand identity guidelines |
 | `data` | lead, analyst, pipeline, reporting | Data analysis, ETL pipelines, dashboards |
 
 ---
@@ -43,7 +45,7 @@ cd /path/to/your-project
 /tmp/aurorie-teams/install.sh
 ```
 
-This installs 28 agents, 27 skills, and 8 workflow files into `.claude/` inside your project.
+This installs 34 agents, 27 skills, and 10 workflow files into `.claude/` inside your project.
 
 ### Install Flags
 

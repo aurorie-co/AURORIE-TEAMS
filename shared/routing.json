@@ -40,6 +40,16 @@
       "team": "support",
       "keywords": ["support", "customer", "ticket", "issue", "complaint", "help", "response", "escalate", "refund"],
       "description": "Customer support and issue response tasks"
+    },
+    {
+      "team": "infra",
+      "keywords": ["infrastructure", "terraform", "IaC", "provision", "cloud resource", "VPC", "IAM", "S3", "EC2", "RDS", "IaC review", "terraform review", "terraform audit"],
+      "description": "Cloud infrastructure as code (Terraform), IaC review, and audit tasks"
+    },
+    {
+      "team": "design",
+      "keywords": ["design system", "design token", "token", "component spec", "brand", "brand guide", "logo", "visual identity", "typography scale", "color palette", "spacing system", "WCAG", "accessibility audit", "brand consistency", "design review", "marketing asset", "banner spec"],
+      "description": "Design system (tokens, component specs, accessibility) and brand identity guidelines tasks"
     }
   ],
   "fallback": "orchestrator-clarify"
