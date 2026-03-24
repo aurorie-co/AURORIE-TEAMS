@@ -342,3 +342,36 @@ User request
 **Artifacts** at `.claude/workspace/artifacts/<team>/<task-id>/` are the team's deliverables. Pass them between teams using `artifact: <path>` in `input_context`.
 
 **`summary.md`** is always the final output — written by the lead after reviewing all specialist outputs. It is the canonical deliverable to share with stakeholders.
+
+---
+
+## Workspace Layout
+
+All runtime files live under `.claude/workspace/` (gitignored). The canonical paths are:
+
+| Path | Description |
+|------|-------------|
+| `.claude/workspace/tasks/{task_id}.json` | Task descriptor written by orchestrator before dispatch |
+| `.claude/workspace/artifacts/{team}/{task_id}/` | Team output directory |
+| `.claude/workspace/artifacts/{team}/{task_id}/summary.md` | Final deliverable — always present after a completed task |
+
+Example after running a product task and a market task:
+
+```
+.claude/workspace/
+├── tasks/
+│   ├── 3f8a1c2d-0001-4b5e-9d6f-abc123def456.json   ← product task
+│   └── 7e2b9a4f-0002-4c8d-be12-def456abc789.json   ← market task
+└── artifacts/
+    ├── product/
+    │   └── 3f8a1c2d-0001-4b5e-9d6f-abc123def456/
+    │       ├── prd.md
+    │       └── summary.md
+    └── market/
+        └── 7e2b9a4f-0002-4c8d-be12-def456abc789/
+            ├── seo-report.md
+            ├── content.md
+            └── summary.md
+```
+
+Pass artifacts between teams using `artifact: <path>` in `input_context` — see the cross-team workflow tutorial above.
