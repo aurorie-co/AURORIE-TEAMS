@@ -101,9 +101,9 @@ assert_eq "routing.json reset to repo version" "1" "$routing_v"
 
 echo ""
 echo "=== Test: workflow skipped if exists ==="
-echo "custom workflow" > .claude/workflows/engineer.md
+echo "custom workflow" > .claude/workflows/backend.md
 "$REPO_ROOT/install.sh" > /dev/null
-assert_file_contains "custom workflow preserved" ".claude/workflows/engineer.md" "custom workflow"
+assert_file_contains "custom workflow preserved" ".claude/workflows/backend.md" "custom workflow"
 
 echo ""
 echo "=== Test: CLAUDE.md skipped if exists ==="
