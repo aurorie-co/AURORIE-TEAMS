@@ -257,8 +257,8 @@ Triggers:
 Output:
 ```
 .claude/workspace/artifacts/product/prd.md
-.claude/workspace/artifacts/backend/api-design.md
-.claude/workspace/artifacts/frontend/ui-spec.md
+.claude/workspace/artifacts/backend/implementation.md
+.claude/workspace/artifacts/frontend/frontend-implementation.md
 ```
 
 Copy and run this — you'll get real artifacts.
@@ -278,7 +278,7 @@ Triggers:
 Output:
 ```
 .claude/workspace/artifacts/data/analysis.md
-.claude/workspace/artifacts/research/synthesis.md
+.claude/workspace/artifacts/research/research-report.md
 ```
 
 Copy and run this — you'll get real artifacts.
@@ -293,13 +293,12 @@ Copy and run this — you'll get real artifacts.
 
 Triggers:
 - Mobile Team
-- Backend Team
 - Product Team
 
 Output:
 ```
-.claude/workspace/artifacts/mobile/app-architecture.md
-.claude/workspace/artifacts/backend/api-design.md
+.claude/workspace/artifacts/mobile/ios-implementation.md
+.claude/workspace/artifacts/mobile/android-implementation.md
 .claude/workspace/artifacts/product/prd.md
 ```
 
@@ -318,7 +317,7 @@ Triggers:
 
 Output:
 ```
-.claude/workspace/artifacts/research/competitive-analysis.md
+.claude/workspace/artifacts/research/comparison-matrix.md
 .claude/workspace/artifacts/research/summary.md
 ```
 

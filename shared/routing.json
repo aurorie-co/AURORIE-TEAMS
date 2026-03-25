@@ -4,7 +4,7 @@
     {
       "team": "backend",
       "description": "Server-side API, database, auth, and backend service tasks",
-      "positive_keywords": ["backend", "API", "endpoint", "REST", "GraphQL", "server", "database", "schema", "migration", "authentication", "authorization", "JWT", "session", "background job", "queue", "worker", "ORM", "SQL", "bug fix"],
+      "positive_keywords": ["backend", "API", "endpoint", "REST", "GraphQL", "server", "database", "schema", "migration", "authentication", "authorization", "JWT", "session", "background job", "queue", "worker", "ORM", "SQL", "bug fix", "SaaS", "platform"],
       "negative_keywords": ["mobile app", "iOS", "Android", "React component", "Vue", "CSS", "Terraform", "IaC", "design token", "brand"],
       "example_requests": [
         "Add a REST endpoint for user authentication with JWT",
@@ -15,7 +15,7 @@
     {
       "team": "frontend",
       "description": "Web UI components, styles, and client-side logic tasks",
-      "positive_keywords": ["frontend", "UI", "component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle", "web app"],
+      "positive_keywords": ["frontend", "UI", "component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle", "web app", "SaaS"],
       "negative_keywords": ["iOS", "Android", "Swift", "Kotlin", "backend API", "database", "Terraform", "brand identity"],
       "example_requests": [
         "Build a responsive navigation component in React",
@@ -48,8 +48,8 @@
     {
       "team": "product",
       "description": "Product definition, requirements, and UX tasks",
-      "positive_keywords": ["product", "feature", "PRD", "requirements", "roadmap", "UX", "user story", "wireframe", "specification", "user flow", "persona"],
-      "negative_keywords": ["implement", "code", "deploy", "database migration", "CSS", "iOS", "Android", "Terraform", "SEO audit"],
+      "positive_keywords": ["product", "feature", "PRD", "requirements", "roadmap", "UX", "user story", "wireframe", "specification", "user flow", "persona", "SaaS", "marketplace", "launch", "startup", "design a", "build a product"],
+      "negative_keywords": ["implement", "code", "deploy", "database migration", "CSS", "Terraform", "SEO audit"],
       "example_requests": [
         "Write a PRD for a dark mode feature across all platforms",
         "Define user stories for the onboarding flow redesign",
@@ -59,7 +59,7 @@
     {
       "team": "data",
       "description": "Data analysis, reporting, pipeline tasks, and data quality investigations",
-      "positive_keywords": ["data", "report", "dashboard", "metrics", "pipeline", "ETL", "analysis", "chart", "query", "insight", "discrepancy", "anomaly", "numbers look wrong", "data quality", "root cause"],
+      "positive_keywords": ["data", "report", "dashboard", "metrics", "pipeline", "ETL", "analysis", "chart", "query", "insight", "discrepancy", "anomaly", "numbers look wrong", "data quality", "root cause", "investigate", "DAU", "MAU", "dropped", "spike", "retention", "trending", "user count"],
       "negative_keywords": ["marketing campaign", "blog post", "iOS", "Android", "React component", "Terraform", "API endpoint", "brand"],
       "example_requests": [
         "Build a weekly retention cohort report from the events table",
@@ -70,7 +70,7 @@
     {
       "team": "research",
       "description": "Research, synthesis, and information gathering tasks",
-      "positive_keywords": ["research", "compare", "summarize", "market research", "competitor", "survey", "synthesis", "landscape", "benchmark", "evaluate options"],
+      "positive_keywords": ["research", "compare", "summarize", "market research", "competitor", "survey", "synthesis", "landscape", "benchmark", "evaluate options", "investigate", "why did", "find out"],
       "negative_keywords": ["implement", "build", "deploy", "fix bug", "database", "code review", "iOS", "Android"],
       "example_requests": [
         "Research the top AI code generation tools and compare pricing and features",
@@ -82,7 +82,7 @@
       "team": "support",
       "description": "Customer support and issue response tasks",
       "positive_keywords": ["support", "customer", "ticket", "complaint", "help", "response", "escalate", "refund", "user reported", "customer said"],
-      "negative_keywords": ["code", "implement", "deploy", "database", "Terraform", "SEO", "PRD", "roadmap"],
+      "negative_keywords": ["code", "implement", "deploy", "database", "Terraform", "SEO", "PRD", "roadmap", "iOS", "Android", "mobile app"],
       "example_requests": [
         "Draft a response to a Pro customer whose data export returned an empty file",
         "Triage this support ticket and assess priority: user cannot log in after password reset",

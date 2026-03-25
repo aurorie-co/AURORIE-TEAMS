@@ -257,8 +257,8 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 输出：
 ```
 .claude/workspace/artifacts/product/prd.md
-.claude/workspace/artifacts/backend/api-design.md
-.claude/workspace/artifacts/frontend/ui-spec.md
+.claude/workspace/artifacts/backend/implementation.md
+.claude/workspace/artifacts/frontend/frontend-implementation.md
 ```
 
 复制并运行——你会得到真实的产出文件。
@@ -278,7 +278,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 输出：
 ```
 .claude/workspace/artifacts/data/analysis.md
-.claude/workspace/artifacts/research/synthesis.md
+.claude/workspace/artifacts/research/research-report.md
 ```
 
 复制并运行——你会得到真实的产出文件。
@@ -293,13 +293,12 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 触发团队：
 - Mobile Team
-- Backend Team
 - Product Team
 
 输出：
 ```
-.claude/workspace/artifacts/mobile/app-architecture.md
-.claude/workspace/artifacts/backend/api-design.md
+.claude/workspace/artifacts/mobile/ios-implementation.md
+.claude/workspace/artifacts/mobile/android-implementation.md
 .claude/workspace/artifacts/product/prd.md
 ```
 
@@ -318,7 +317,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 输出：
 ```
-.claude/workspace/artifacts/research/competitive-analysis.md
+.claude/workspace/artifacts/research/comparison-matrix.md
 .claude/workspace/artifacts/research/summary.md
 ```
 
