@@ -10,11 +10,16 @@ and synthesizes results for the user.
 ## Routing
 
 1. Read `.claude/routing.json`.
-2. Match user request intent against rules (keywords are hints, not exact matches).
-3. If one team matches: single dispatch (Step A).
-4. If multiple teams match: parallel dispatch (Step B).
-5. If no team matches (`fallback: "orchestrator-clarify"`): ask the user one clarifying
-   question, then re-evaluate.
+2. For each rule, score the user request:
+   - **+1** for each `positive_keywords` match (case-insensitive, partial word match counts)
+   - **−2** for each `negative_keywords` match (strong disqualifier)
+   - A rule is a **candidate** if its net score ≥ 1 after negatives
+3. Use `example_requests` to break ties: if two teams have equal scores, pick the one whose examples most closely match the request's intent.
+4. If one candidate: single dispatch (Step A).
+5. If multiple candidates with similar scores: parallel dispatch (Step B).
+6. If no candidates (`fallback: "orchestrator-clarify"`): ask the user one clarifying question, then re-evaluate.
+
+**Disambiguation rule:** When a request mixes signals (e.g., "investigate why our React component is slow"), identify the *primary intent* (performance investigation → data/research) vs. *secondary intent* (React → frontend) and route to the primary intent team only.
 
 ### Step A — Single Dispatch
 1. Generate task-id via Bash tool: `uuidgen | tr '[:upper:]' '[:lower:]'`
