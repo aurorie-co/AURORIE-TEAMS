@@ -375,3 +375,19 @@ Example after running a product task and a market task:
 ```
 
 Pass artifacts between teams using `artifact: <path>` in `input_context` — see the cross-team workflow tutorial above.
+
+
+## Tests
+
+Two test suites live in `tests/`:
+
+| Script | What it tests |
+|--------|--------------|
+| `tests/install.test.sh` | Full install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
+| `tests/lint.test.sh` | Source tree consistency: agent/workflow/skill/routing contract validation |
+
+Run both with:
+
+```bash
+bash tests/install.test.sh && bash tests/lint.test.sh
+```
