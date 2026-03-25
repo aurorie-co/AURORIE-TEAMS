@@ -50,20 +50,30 @@ _(or simply: "Build me a SaaS product from scratch" — the system routes automa
    - Frontend Team (UI)
    - Mobile Team   (app structure)
 3. Each team executes its workflow
-4. Outputs are written to structured artifacts
+4. Outputs are written to structured artifacts (each in its own task folder)
 
 ### Output
 
 ```
 .claude/workspace/
 ├── tasks/
-│   └── task-001.json
+│   └── <task-id>.json
 └── artifacts/
-    ├── product/prd.md
-    ├── backend/implementation.md
-    ├── frontend/frontend-implementation.md
-    └── mobile/ios-implementation.md
+    ├── product/<task-id>/
+    │   ├── prd.md
+    │   └── summary.md
+    ├── backend/<task-id>/
+    │   ├── backend-implementation.md
+    │   └── summary.md
+    ├── frontend/<task-id>/
+    │   ├── frontend-implementation.md
+    │   └── summary.md
+    └── mobile/<task-id>/
+        ├── ios-implementation.md
+        └── summary.md
 ```
+
+Each task gets its own folder (UUID) so outputs never collide.
 
 💡 You just went from idea → structured execution plan in seconds.
 
@@ -257,9 +267,12 @@ Triggers:
 
 Output:
 ```
-.claude/workspace/artifacts/product/prd.md
-.claude/workspace/artifacts/backend/implementation.md
-.claude/workspace/artifacts/frontend/frontend-implementation.md
+.claude/workspace/artifacts/product/<task-id>/prd.md
+.claude/workspace/artifacts/product/<task-id>/summary.md
+.claude/workspace/artifacts/backend/<task-id>/backend-implementation.md
+.claude/workspace/artifacts/backend/<task-id>/summary.md
+.claude/workspace/artifacts/frontend/<task-id>/frontend-implementation.md
+.claude/workspace/artifacts/frontend/<task-id>/summary.md
 ```
 
 Copy and run this — you'll get real artifacts.
@@ -278,8 +291,10 @@ Triggers:
 
 Output:
 ```
-.claude/workspace/artifacts/data/analysis.md
-.claude/workspace/artifacts/research/research-report.md
+.claude/workspace/artifacts/data/<task-id>/analysis.md
+.claude/workspace/artifacts/data/<task-id>/summary.md
+.claude/workspace/artifacts/research/<task-id>/research-report.md
+.claude/workspace/artifacts/research/<task-id>/summary.md
 ```
 
 Copy and run this — you'll get real artifacts.
@@ -298,9 +313,11 @@ Triggers:
 
 Output:
 ```
-.claude/workspace/artifacts/mobile/ios-implementation.md
-.claude/workspace/artifacts/mobile/android-implementation.md
-.claude/workspace/artifacts/product/prd.md
+.claude/workspace/artifacts/mobile/<task-id>/ios-implementation.md
+.claude/workspace/artifacts/mobile/<task-id>/android-implementation.md
+.claude/workspace/artifacts/mobile/<task-id>/summary.md
+.claude/workspace/artifacts/product/<task-id>/prd.md
+.claude/workspace/artifacts/product/<task-id>/summary.md
 ```
 
 Copy and run this — you'll get real artifacts.
@@ -318,8 +335,8 @@ Triggers:
 
 Output:
 ```
-.claude/workspace/artifacts/research/comparison-matrix.md
-.claude/workspace/artifacts/research/summary.md
+.claude/workspace/artifacts/research/<task-id>/comparison-matrix.md
+.claude/workspace/artifacts/research/<task-id>/summary.md
 ```
 
 Copy and run this — you'll get real artifacts.
@@ -340,10 +357,14 @@ Triggers:
 
 Output:
 ```
-.claude/workspace/artifacts/product/prd.md
-.claude/workspace/artifacts/backend/implementation.md
-.claude/workspace/artifacts/frontend/frontend-implementation.md
-.claude/workspace/artifacts/data/report-spec.md
+.claude/workspace/artifacts/product/<task-id>/prd.md
+.claude/workspace/artifacts/product/<task-id>/summary.md
+.claude/workspace/artifacts/backend/<task-id>/backend-implementation.md
+.claude/workspace/artifacts/backend/<task-id>/summary.md
+.claude/workspace/artifacts/frontend/<task-id>/frontend-implementation.md
+.claude/workspace/artifacts/frontend/<task-id>/summary.md
+.claude/workspace/artifacts/data/<task-id>/report-spec.md
+.claude/workspace/artifacts/data/<task-id>/summary.md
 ```
 
 Copy and run this — you'll get real artifacts.
