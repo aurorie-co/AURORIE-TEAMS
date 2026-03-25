@@ -29,7 +29,7 @@ Then just ask:
 @orchestrator "Build me a SaaS product from scratch"
 ```
 
-_(or simply: "Build me a SaaS product from scratch" — the system routes automatically)_
+_(the orchestrator reads `.claude/routing.json` to dispatch teams automatically)_
 
 ---
 

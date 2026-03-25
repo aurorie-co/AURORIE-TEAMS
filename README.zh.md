@@ -29,7 +29,7 @@ cd /path/to/your-project
 @orchestrator "Build me a SaaS product from scratch"
 ```
 
-_（或者直接说："Build me a SaaS product from scratch"——系统会自动路由）_
+_（orchestrator 会读取 `.claude/routing.json` 自动分派团队）_
 
 ---
 
