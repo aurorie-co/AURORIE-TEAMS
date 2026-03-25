@@ -39,7 +39,7 @@ This maps to a complete product funnel:
 ```markdown
 # AURORIE TEAMS
 
-> Turn Claude Code into a fully-operational AI startup team in 60 seconds.
+> Turn Claude Code into a fully-operational AI startup team in 60 seconds — with real artifacts.
 
 ⚡ 34 Agents · 10 Teams · 1 Orchestrator
 ⚡ Plug-and-play AI workflows for real-world execution
@@ -109,7 +109,7 @@ Render as three titled subsections:
     ├── frontend/ui-spec.md
     └── mobile/app-architecture.md
 
-💡 You just went from idea → structured execution plan in one prompt.
+💡 You just went from idea → structured execution plan in seconds.
 
 Each file is a reusable artifact — not just a response.
 ```
@@ -141,8 +141,10 @@ Structure:
   3. **Agents (34 total)** — each executes specific tasks with defined workflows
 
 **Closing analogy:**
-> ChatGPT → single brain
-> AURORIE TEAMS → full company
+> ChatGPT → one smart person
+> AURORIE TEAMS → a full company working together
+
+**Anchor forward:** `Want to see the full system? → See Architecture below.`
 
 ---
 
@@ -191,6 +193,7 @@ Final: Data + Research
 Final: Mobile + Backend
 ```
 
+- **System-level framing:** `Routing is deterministic at the rule level, and adaptive at the system level.`
 - Customization pointer: `You can customize routing in .claude/routing.json`
   (Note: `.claude/routing.json` is the post-install path in the user's project. `shared/routing.json` is the source repo path; do not use it in user-facing copy.)
 
@@ -240,7 +243,7 @@ export EXA_API_KEY=...
 export FIRECRAWL_API_KEY=...
 
 # 4. Verify
-# In Claude Code: @orchestrator "Hello"
+# In Claude Code: @orchestrator "Test the system"
 # You should see routing + task output.
 ```
 
@@ -269,6 +272,9 @@ The verify step closes the feedback loop and prevents users from silently failin
 ## Section 8: Try These Prompts
 
 **Purpose:** Activate users immediately. Every prompt is real and runnable. Strongly guide users to act.
+
+**Section opening line (before the first prompt):**
+> Each prompt triggers a different team workflow — try one to see the system in action.
 
 Four prompts in this exact format:
 
@@ -371,6 +377,7 @@ Extend MCP integrations via `.claude/settings.json`.
 - **Agents generate outputs — they do not execute external actions unless you do.**
   Agents write files to `.claude/workspace/artifacts/`. They do not call external APIs,
   run shell commands, or modify your database unless you explicitly wire that up.
+- **Nothing runs without your approval.**
 - Avoid running on production systems during initial setup
 - Review `.claude/settings.json` to see and control which tools each agent can access
 ```
