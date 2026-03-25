@@ -97,7 +97,7 @@ echo ""
 echo "=== Test: --force-workflows --yes overwrites routing.json ==="
 "$REPO_ROOT/install.sh" --force-workflows --yes > /dev/null 2>&1
 routing_v="$(jq -r '.version' .claude/routing.json)"
-assert_eq "routing.json reset to repo version" "1" "$routing_v"
+assert_eq "routing.json reset to repo version" "2" "$routing_v"
 
 echo ""
 echo "=== Test: workflow skipped if exists ==="
