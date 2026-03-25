@@ -11,22 +11,24 @@
 - **Strategy:** Full rewrite (Option A) — not surgical. Mixing old engineering docs with new product narrative would signal an identity crisis for a category-level project.
 - **Languages:** EN and ZH synchronized, same 12-section structure throughout.
 - **Mermaid diagram split:** Section 3 (Mental Model) gets a simplified cognitive diagram; Section 6 (Architecture) gets the full system diagram. Each diagram has exactly one responsibility.
+- **[CTA] in narrative arc:** Not a standalone section. It is the inline micro-CTA at the end of Section 4 ("Ready to try it? ↓"), bridging positioning to install.
 
 ---
 
 ## Narrative Arc
 
 ```
-Hook → Proof → Model → Positioning → [CTA] → Install → Play → Customize → Trust → Vision → Community
+Hook → Proof → Model → Positioning → Install → Play → Customize → Trust → Vision → Community
+        (S1)    (S2)    (S3)   (S4+CTA)  (S5-S7)  (S8)    (S9)      (S10)  (S11)    (S12)
 ```
 
 This maps to a complete product funnel:
-- **Credibility** (Routing / Architecture)
-- **Activation** (Install / Try Prompts)
-- **Power** (Customization)
-- **Trust** (Safety)
-- **Vision** (Roadmap)
-- **Community** (Contributing)
+- **Credibility** (Routing / Architecture) — Sections 5-6
+- **Activation** (Install / Try Prompts) — Sections 7-8
+- **Power** (Customization) — Section 9
+- **Trust** (Safety) — Section 10
+- **Vision** (Roadmap) — Section 11
+- **Community** (Contributing) — Section 12
 
 ---
 
@@ -43,10 +45,20 @@ This maps to a complete product funnel:
 ⚡ Plug-and-play AI workflows for real-world execution
 ⚡ Built for builders, founders, and power users
 
-[badges: platform / agents / teams / license]
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
+![Agents](https://img.shields.io/badge/agents-34-informational?style=flat-square)
+![Teams](https://img.shields.io/badge/teams-10-informational?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
-git clone https://github.com/aurorie-co/AURORIE-TEAMS.git
-cd AURORIE-TEAMS && ./install.sh
+**Languages:** English | [中文](README.zh.md)
+
+---
+
+# Install in 60 seconds:
+
+git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
+cd /path/to/your-project
+/tmp/aurorie-teams/install.sh
 
 Then just ask:
 
@@ -55,9 +67,11 @@ Then just ask:
 ```
 
 **Design notes:**
-- Dual-layer syntax: `@orchestrator` for Claude Code users, plain prompt for newcomers
+- Badge URLs copied verbatim from `README.md` lines 3–6 of the current file
+- Language switcher placed immediately below badges (same position as current README)
+- Install commands use the actual 3-step flow (clone to tmp → cd to project → run install.sh) to match real behavior
+- Dual-layer syntax: `@orchestrator` for Claude Code users, plain prompt line for newcomers
 - "The system routes automatically" removes the 0.5-second comprehension cost
-- Badge row preserved as visual anchor on GitHub
 
 ---
 
@@ -65,14 +79,42 @@ Then just ask:
 
 **Purpose:** Prove the claim. Show input → internal routing → structured output. No black box.
 
-Structure:
-1. **Input** — one natural language prompt
-2. **What happens internally** — numbered routing steps showing orchestrator analyzing intent, selecting teams, executing workflows
-3. **Output** — real file tree (`artifacts/product/prd.md`, `artifacts/backend/api-design.md`, `artifacts/frontend/ui-spec.md`, `artifacts/mobile/app-architecture.md`)
-4. **Closing line:** `💡 You just went from idea → structured execution plan in one prompt.`
-5. **Artifact framing:** `Each file is a reusable artifact — not just a response.`
+Render as three titled subsections:
 
-The intermediate visibility nodes (numbered steps) are critical: they turn the system from "LLM magic" into "engineered process."
+```markdown
+## 🎬 What it actually does
+
+### Input
+@orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
+
+### What happens internally
+
+1. Orchestrator analyzes intent
+2. Selects relevant teams:
+   → Product Team  (requirements)
+   → Backend Team  (API design)
+   → Frontend Team (UI)
+   → Mobile Team   (app structure)
+3. Each team executes its workflow
+4. Outputs are written to structured artifacts
+
+### Output
+
+.claude/workspace/
+├── tasks/
+│   └── task-001.json
+└── artifacts/
+    ├── product/prd.md
+    ├── backend/api-design.md
+    ├── frontend/ui-spec.md
+    └── mobile/app-architecture.md
+
+💡 You just went from idea → structured execution plan in one prompt.
+
+Each file is a reusable artifact — not just a response.
+```
+
+The intermediate visibility nodes (numbered steps) turn the system from "LLM magic" into "engineered process."
 
 ---
 
@@ -82,11 +124,21 @@ The intermediate visibility nodes (numbered steps) are critical: they turn the s
 
 Structure:
 - One decode prompt before the diagram: `"You don't interact with agents directly — the system does it for you:"`
-- **Simplified Mermaid** (cognitive level only): User → Orchestrator → Teams (no specialist expansion)
+- **Simplified Mermaid** (cognitive level — User → Orchestrator → 10 Teams, no specialist expansion):
+  ```mermaid
+  graph TD
+      U([User Request]) --> O[Orchestrator]
+      O --> T1[Product Team]
+      O --> T2[Backend Team]
+      O --> T3[Frontend Team]
+      O --> T4[Mobile Team]
+      O --> T5[Data Team]
+      O --> T6[... 5 more teams]
+  ```
 - Three-layer explanation:
-  1. Orchestrator: routes your request to the right teams
-  2. Teams (10 domains): each specializes in a function
-  3. Agents (34 total): each executes specific tasks
+  1. **Orchestrator** — routes your request to the right teams
+  2. **Teams (10 domains)** — each specializes in a function
+  3. **Agents (34 total)** — each executes specific tasks with defined workflows
 
 **Closing analogy:**
 > ChatGPT → single brain
@@ -96,7 +148,7 @@ Structure:
 
 ## Section 4: Why Not ChatGPT
 
-**Purpose:** Land the positioning. Differentiate sharply. End with a behavior trigger.
+**Purpose:** Land the positioning. Differentiate sharply. End with a behavior trigger (inline CTA that bridges to Section 7 Install).
 
 Comparison table:
 
@@ -111,7 +163,7 @@ Comparison table:
 > You don't need one answer.
 > You need a team that executes.
 
-**Micro CTA:**
+**Inline micro-CTA** (bridges to Install):
 > Ready to try it? ↓
 
 ---
@@ -121,17 +173,26 @@ Comparison table:
 **Purpose:** Signal that the system is engineered, not guessed. Build trust with technical users.
 
 Content:
+- **Explainability hook first:** `Each routing decision is explainable — not a black box.`
 - v2 schema explanation: `positive_keywords` (+1 per match), `negative_keywords` (−2 per match, strong disqualifier), `example_requests` for tie-breaking
 - Two routing examples with score breakdown:
-  ```
-  "Why did revenue drop?"
-  → Data    (+score: data, metrics, report)
-  → Research (+score: investigate, compare)
-  → Backend (−score: database penalty)
-  Final: Data + Research
-  ```
-- **Explainability hook:** `Each routing decision is explainable — not a black box.`
-- Customization pointer: `Edit shared/routing.json`
+
+```
+"Why did revenue drop?"
+→ Data     (+score: data, metrics, report)
+→ Research (+score: investigate, compare)
+→ Backend  (−score: database penalty)
+Final: Data + Research
+
+"Build a mobile app"
+→ Mobile  (+score: iOS, Android, native)
+→ Backend (+score: API, server)
+→ Frontend (−score: mobile app penalty)
+Final: Mobile + Backend
+```
+
+- Customization pointer: `You can customize routing in .claude/routing.json`
+  (Note: `.claude/routing.json` is the post-install path in the user's project. `shared/routing.json` is the source repo path; do not use it in user-facing copy.)
 
 ---
 
@@ -141,8 +202,16 @@ Content:
 
 Content:
 - Decode prompt: `Here's the full system:`
-- **Complete Mermaid diagram** (existing diagram, all 10 teams + specialist expansion for market/product/frontend)
-- Below diagram: each team includes Agents / Workflows / Skills / MCP integrations
+- **Complete Mermaid diagram** — preserve the existing diagram from `README.md` lines 36–68 verbatim. The existing diagram expands specialists only for `market` (seo, content, analytics), `product` (pm, ux, researcher), and `frontend` (developer, qa, devops). Do not expand the other 7 teams — this matches the current diagram exactly.
+- **Replace** the current Teams table (10 rows × 3 columns, current README lines 72–84) with the following 4-item list. Do not carry the table forward — the Mental Model section already conveys team listing; the Architecture section's job is structural comprehension, not team enumeration.
+
+```markdown
+Each team includes:
+- Agents (specialists with defined roles)
+- Workflows (step-by-step execution guides)
+- Skills (reusable task modules)
+- MCP integrations (tool access per team)
+```
 
 ---
 
@@ -150,30 +219,61 @@ Content:
 
 **Purpose:** Zero-friction install. User completes in under 2 minutes and knows it worked.
 
-Steps:
-1. Clone
-2. `./install.sh`
-3. Add API keys (`GITHUB_TOKEN`, `EXA_API_KEY`, `FIRECRAWL_API_KEY`)
-4. **Verify:** `@orchestrator "Hello"` → you should see routing + task output
+**Prerequisites block** (all real hard dependencies — keep all four):
+```
+Requirements: macOS or Linux (bash 3.2+) · jq · uuidgen or python3 · Node.js
+```
+Render as a single line above the install steps. Do not expand to a full table.
+
+**Steps:**
+```bash
+# 1. Clone the library
+git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
+
+# 2. Install into your project
+cd /path/to/your-project
+/tmp/aurorie-teams/install.sh
+
+# 3. Add API keys (optional but recommended)
+export GITHUB_TOKEN=...
+export EXA_API_KEY=...
+export FIRECRAWL_API_KEY=...
+
+# 4. Verify
+# In Claude Code: @orchestrator "Hello"
+# You should see routing + task output.
+```
 
 **Closing line:** `Done ✅ Your Claude Code is now an AI startup team.`
 
-The verify step is critical: it closes the feedback loop and prevents users from silently failing.
+**Install flags** (all three — condensed but complete):
+```
+--force-workflows   Overwrite existing workflow + routing overrides
+--yes               Skip all confirmation prompts
+--detect-orphans    Report stale agent/skill files no longer in repo
+```
+
+**Upgrade** (retain as a short subsection):
+```bash
+# Pull latest changes
+git -C /tmp/aurorie-teams pull
+
+# Re-run install in your project
+cd /path/to/your-project && /tmp/aurorie-teams/install.sh
+```
+
+The verify step closes the feedback loop and prevents users from silently failing.
 
 ---
 
 ## Section 8: Try These Prompts
 
-**Purpose:** Activate users immediately. Every prompt is real and runnable.
+**Purpose:** Activate users immediately. Every prompt is real and runnable. Strongly guide users to act.
 
-Four prompts, each with:
-- The prompt (copy-ready)
-- Triggered teams (standardized format)
-- Expected output file tree
+Four prompts in this exact format:
 
-Format:
-```markdown
-### Build a product
+### Prompt 1: Build a product
+```
 @orchestrator "Create a SaaS for AI agents marketplace"
 
 Triggers:
@@ -182,14 +282,58 @@ Triggers:
 - Frontend Team
 
 Output:
-  artifacts/product/prd.md
-  artifacts/backend/api-design.md
-  artifacts/frontend/ui-spec.md
+  .claude/workspace/artifacts/product/prd.md
+  .claude/workspace/artifacts/backend/api-design.md
+  .claude/workspace/artifacts/frontend/ui-spec.md
 
 Copy and run this — you'll get real artifacts.
 ```
 
-Four prompts: Build a product / Analyze data / Build an app / Research a market.
+### Prompt 2: Analyze data
+```
+@orchestrator "Investigate why our DAU dropped 30% last week"
+
+Triggers:
+- Data Team
+- Research Team
+
+Output:
+  .claude/workspace/artifacts/data/analysis.md
+  .claude/workspace/artifacts/research/synthesis.md
+
+Copy and run this — you'll get real artifacts.
+```
+
+### Prompt 3: Build an app
+```
+@orchestrator "Design a mobile app for habit tracking with iOS and Android support"
+
+Triggers:
+- Mobile Team
+- Backend Team
+- Product Team
+
+Output:
+  .claude/workspace/artifacts/mobile/app-architecture.md
+  .claude/workspace/artifacts/backend/api-design.md
+  .claude/workspace/artifacts/product/prd.md
+
+Copy and run this — you'll get real artifacts.
+```
+
+### Prompt 4: Research a market
+```
+@orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
+
+Triggers:
+- Research Team
+
+Output:
+  .claude/workspace/artifacts/research/competitive-analysis.md
+  .claude/workspace/artifacts/research/summary.md
+
+Copy and run this — you'll get real artifacts.
+```
 
 ---
 
@@ -203,7 +347,7 @@ Three capability categories:
 Edit `.claude/workflows/<team>.md` to change how a team operates.
 
 ### Customize intelligence
-Edit `shared/routing.json` — v2 schema supports `positive_keywords`, `negative_keywords`, `example_requests` per team rule.
+Edit `.claude/routing.json` — v2 schema supports `positive_keywords` (+1), `negative_keywords` (−2), and `example_requests` per rule.
 
 ### Customize tools
 Extend MCP integrations via `.claude/settings.json`.
@@ -214,39 +358,48 @@ Extend MCP integrations via `.claude/settings.json`.
 
 **Purpose:** Build trust through layered disclosure. Don't interrupt the flow; provide depth for those who need it.
 
+**Placement:** Section 10 in the 12-section structure, between Customization (9) and Roadmap (11). Do not move it after Contributing.
+
 **Layer 1 (inline, 2 lines):**
 > Use read-only credentials where possible. Review generated artifacts before acting on them.
 
-**Layer 2 (subsection):**
-- Agents generate outputs — they do not execute external actions unless you do.
-- Avoid running on production systems
-- Permission model explanation (what agents can read/write)
+**Layer 2 (subsection titled "Details"):**
 
-The boundary definition sentence (`Agents generate outputs — they do not execute external actions unless you do.`) directly removes the fear of agents "going rogue."
+```markdown
+### Details
+
+- **Agents generate outputs — they do not execute external actions unless you do.**
+  Agents write files to `.claude/workspace/artifacts/`. They do not call external APIs,
+  run shell commands, or modify your database unless you explicitly wire that up.
+- Avoid running on production systems during initial setup
+- Review `.claude/settings.json` to see and control which tools each agent can access
+```
+
+The boundary definition sentence directly removes the fear of agents "going rogue." The permission model content is derived from `.claude/settings.json` structure (tool allow-lists) — implementer should read that file and describe the actual allow-list pattern in plain language.
 
 ---
 
 ## Section 11: Roadmap
 
-**Purpose:** Create expectation and signal long-term investment. Capability-oriented, not feature-oriented.
+**Purpose:** Create expectation and signal long-term investment. Capability-oriented, not feature-list.
 
-```
+```markdown
 We're building the AI company OS.
 
-v1.x — Reliable execution
-  ✓ 10 teams, 34 agents
-  ✓ v2 routing with positive/negative scoring
-  ✓ Lint + install test suites
+**v1.x — Reliable execution**
+- ✓ 10 specialized teams, 34 agents
+- ✓ v2 routing with positive/negative scoring
+- ✓ Lint + install test suites
 
-v2.0 — Intelligent systems
-  □ Confidence-based routing
-  □ UI dashboard
-  □ Visual workflow editor
+**v2.0 — Intelligent systems**
+- [ ] Confidence-based routing
+- [ ] UI dashboard
+- [ ] Visual workflow editor
 
-Long-term — AI-native companies
-  □ Agent marketplace
-  □ Memory system
-  □ Cross-project orchestration
+**Long-term — AI-native companies**
+- [ ] Agent marketplace
+- [ ] Memory system
+- [ ] Cross-project orchestration
 ```
 
 ---
@@ -269,14 +422,17 @@ We value coherence over volume.
 Open a PR 🚀
 ```
 
-"We value coherence over volume" prevents low-quality PRs and signals quality bar without needing a lengthy contributing guide.
+"We value coherence over volume" prevents low-quality PRs and signals the quality bar without needing a lengthy contributing guide.
 
 ---
 
 ## Implementation Notes
 
-- Both `README.md` (EN) and `README.zh.md` (ZH) are full rewrites with identical section structure
-- ZH version translates content, preserving all code blocks and file trees verbatim
-- Existing Mermaid diagram is reused in Section 6 (full version); Section 3 gets a new simplified version
-- All file tree examples must use real paths that exist after install (verify against actual artifact structure)
-- Badge URLs preserved from current README
+- Both `README.md` (EN) and `README.zh.md` (ZH) are full rewrites with identical 12-section structure
+- ZH version translates prose; all code blocks, file trees, badge URLs, and Mermaid diagrams are verbatim
+- Badge URLs: copy exactly from current `README.md` lines 3–6
+- Language switcher (`**Languages:** English | [中文](README.zh.md)`) placed in Section 1 (Hero), below badges
+- Full Mermaid in Section 6: copy exactly from current `README.md` lines 36–68 — do not add specialist expansions beyond market/product/frontend
+- Install commands use 3-step form (clone to tmp → cd project → run install.sh) consistently in Section 1 and Section 7
+- All artifact paths in Section 8 use `.claude/workspace/artifacts/<team>/` — the real post-install path
+- Routing file in user-facing copy is always `.claude/routing.json` (post-install), never `shared/routing.json`
