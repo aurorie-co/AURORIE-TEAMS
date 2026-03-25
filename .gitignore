@@ -1,4 +1,4 @@
 
-# aurorie-teams runtime workspace — local only, do not commit
-.claude/workspace/
+# Claude Code local configuration — do not commit
+.claude/
 .worktrees/
