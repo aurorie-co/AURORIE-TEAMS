@@ -119,3 +119,208 @@ You need a team that executes.
 Ready to try it? ↓
 
 ---
+
+## 🧠 Intelligent Routing
+
+Each routing decision is explainable — not a black box.
+
+Each request is scored against every team rule:
+- **+1** for each `positive_keywords` match
+- **−2** for each `negative_keywords` match (strong disqualifier)
+- `example_requests` break ties
+
+Example:
+
+```
+"Why did revenue drop?"
+→ Data     (+score: data, metrics, report)
+→ Research (+score: investigate, compare)
+→ Backend  (−score: database penalty)
+Final: Data + Research
+
+"Build a mobile app"
+→ Mobile  (+score: iOS, Android, native)
+→ Backend (+score: API, server)
+→ Frontend (−score: mobile app penalty)
+Final: Mobile + Backend
+```
+
+Routing is deterministic at the rule level, and adaptive at the system level.
+
+You can customize routing in `.claude/routing.json`.
+
+---
+
+## 🏗 Architecture
+
+Here's the full system:
+
+```mermaid
+graph TD
+    U([User Request]) --> O[orchestrator<br/>reads routing.json]
+    O --> ML[market-lead]
+    O --> PL[product-lead]
+    O --> RL[research-lead]
+    O --> SL[support-lead]
+    O --> FL[frontend-lead]
+    O --> BL[backend-lead]
+    O --> IL[infra-lead]
+    O --> DL[design-lead]
+    O --> DAL[data-lead]
+    O --> MOL[mobile-lead]
+
+    ML --> MS1[seo]
+    ML --> MS2[content]
+    ML --> MS3[analytics]
+
+    PL --> PS1[pm]
+    PL --> PS2[ux]
+    PL --> PS3[researcher]
+
+    FL --> FS1[developer]
+    FL --> FS2[qa]
+    FL --> FS3[devops]
+
+    MS2 --> A1[(artifact)]
+    PS1 --> A2[(artifact)]
+    FS1 --> A3[(artifact)]
+
+    style O fill:#1a1a2e,color:#fff,stroke:#4a4a8a
+    style U fill:#16213e,color:#fff,stroke:#4a4a8a
+```
+
+Each team includes:
+- Agents (specialists with defined roles)
+- Workflows (step-by-step execution guides)
+- Skills (reusable task modules)
+- MCP integrations (tool access per team)
+
+---
+
+## 🛠 Installation
+
+Requirements: macOS or Linux (bash 3.2+) · `jq` · `uuidgen` or `python3` · Node.js
+
+```bash
+# 1. Clone the library
+git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
+
+# 2. Install into your project
+cd /path/to/your-project
+/tmp/aurorie-teams/install.sh
+
+# 3. Add API keys (optional but recommended)
+export GITHUB_TOKEN=...
+export EXA_API_KEY=...
+export FIRECRAWL_API_KEY=...
+
+# 4. Verify
+# In Claude Code: @orchestrator "Test the system"
+# You should see routing + task output.
+```
+
+Done ✅ Your Claude Code is now an AI startup team.
+
+### Install flags
+
+```
+--force-workflows   Overwrite existing workflow + routing overrides
+--yes               Skip all confirmation prompts
+--detect-orphans    Report stale agent/skill files no longer in repo
+```
+
+### Upgrade
+
+```bash
+git -C /tmp/aurorie-teams pull
+cd /path/to/your-project && /tmp/aurorie-teams/install.sh
+```
+
+---
+
+## 🧪 Try these prompts
+
+Each prompt triggers a different team workflow — try one to see the system in action.
+
+### Build a product
+
+```
+@orchestrator "Create a SaaS for AI agents marketplace"
+```
+
+Triggers:
+- Product Team
+- Backend Team
+- Frontend Team
+
+Output:
+```
+.claude/workspace/artifacts/product/prd.md
+.claude/workspace/artifacts/backend/api-design.md
+.claude/workspace/artifacts/frontend/ui-spec.md
+```
+
+Copy and run this — you'll get real artifacts.
+
+---
+
+### Analyze data
+
+```
+@orchestrator "Investigate why our DAU dropped 30% last week"
+```
+
+Triggers:
+- Data Team
+- Research Team
+
+Output:
+```
+.claude/workspace/artifacts/data/analysis.md
+.claude/workspace/artifacts/research/synthesis.md
+```
+
+Copy and run this — you'll get real artifacts.
+
+---
+
+### Build an app
+
+```
+@orchestrator "Design a mobile app for habit tracking with iOS and Android support"
+```
+
+Triggers:
+- Mobile Team
+- Backend Team
+- Product Team
+
+Output:
+```
+.claude/workspace/artifacts/mobile/app-architecture.md
+.claude/workspace/artifacts/backend/api-design.md
+.claude/workspace/artifacts/product/prd.md
+```
+
+Copy and run this — you'll get real artifacts.
+
+---
+
+### Research a market
+
+```
+@orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
+```
+
+Triggers:
+- Research Team
+
+Output:
+```
+.claude/workspace/artifacts/research/competitive-analysis.md
+.claude/workspace/artifacts/research/summary.md
+```
+
+Copy and run this — you'll get real artifacts.
+
+---
