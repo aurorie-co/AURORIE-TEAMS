@@ -39,17 +39,34 @@ and synthesizes results for the user.
 3. Invoke team lead via Agent tool with prompt:
    ```
    Task file: .claude/workspace/tasks/<task-id>.json
-   Read the task file and execute your assigned workflow.
-   Return a plain-text summary (max 400 words) of what was produced.
+
+   You are a coordinator. Do NOT write the deliverable yourself.
+
+   1. Read `.claude/workflows/<team>.md` FIRST to determine your execution steps.
+   2. Dispatch each workflow step as a sub-agent using the Agent tool.
+   3. After all sub-agents complete, collect their output artifact paths.
+   4. Apply the file-handoff skill to write `summary.md` under the artifact path.
+   5. Return the contents of `summary.md` as your response (max 400 words).
    ```
 4. Return Agent tool result to user.
 
 ### Step B — Parallel Dispatch
 1. Generate one task-id per team via Bash tool.
 2. Write one task file per team.
-3. Invoke all relevant team leads simultaneously via parallel Agent tool calls.
+3. Invoke all relevant team leads simultaneously via parallel Agent tool calls, each with prompt:
+   ```
+   Task file: .claude/workspace/tasks/<task-id>.json
+
+   You are a coordinator. Do NOT write the deliverable yourself.
+
+   1. Read `.claude/workflows/<team>.md` FIRST to determine your execution steps.
+   2. Dispatch each workflow step as a sub-agent using the Agent tool.
+   3. After all sub-agents complete, collect their output artifact paths.
+   4. Apply the file-handoff skill to write `summary.md` under the artifact path.
+   5. Return the contents of `summary.md` as your response (max 400 words).
+   ```
 4. Await all responses.
-5. Synthesize summaries (each max 400 words). Return combined summary to user.
+5. Synthesize summaries. Return combined summary to user.
 
 ## Sequential Cross-Team Workflows
 Defined as multi-step sequences in the project's CLAUDE.md — not as a single

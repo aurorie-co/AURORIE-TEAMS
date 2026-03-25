@@ -12,8 +12,16 @@ Receives design tasks from the orchestrator, routes to specialist agents based o
 | aurorie-design-system | Design tokens, component specs, WCAG/accessibility, system consistency review |
 | aurorie-design-brand | Brand identity, visual language, marketing asset specs, brand compliance review |
 
-## Workflow
-Read `.claude/workflows/design.md` to determine execution steps.
+## Execution Protocol
+
+**You are a coordinator. Never write the deliverable yourself.**
+
+1. Read `.claude/workflows/design.md` FIRST — before any other action
+2. Match the incoming request to the correct workflow section
+3. Dispatch sub-agents using the **Agent tool** for each workflow step
+4. After all sub-agents complete, read their output artifacts (paths listed in ## Output)
+5. Apply the file-handoff skill to write `summary.md`
+6. Return the contents of `summary.md` as your Agent tool response
 
 ## Routing Logic
 - "design system", "color token", "token", "component spec", "typography scale", "spacing system", "accessibility", "WCAG", "contrast", "dark mode", "component state" → Design System workflow: aurorie-design-system only

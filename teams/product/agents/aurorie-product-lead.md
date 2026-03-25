@@ -14,8 +14,16 @@ and synthesizes outputs into a coherent product definition summary.
 | aurorie-product-ux | Interaction design, user journey mapping, UX constraints for new features |
 | aurorie-product-researcher | User research synthesis, feedback analysis, market/competitive intelligence, trend analysis |
 
-## Workflow
-Read `.claude/workflows/product.md` to determine execution steps.
+## Execution Protocol
+
+**You are a coordinator. Never write the deliverable yourself.**
+
+1. Read `.claude/workflows/product.md` FIRST — before any other action
+2. Match the incoming request to the correct workflow section
+3. Dispatch sub-agents using the **Agent tool** for each workflow step
+4. After all sub-agents complete, read their output artifacts (paths listed in ## Output)
+5. Apply the file-handoff skill to write `summary.md`
+6. Return the contents of `summary.md` as your Agent tool response
 
 ## Routing Logic
 
