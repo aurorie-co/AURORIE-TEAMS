@@ -161,7 +161,7 @@ MCP servers are pre-configured per team and merged into `.claude/settings.json` 
 
 ### 1. Invoking a team via the orchestrator
 
-The `orchestrator` agent is the recommended entry point. It reads `.claude/routing.json`, matches your request to the right team, and dispatches the team lead.
+The `orchestrator` agent is the recommended entry point. It reads `.claude/routing.json`, scores your request against each team's `positive_keywords` (+1) and `negative_keywords` (−2), picks the best-matching team, and dispatches the team lead. When signals are mixed it identifies the *primary intent* to avoid ambiguous multi-team dispatches.
 
 In Claude Code, tell the `orchestrator` agent what you need:
 
@@ -317,7 +317,7 @@ Goal: inform our product roadmap decisions.
 ## Customizing
 
 - **Workflows:** Edit `.claude/workflows/<team>.md` to change how a team operates
-- **Routing:** Edit `.claude/routing.json` to control which keywords route to which team
+- **Routing:** Edit `.claude/routing.json` to control which keywords route to which team. The schema (v2) supports `positive_keywords` (+1 per match), `negative_keywords` (−2 per match, strong disqualifier), and `example_requests` (used to break ties) per team rule
 - **CLAUDE.md:** Edit `CLAUDE.md` in your project root to add project context all agents read
 
 Changes to `.claude/workflows/` and `.claude/routing.json` are preserved on upgrade (unless you run with `--force-workflows`).
