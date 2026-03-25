@@ -151,10 +151,10 @@ assert_eq "--detect-orphans reports orphaned agent" "true" \
   "$([[ "$output" == *"old-legacy-agent.md"* ]] && echo true || echo false)"
 
 echo ""
-echo "=== Test: postgres key collision warning emitted ==="
+echo "=== Test: no MCP key collision warnings on clean install ==="
 collision_output="$("$REPO_ROOT/install.sh" 2>&1)"
-assert_eq "install warns on postgres key collision" "true" \
-  "$([[ "$collision_output" == *"postgres"* ]] && echo true || echo false)"
+assert_eq "install emits no MCP key collision warnings" "false" \
+  "$([[ "$collision_output" == *"collision"* ]] && echo true || echo false)"
 
 echo ""
 echo "=== Results ==="

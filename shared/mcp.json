@@ -9,6 +9,16 @@
       "command": "npx",
       "args": ["-y", "exa-mcp-server"],
       "env": { "EXA_API_KEY": "${EXA_API_KEY}" }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL}"],
+      "env": {}
+    },
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
     }
   }
 }
