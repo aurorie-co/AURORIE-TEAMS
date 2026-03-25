@@ -324,3 +324,85 @@ Output:
 Copy and run this — you'll get real artifacts.
 
 ---
+
+## 🔧 Customization
+
+### Customize behavior
+Edit `.claude/workflows/<team>.md` to change how a team operates.
+
+### Customize intelligence
+Edit `.claude/routing.json` — v2 schema supports `positive_keywords` (+1), `negative_keywords` (−2), and `example_requests` per rule.
+
+### Customize tools
+Extend MCP integrations via `.claude/settings.json`.
+
+---
+
+## ⚠️ Safety
+
+Use read-only credentials where possible. Review generated artifacts before acting on them.
+
+### Details
+
+- **Agents generate outputs — they do not execute external actions unless you do.**
+  Agents write files to `.claude/workspace/artifacts/`. They do not call external APIs,
+  run shell commands, or modify your database unless you explicitly wire that up.
+- **Nothing runs without your approval.**
+- Avoid running on production systems during initial setup.
+- Review `.claude/settings.json` to see and control which tools each agent can access.
+
+---
+
+## 🗺 Roadmap
+
+We're building the AI company OS.
+
+**v1.x — Reliable execution**
+- ✓ 10 specialized teams, 34 agents
+- ✓ v2 routing with positive/negative scoring
+- ✓ Lint + install test suites
+
+**v2.0 — Intelligent systems**
+- [ ] Confidence-based routing
+- [ ] UI dashboard
+- [ ] Visual workflow editor
+
+**Long-term — AI-native companies**
+- [ ] Agent marketplace
+- [ ] Memory system
+- [ ] Cross-project orchestration
+
+---
+
+## 🤝 Contributing
+
+We're building the AI company OS — and we're opinionated about it.
+
+Want to help?
+- Add new teams
+- Improve routing logic
+- Build workflows
+- Share use cases
+
+We value coherence over volume.
+
+Open a PR 🚀
+
+---
+
+## Tests
+
+Two test suites live in `tests/`:
+
+| Script | What it tests |
+|--------|--------------|
+| `tests/install.test.sh` | Full install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
+| `tests/lint.test.sh` | Source tree consistency: agent/workflow/skill/routing contract validation |
+
+Run both with:
+
+```bash
+bash tests/install.test.sh && bash tests/lint.test.sh
+```
+
+---
