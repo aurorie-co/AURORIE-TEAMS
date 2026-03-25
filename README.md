@@ -60,9 +60,9 @@ _(or simply: "Build me a SaaS product from scratch" — the system routes automa
 │   └── task-001.json
 └── artifacts/
     ├── product/prd.md
-    ├── backend/api-design.md
-    ├── frontend/ui-spec.md
-    └── mobile/app-architecture.md
+    ├── backend/implementation.md
+    ├── frontend/frontend-implementation.md
+    └── mobile/ios-implementation.md
 ```
 
 💡 You just went from idea → structured execution plan in seconds.
@@ -319,6 +319,30 @@ Output:
 ```
 .claude/workspace/artifacts/research/comparison-matrix.md
 .claude/workspace/artifacts/research/summary.md
+```
+
+Copy and run this — you'll get real artifacts.
+
+---
+
+### Build a trading system
+
+```
+@orchestrator "Build a crypto SaaS with real-time price feeds, portfolio analytics, and a React dashboard"
+```
+
+Triggers:
+- Product Team
+- Backend Team
+- Frontend Team
+- Data Team
+
+Output:
+```
+.claude/workspace/artifacts/product/prd.md
+.claude/workspace/artifacts/backend/implementation.md
+.claude/workspace/artifacts/frontend/frontend-implementation.md
+.claude/workspace/artifacts/data/report-spec.md
 ```
 
 Copy and run this — you'll get real artifacts.

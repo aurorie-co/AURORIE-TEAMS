@@ -37,8 +37,8 @@
     {
       "team": "market",
       "description": "Marketing, content, and growth tasks",
-      "positive_keywords": ["marketing", "SEO", "content", "social", "campaign", "blog", "copywriting", "analytics", "growth", "acquisition", "landing page", "ad copy"],
-      "negative_keywords": ["database", "API", "code", "backend", "frontend component", "iOS", "Android", "Terraform", "data pipeline"],
+      "positive_keywords": ["marketing", "SEO", "content", "social", "campaign", "blog", "copywriting", "marketing analytics", "growth", "acquisition", "landing page", "ad copy", "go-to-market"],
+      "negative_keywords": ["database schema", "API endpoint", "backend code", "frontend component", "iOS", "Android", "Terraform", "data pipeline"],
       "example_requests": [
         "Write a blog post announcing our new API for developer audiences",
         "Run an SEO audit on our pricing page and suggest improvements",

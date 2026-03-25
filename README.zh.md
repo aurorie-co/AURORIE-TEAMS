@@ -60,9 +60,9 @@ _（或者直接说："Build me a SaaS product from scratch"——系统会自�
 │   └── task-001.json
 └── artifacts/
     ├── product/prd.md
-    ├── backend/api-design.md
-    ├── frontend/ui-spec.md
-    └── mobile/app-architecture.md
+    ├── backend/implementation.md
+    ├── frontend/frontend-implementation.md
+    └── mobile/ios-implementation.md
 ```
 
 💡 你刚刚在几秒内完成了从想法到结构化执行计划的全过程。
@@ -319,6 +319,30 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 ```
 .claude/workspace/artifacts/research/comparison-matrix.md
 .claude/workspace/artifacts/research/summary.md
+```
+
+复制并运行——你会得到真实的产出文件。
+
+---
+
+### 构建交易系统
+
+```
+@orchestrator "Build a crypto SaaS with real-time price feeds, portfolio analytics, and a React dashboard"
+```
+
+触发团队：
+- Product Team
+- Backend Team
+- Frontend Team
+- Data Team
+
+输出：
+```
+.claude/workspace/artifacts/product/prd.md
+.claude/workspace/artifacts/backend/implementation.md
+.claude/workspace/artifacts/frontend/frontend-implementation.md
+.claude/workspace/artifacts/data/report-spec.md
 ```
 
 复制并运行——你会得到真实的产出文件。
