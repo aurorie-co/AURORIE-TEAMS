@@ -46,7 +46,7 @@ _(or simply: "Build me a SaaS product from scratch" — the system routes automa
 1. Orchestrator analyzes intent
 2. Selects relevant teams:
    - Product Team  (requirements)
-   - Backend Team  (API design)
+   - Backend Team  (services & data layer)
    - Frontend Team (UI)
    - Mobile Team   (app structure)
 3. Each team executes its workflow
@@ -133,16 +133,17 @@ Example:
 
 ```
 "Why did revenue drop?"
-→ Data     (+score: data, metrics, report)
-→ Research (+score: investigate, compare)
-→ Backend  (−score: database penalty)
+→ Data     (+score: dropped, metrics, root cause)
+→ Research (+score: why did, investigate)
+→ Backend  (no match)
 Final: Data + Research
 
-"Build a mobile app"
-→ Mobile  (+score: iOS, Android, native)
-→ Backend (+score: API, server)
-→ Frontend (−score: mobile app penalty)
-Final: Mobile + Backend
+"Build a crypto SaaS with React dashboard"
+→ Frontend (+score: SaaS, React)
+→ Backend  (+score: SaaS)
+→ Product  (+score: SaaS)
+→ Data     (+score: dashboard)
+Final: Frontend + Backend + Product + Data
 ```
 
 Routing is deterministic at the rule level, and adaptive at the system level.
