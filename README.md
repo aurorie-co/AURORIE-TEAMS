@@ -15,6 +15,22 @@
 
 ---
 
+- [Install in 60 seconds](#install-in-60-seconds)
+- [What it actually does](#-what-it-actually-does)
+- [How it works](#-how-it-works)
+- [Why not just use ChatGPT?](#-why-not-just-use-chatgpt)
+- [Intelligent Routing](#-intelligent-routing)
+- [Architecture](#-architecture)
+- [Installation](#-installation)
+- [Try these prompts](#-try-these-prompts)
+- [Customization](#-customization)
+- [Safety](#️-safety)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [Tests](#tests)
+
+---
+
 ## Install in 60 seconds
 
 ```bash
@@ -30,6 +46,8 @@ Then just ask:
 ```
 
 _(the orchestrator reads `.claude/routing.json` to dispatch teams automatically)_
+
+Just type a task — the system routes teams automatically.
 
 ---
 
@@ -254,7 +272,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 Each prompt triggers a different team workflow — try one to see the system in action.
 
-### Build a product
+### Build a product ⭐ Start here
 
 ```
 @orchestrator "Create a SaaS for AI agents marketplace"
@@ -393,6 +411,7 @@ Use read-only credentials where possible. Review generated artifacts before acti
 - **Agents generate outputs — they do not execute external actions unless you do.**
   Agents write files to `.claude/workspace/artifacts/`. They do not call external APIs,
   run shell commands, or modify your database unless you explicitly wire that up.
+  **Default behavior is local file generation under `.claude/workspace/artifacts/`.**
 - **Nothing runs without your approval.**
 - Avoid running on production systems during initial setup.
 - Review `.claude/settings.json` to see and control which tools each agent can access.
@@ -432,7 +451,7 @@ Want to help?
 
 We value coherence over volume.
 
-Open a PR 🚀
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR 🚀
 
 ---
 
@@ -445,7 +464,7 @@ Two test suites live in `tests/`:
 | `tests/install.test.sh` | Full install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree consistency: agent/workflow/skill/routing contract validation |
 
-Run both with:
+Run both before opening a PR or after changing routing/workflows:
 
 ```bash
 bash tests/install.test.sh && bash tests/lint.test.sh

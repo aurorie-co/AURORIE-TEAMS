@@ -15,6 +15,22 @@
 
 ---
 
+- [60 秒安装](#60-秒安装)
+- [实际效果](#-实际效果)
+- [工作原理](#-工作原理)
+- [为什么不直接用 ChatGPT？](#-为什么不直接用-chatgpt)
+- [智能路由](#-智能路由)
+- [系统架构](#-系统架构)
+- [安装](#-安装)
+- [试试这些 prompt](#-试试这些-prompt)
+- [自定义](#-自定义)
+- [安全说明](#️-安全说明)
+- [路线图](#-路线图)
+- [参与贡献](#-参与贡献)
+- [测试](#测试)
+
+---
+
 ## 60 秒安装
 
 ```bash
@@ -30,6 +46,8 @@ cd /path/to/your-project
 ```
 
 _（orchestrator 会读取 `.claude/routing.json` 自动分派团队）_
+
+直接说你的任务——系统会自动路由到正确的团队。
 
 ---
 
@@ -254,7 +272,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 每个 prompt 都会触发不同的团队工作流——试一个，看看系统如何运转。
 
-### 构建产品
+### 构建产品 ⭐ 初次运行首选
 
 ```
 @orchestrator "Create a SaaS for AI agents marketplace"
@@ -393,6 +411,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - **Agent 只生成输出——除非你主动触发，否则不会执行任何外部操作。**
   Agent 将文件写入 `.claude/workspace/artifacts/`。它们不会调用外部 API、
   运行 shell 命令或修改数据库，除非你明确接入这些能力。
+  **默认行为是本地文件生成，输出目录为 `.claude/workspace/artifacts/`。**
 - **没有你的确认，什么都不会执行。**
 - 初始设置阶段，避免在生产系统上运行。
 - 查看 `.claude/settings.json` 了解并控制每个 Agent 的工具访问权限。
@@ -432,7 +451,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 我们重视一致性，而非数量。
 
-提交 PR 🚀
+请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，再提交 PR 🚀
 
 ---
 
@@ -445,7 +464,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 | `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
 | `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
 
-运行全部测试：
+在开 PR 或修改 routing/workflows 后，运行全部测试：
 
 ```bash
 bash tests/install.test.sh && bash tests/lint.test.sh
