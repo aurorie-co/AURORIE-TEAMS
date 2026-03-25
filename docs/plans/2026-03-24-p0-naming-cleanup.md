@@ -4,7 +4,7 @@
 
 **Goal:** Eliminate the `engineer-lead` / `engineer.md` naming drift from user-facing files and add a formal workspace path schema to README so onboarding is unambiguous.
 
-**Architecture:** Two focused edits — `templates/CLAUDE.md.template` and `tests/install.test.sh` — plus a path schema block added to `README.md` and `README.zh.md`. Historical plan docs in `docs/superpowers/plans/` are left untouched (they are read-only artifacts, not user-facing content).
+**Architecture:** Two focused edits — `templates/CLAUDE.md.template` and `tests/install.test.sh` — plus a path schema block added to `README.md` and `README.zh.md`. Historical plan docs in `docs/plans/` are left untouched (they are read-only artifacts, not user-facing content).
 
 **Tech Stack:** bash, markdown
 

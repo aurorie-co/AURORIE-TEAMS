@@ -8,7 +8,7 @@
 
 **Tech Stack:** bash, jq (JSON merge), standard POSIX utilities (`uuidgen`/`python3`, `cp`, `mkdir`). All agent/skill files are Markdown. No runtime dependencies beyond Claude Code.
 
-**Spec:** `docs/superpowers/specs/2026-03-22-aurorie-teams-design.md`
+**Spec:** `docs/specs/2026-03-22-aurorie-teams-design.md`
 
 ---
 
