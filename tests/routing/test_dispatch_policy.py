@@ -1485,6 +1485,172 @@ def _test_e2e_milestone_second_task_append_only():
         shutil.rmtree(ws)
 
 
+# ---------------------------------------------------------------------------
+# P0 Runtime tests — fills gaps identified in QA coverage report
+# These tests target the "orchestrator integration / runtime contract" layer
+# that pure-function tests alone do not cover.
+# ---------------------------------------------------------------------------
+
+def _test_e2e_ask_resolve_dag():
+    """
+    P0-E2E-01: ask parks → resolve all → graph built → Step C executes to completion.
+    Verifies the resolve-to-Step-C contract: resolve populates selected_teams,
+    graph is built, and DAG dispatch completes all waves.
+    """
+    # Simulate ask + resolve flow (from _orchestrator_resolve_flow pattern)
+    task = {
+        "task_id": "test-resolve-dag",
+        "status": "awaiting_dispatch_decision",
+        "routing_decision": {
+            "selected_teams": [],
+            "secondary_teams": [],
+            "ignored_teams": [],
+            "pending_decision": {
+                "type": "dispatch_confirmation",
+                "band": "medium",
+                "context": "medium_when_no_high_exists",
+                "teams": [_team("backend", 3), _team("frontend", 2)],
+                "options": ["all", "none"],
+                "default": "none",
+            },
+        },
+    }
+    resolved = resolve_task(task, {"selected": "all"})
+    assert resolved["status"] == "pending"
+    assert "pending_decision" not in resolved["routing_decision"]
+    selected = resolved["routing_decision"]["selected_teams"]
+    assert len(selected) == 2
+
+    # Verify Step C would execute: build graph and run to completion
+    graph = build_execution_graph("test-resolve-dag", selected)
+    assert graph["status"] == "pending"
+    assert len(graph["nodes"]) == 2
+
+    # Step C dispatch loop: simulate to completion
+    g = graph
+    while g["status"] not in ("completed", "partial_failed"):
+        ready = get_ready_nodes(g)
+        if not ready:
+            break
+        for node_id in ready:
+            g = advance_node(g, node_id, "done")
+
+    assert g["status"] == "completed", f"Expected completed, got {g['status']}"
+
+
+def _test_e2e_partial_failure_middle_wave():
+    """
+    P0-E2E-02: linear pipeline, wave 1 done → wave 2 partial_failed → graph stops.
+    Verifies that partial failure in any wave propagates to graph status and halts dispatch.
+    This is the most critical DAG runtime guarantee.
+    """
+    teams = [_team("product", 3), _team("backend", 4), _team("frontend", 2)]
+    graph = build_execution_graph("test-partial-fail", teams)
+    assert select_graph_template(teams) == "linear-pipeline"
+
+    # Wave 1: product advances to done
+    g = advance_node(graph, "product-1", "done")
+    wave2 = get_ready_nodes(g)
+    assert wave2 == ["backend-1"]  # backend unlocked
+
+    # Wave 2: backend partial_fails — this MUST halt the dispatch loop
+    g = advance_node(g, "backend-1", "failed")
+    assert g["status"] == "partial_failed"
+    assert g["nodes"][1]["status"] == "failed"  # backend node is failed
+
+    # Verify dispatch loop would stop (no more advance calls)
+    ready = get_ready_nodes(g)
+    assert ready == [], f"Expected no ready nodes after partial_failure, got {ready}"
+
+
+def _test_ready_nodes_empty_on_terminal_graph():
+    """
+    P0-RT-01: completed graph → get_ready_nodes returns [].
+    Verifies the contract: once graph reaches terminal status, no nodes are ready.
+    """
+    teams = [_team("product", 2), _team("backend", 4)]
+    graph = build_execution_graph("test-terminal", teams)
+
+    # Advance all to done
+    g = advance_node(graph, "product-1", "done")
+    assert g["status"] == "pending"
+    g = advance_node(g, "backend-1", "done")
+    assert g["status"] == "completed"
+
+    # Terminal graph must return empty ready set
+    ready = get_ready_nodes(g)
+    assert ready == [], f"Expected [] on completed graph, got {ready}"
+
+
+def _test_advance_node_idempotent_on_done():
+    """
+    P0-RT-02: advancing an already-done node is a no-op (idempotent).
+    This prevents double-processing if orchestrator calls advance_node twice.
+    """
+    teams = [_team("backend", 4)]
+    graph = build_execution_graph("test-idempotent", teams)
+    g = advance_node(graph, "backend-1", "done")
+    assert g["status"] == "completed"
+    assert g["nodes"][0]["status"] == "done"
+
+    # Advance again — must be idempotent
+    g2 = advance_node(g, "backend-1", "done")
+    assert g2["status"] == "completed"  # still completed
+    assert g2["nodes"][0]["status"] == "done"  # still done
+    # Graph unchanged
+    assert g == g2
+
+
+def _test_e2e_research_branch_partial_failure():
+    """
+    P0-E2E-03: research branch fan-out, research done, one downstream fails.
+    Verifies: fan-out where backend fails but frontend completes → graph partial_failed.
+    Also verifies the surviving branch (frontend) is correctly handled.
+    """
+    teams = [_team("research", 3), _team("backend", 4), _team("frontend", 2)]
+    graph = build_execution_graph("test-research-fail", teams)
+    assert select_graph_template(teams) == "research-branch"
+
+    # Wave 1: research done
+    g = advance_node(graph, "research-1", "done")
+    wave2 = get_ready_nodes(g)
+    assert set(wave2) == {"backend-1", "frontend-1"}  # both ready in parallel
+
+    # Wave 2: backend fails, frontend completes
+    g = advance_node(g, "backend-1", "failed")
+    assert g["status"] == "partial_failed"
+
+    # frontend was still in wave2; verify it's still tracked correctly
+    frontend_node = next(n for n in g["nodes"] if n["team"] == "frontend")
+    assert frontend_node["status"] == "pending"  # not yet advanced, still pending
+
+
+def _test_get_ready_nodes_on_partial_failed_graph():
+    """
+    P0-RT-03: partial_failed graph → get_ready_nodes returns [].
+    Confirms terminal status locks the ready set.
+    """
+    teams = [_team("backend", 4), _team("frontend", 2)]
+    graph = build_execution_graph("test-pf-terminal", teams)
+    g = advance_node(graph, "backend-1", "failed")
+    assert g["status"] == "partial_failed"
+
+    ready = get_ready_nodes(g)
+    assert ready == [], f"Expected [] on partial_failed graph, got {ready}"
+
+
+RUNTIME_TESTS = [
+    # P0-E2E: Orchestrator integration — ask/resolve → DAG dispatch
+    ("e2e_ask_resolve_dag", _test_e2e_ask_resolve_dag),
+    ("e2e_partial_failure_middle_wave", _test_e2e_partial_failure_middle_wave),
+    ("e2e_research_branch_partial_failure", _test_e2e_research_branch_partial_failure),
+    # P0-RT: Graph runtime contracts
+    ("ready_nodes_empty_on_terminal_graph", _test_ready_nodes_empty_on_terminal_graph),
+    ("advance_node_idempotent_done", _test_advance_node_idempotent_on_done),
+    ("get_ready_nodes_on_partial_failed_graph", _test_get_ready_nodes_on_partial_failed_graph),
+]
+
+
 MILESTONE_TESTS = [
     ("milestone_create", _test_milestone_create),
     ("milestone_create_auto_id", _test_milestone_create_auto_id),
@@ -1517,6 +1683,7 @@ def main():
         ("phase1", PHASE1_TESTS),
         ("graph", GRAPH_TESTS),
         ("milestone", MILESTONE_TESTS),
+        ("runtime", RUNTIME_TESTS),
     ]
 
     total_passed = total_failed = 0
