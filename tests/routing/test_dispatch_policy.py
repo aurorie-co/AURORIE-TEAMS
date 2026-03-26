@@ -1093,6 +1093,112 @@ def _test_resolve_idempotent():
     assert len(r2["routing_decision"]["selected_teams"]) == 1
 
 
+# ---------------------------------------------------------------------------
+# Phase 2: E2E Orchestrator Smoke Tests
+# Verifies full orchestrator wiring: Step 7 builds graph → Step C executes it.
+# _simulate_dispatch_loop mirrors the Step C dispatch loop for test purposes.
+# ---------------------------------------------------------------------------
+
+def _simulate_dispatch_loop(task_id, selected_teams):
+    """
+    Simulates Step C DAG dispatch loop end-to-end.
+    Builds graph from selected_teams, then simulates wave-based execution
+    by advancing all ready nodes to 'done' in dependency order.
+
+    Returns the final execution_graph dict.
+    """
+    graph = build_execution_graph(task_id, selected_teams)
+
+    # Simulate wave-based dispatch loop (Step C)
+    while graph["status"] not in ("completed", "partial_failed"):
+        ready = get_ready_nodes(graph)
+        if not ready:
+            # Blocked — no forward progress possible
+            break
+        # Advance all ready nodes to 'done' in this wave
+        for node_id in ready:
+            graph = advance_node(graph, node_id, "done")
+
+    return graph
+
+
+def _test_e2e_linear_pipeline():
+    """
+    E2E: product + backend + frontend → linear pipeline
+    Verifies:
+    - template = linear-pipeline
+    - graph edges: product → backend → frontend
+    - Step C wave order: product (wave 1) → backend (wave 2) → frontend (wave 3)
+    - graph final status = completed
+    """
+    teams = [_team("product", 2), _team("backend", 4), _team("frontend", 3)]
+    graph = _simulate_dispatch_loop("e2e-linear-001", teams)
+
+    # Template
+    assert select_graph_template(teams) == "linear-pipeline"
+
+    # Edges
+    edges = graph["edges"]
+    assert ["product-1", "backend-1"] in edges
+    assert ["backend-1", "frontend-1"] in edges
+
+    # Wave execution order (verified via node status snapshots between advances)
+    g = build_execution_graph("e2e-linear-001", teams)
+    wave1 = get_ready_nodes(g)
+    assert wave1 == ["product-1"]  # only product ready initially
+
+    g = advance_node(g, "product-1", "done")
+    wave2 = get_ready_nodes(g)
+    assert wave2 == ["backend-1"]  # backend unlocked after product
+
+    g = advance_node(g, "backend-1", "done")
+    wave3 = get_ready_nodes(g)
+    assert wave3 == ["frontend-1"]  # frontend unlocked after backend
+
+    g = advance_node(g, "frontend-1", "done")
+    assert g["status"] == "completed"
+
+
+def _test_e2e_research_branch_parallel():
+    """
+    E2E: research + backend + frontend → research-branch fan-out
+    Verifies:
+    - template = research-branch
+    - graph edges: research → backend, research → frontend
+    - research done → backend AND frontend ready in same wave (parallel)
+    - graph final status = completed
+    """
+    teams = [_team("research", 3), _team("backend", 4), _team("frontend", 3)]
+    graph = _simulate_dispatch_loop("e2e-research-001", teams)
+
+    # Template
+    assert select_graph_template(teams) == "research-branch"
+
+    # Edges: both downstream nodes depend on research
+    edges = graph["edges"]
+    assert ["research-1", "backend-1"] in edges
+    assert ["research-1", "frontend-1"] in edges
+    # No edge between backend and frontend (parallel, not sequential)
+    edge_set = {tuple(e) for e in edges}
+    assert ("backend-1", "frontend-1") not in edge_set
+    assert ("frontend-1", "backend-1") not in edge_set
+
+    # Wave 1: only research ready
+    g = build_execution_graph("e2e-research-001", teams)
+    wave1 = get_ready_nodes(g)
+    assert wave1 == ["research-1"]
+
+    # Wave 2: backend AND frontend ready simultaneously after research done
+    g = advance_node(g, "research-1", "done")
+    wave2 = get_ready_nodes(g)
+    assert set(wave2) == {"backend-1", "frontend-1"}
+
+    # Advance both in same wave
+    g = advance_node(g, "backend-1", "done")
+    g = advance_node(g, "frontend-1", "done")
+    assert g["status"] == "completed"
+
+
 PHASE1_TESTS = [
     ("ask_parks_with_pending_decision", _test_ask_parks_with_pending_decision),
     ("ask_no_fallback_triggered", _test_ask_no_fallback_triggered),
@@ -1129,6 +1235,9 @@ GRAPH_TESTS = [
     # Graph status
     ("graph_status_done", _test_graph_status_done),
     ("graph_status_partial_failed", _test_graph_status_partial_failed),
+    # E2E orchestrator smoke tests (Step 7 → Step C)
+    ("e2e_linear_pipeline", _test_e2e_linear_pipeline),
+    ("e2e_research_branch_parallel", _test_e2e_research_branch_parallel),
 ]
 
 
