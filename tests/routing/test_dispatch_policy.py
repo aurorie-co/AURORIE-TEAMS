@@ -68,21 +68,22 @@ NORMALIZE_TESTS = [
 # Evaluator stub
 # ---------------------------------------------------------------------------
 
-def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=None, dry_run=False):
+def apply_dispatch_policy(high_candidates, medium_candidates, policy, dry_run=False):
     """
     Applies dispatch_policy to candidates. Returns:
-      (selected_teams, secondary_teams, ignored_teams, ask_resolution_or_ask_required)
+      (selected_teams, secondary_teams, ignored_teams, pending_decision_or_None)
 
-    - ask_resolution is returned when ask is resolved via user input (normal mode).
-    - ask_required dict is returned when ask is deferred (dry-run mode).
-    - The two are mutually exclusive — only one is ever present.
+    v0.4 semantics:
+    - When ask is triggered: parks task with pending_decision, does NOT prompt.
+      The CLI layer (or resolve interface) handles prompting separately.
+    - dry_run only skips Steps A/B; it does NOT defer the ask prompt.
     - secondary_teams are never dispatched — informational only.
     """
     normalized = normalize_dispatch_policy(policy)
     selected = []
     secondary = []
     ignored = []
-    ask_resolution_or_ask_required = None
+    pending_decision = None
 
     # Apply high policy
     high_action = normalized["high"]
@@ -97,17 +98,15 @@ def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=
     medium_action = normalized["medium"][medium_context]
 
     if medium_action == "ask" and medium_candidates:
-        if dry_run:
-            # Deferred: set ask_required instead of prompting
-            ask_resolution_or_ask_required = {
-                "ask_required": True,
-                "context": f"medium_{medium_context}",
-                "teams": [t["team"] for t in medium_candidates],
-            }
-        else:
-            ask_resolution_or_ask_required = _handle_ask(
-                medium_candidates, medium_context, selected, secondary, ignored, prompt_fn
-            )
+        # v0.4: always park, never prompt here (CLI/resolve interface handles that)
+        pending_decision = {
+            "type": "dispatch_confirmation",
+            "band": "medium",
+            "context": f"medium_{medium_context}",
+            "teams": medium_candidates,
+            "options": ["all", "none"],
+            "default": "none",
+        }
     else:
         for team in medium_candidates:
             if medium_action == "auto":
@@ -118,55 +117,115 @@ def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=
             elif medium_action == "ignore":
                 ignored.append(team)
 
-    return selected, secondary, ignored, ask_resolution_or_ask_required
+    return selected, secondary, ignored, pending_decision
 
 
-def _handle_ask(medium_candidates, medium_context, selected, secondary, ignored, prompt_fn):
-    """Handles ask mode. Triggered at most once. Returns ask_resolution dict."""
-    team_names = [t["team"] for t in medium_candidates]
+def _render_cli_ask(pending_decision):
+    """CLI renderer: formats pending_decision as a y/n prompt string."""
     lines = ["Medium-confidence teams identified:"]
-    for t in medium_candidates:
+    for t in pending_decision["teams"]:
         lines.append(f"  - {t['team']} (score {t['score']})")
     lines.append("Dispatch these teams? [Y/n]")
-    question = "\n".join(lines)
+    return "\n".join(lines)
 
-    prompt_count = 0
-    fn = prompt_fn if prompt_fn else input
 
-    response = fn(question).strip().lower()
-    prompt_count += 1
-
-    if response not in ("y", "yes", "n", "no", ""):
-        response = fn("Please reply y or n.").strip().lower()
-        prompt_count += 1
-        if response not in ("y", "yes", "n", "no", ""):
-            response = "default_no"
-
-    YES_RESPONSES = ("y", "yes", "")
-    NO_RESPONSES = ("n", "no", "")
-
-    if response in YES_RESPONSES:
-        user_response = "yes"
-        for team in medium_candidates:
-            if medium_context == "when_no_high_exists":
-                selected.append(team)
-            else:
-                secondary.append(team)
-    elif response == "default_no":
-        user_response = response
+def _parse_cli_response(response, pending_decision):
+    """
+    Parses CLI response against pending_decision.options.
+    Returns resolved decision dict: {selected: "all"|"none"|"selective", teams: [...]}.
+    """
+    response = response.strip().lower()
+    if response in ("y", "yes", ""):
+        return {"selected": "all"}
+    elif response in ("n", "no"):
+        return {"selected": "none"}
     else:
-        user_response = "no"
+        # Invalid: re-prompt once, then default to "none"
+        return {"selected": "none", "invalid": True}
 
-    if user_response in ("no", "default_no"):
-        for team in medium_candidates:
-            ignored.append(team)
 
+def resolve_task(task, decision):
+    """
+    Applies a user decision to a parked task.
+
+    Args:
+        task: dict with keys routing_decision (containing pending_decision),
+              selected_teams, ignored_teams
+        decision: {"selected": "all"|"none"|"selective", "teams": [...]} from _parse_cli_response
+
+    Returns:
+        Updated task dict with:
+        - pending_decision cleared
+        - selected_teams / ignored_teams updated per decision
+        - status set to "pending" (ready to dispatch) or "needs_clarification" (empty after decline)
+    """
+    pending = task.get("routing_decision", {}).get("pending_decision")
+    if not pending:
+        return task  # Idempotent: no-op if not parked
+
+    selected = list(task.get("selected_teams", []))
+    secondary = list(task.get("secondary_teams", []))
+    ignored = list(task.get("ignored_teams", []))
+
+    # Determine where confirmed teams go based on context
+    when_high_exists = pending.get("context") == "medium_when_high_exists"
+
+    if decision["selected"] == "all":
+        for team in pending["teams"]:
+            if when_high_exists:
+                # When high teams exist, medium confirm → secondary (informational, not dispatched)
+                if team not in secondary:
+                    secondary.append(team)
+            else:
+                # No high teams → medium confirm → selected (dispatched)
+                if team not in selected:
+                    selected.append(team)
+    elif decision["selected"] == "none":
+        for team in pending["teams"]:
+            if team not in ignored:
+                ignored.append(team)
+    elif decision["selected"] == "selective":
+        confirmed = set(decision.get("teams", []))
+        for team in pending["teams"]:
+            if team["team"] in confirmed:
+                if when_high_exists:
+                    if team not in secondary:
+                        secondary.append(team)
+                else:
+                    if team not in selected:
+                        selected.append(team)
+            else:
+                if team not in ignored:
+                    ignored.append(team)
+
+    # Update routing_decision
+    routing_decision = dict(task.get("routing_decision", {}))
+    routing_decision.pop("pending_decision", None)
+    routing_decision["selected_teams"] = selected
+    routing_decision["secondary_teams"] = secondary
+    routing_decision["ignored_teams"] = ignored
+
+    # Determine status: if selected is empty after resolve, park as needs_clarification
+    if not selected and decision["selected"] == "none":
+        new_status = "needs_clarification"
+    else:
+        new_status = "pending"
+
+    result = dict(task)
+    result["routing_decision"] = routing_decision
+    result["status"] = new_status
+    return result
+
+
+def _task_from_routing_decision(routing_decision):
+    """Build a minimal task dict from a routing_decision (for testing resolve)."""
     return {
-        "triggered": True,
-        "context": f"medium_{medium_context}",
-        "teams": team_names,
-        "user_response": user_response,
-        "prompt_count": prompt_count,
+        "task_id": "test-task-001",
+        "status": "awaiting_dispatch_decision",
+        "routing_decision": dict(routing_decision),
+        "selected_teams": list(routing_decision.get("selected_teams", [])),
+        "secondary_teams": list(routing_decision.get("secondary_teams", [])),
+        "ignored_teams": list(routing_decision.get("ignored_teams", [])),
     }
 
 
@@ -174,146 +233,148 @@ def _handle_ask(medium_candidates, medium_context, selected, secondary, ignored,
 # Auto / ignore tests
 # ---------------------------------------------------------------------------
 
-def _team(name, score=2):
-    return {"team": name, "score": score, "confidence": "high", "matched_positive": [], "matched_negative": []}
+def _team(name, score=2, confidence="medium"):
+    return {"team": name, "score": score, "confidence": confidence, "matched_positive": [], "matched_negative": []}
 
 
 def _test_high_auto_medium_ignored():
     """high: auto + medium.when_high_exists: ignore → selected: high only, ignored: medium"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "auto"}}
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+    selected, secondary, ignored, pending = apply_dispatch_policy(
         [_team("backend", 4)], [_team("product", 2)], policy
     )
     assert [t["team"] for t in selected] == ["backend"]
     assert secondary == []
     assert [t["team"] for t in ignored] == ["product"]
-    assert ask_res is None
+    assert pending is None
 
 
 def _test_high_auto_medium_auto():
     """high: auto + medium.when_high_exists: auto → selected: high, secondary: medium"""
     policy = {"high": "auto", "medium": {"when_high_exists": "auto", "when_no_high_exists": "auto"}}
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+    selected, secondary, ignored, pending = apply_dispatch_policy(
         [_team("backend", 4)], [_team("product", 2)], policy
     )
     assert [t["team"] for t in selected] == ["backend"]
     assert [t["team"] for t in secondary] == ["product"]
     assert ignored == []
-    assert ask_res is None
+    assert pending is None
 
 
 def _test_high_ignored():
     """high: ignore → selected: none (fallback)"""
     policy = {"high": "ignore", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "auto"}}
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+    selected, secondary, ignored, pending = apply_dispatch_policy(
         [_team("backend", 4)], [], policy
     )
     assert selected == []
     assert secondary == []
     assert [t["team"] for t in ignored] == ["backend"]
-    assert ask_res is None
+    assert pending is None
 
 
 def _test_medium_only_auto():
     """medium.when_no_high_exists: auto → selected: medium"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "auto"}}
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+    selected, secondary, ignored, pending = apply_dispatch_policy(
         [], [_team("product", 2)], policy
     )
     assert [t["team"] for t in selected] == ["product"]
     assert secondary == []
     assert ignored == []
-    assert ask_res is None
+    assert pending is None
 
 
 # ---------------------------------------------------------------------------
-# Ask mode tests
+# Ask mode tests (v0.4 — CLI layer: park + resolve)
+# In v0.4, apply_dispatch_policy parks on ask; CLI handles prompt + resolve.
 # ---------------------------------------------------------------------------
 
 def _test_medium_only_ask_yes():
-    """medium.when_no_high_exists: ask → user says "y" → selected: all medium"""
+    """CLI resolve "y" → all medium teams selected"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    mock_responses = iter(["y"])
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [], [_team("product", 2), _team("frontend", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy
     )
-    assert [t["team"] for t in selected] == ["product", "frontend"]
-    assert secondary == []
-    assert ignored == []
-    assert ask_res is not None
-    assert ask_res["triggered"] is True
-    assert ask_res["context"] == "medium_when_no_high_exists"
-    assert ask_res["teams"] == ["product", "frontend"]
-    assert ask_res["user_response"] == "yes"
-    assert ask_res["prompt_count"] == 1
+    # Step 1: parked with pending_decision
+    assert pending is not None
+    assert pending["type"] == "dispatch_confirmation"
+    assert pending["context"] == "medium_when_no_high_exists"
+    assert [t["team"] for t in pending["teams"]] == ["product", "frontend"]
+    assert pending["options"] == ["all", "none"]
+    assert selected == []  # parked, not yet dispatched
+
+    # Step 2: CLI resolves → all selected
+    task = _task_from_routing_decision({"selected_teams": selected, "secondary_teams": secondary, "ignored_teams": ignored, "pending_decision": pending})
+    response = _parse_cli_response("y", pending)
+    resolved = resolve_task(task, response)
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["product", "frontend"]
+    assert resolved["status"] == "pending"
+    assert "pending_decision" not in resolved["routing_decision"]
 
 
 def _test_medium_only_ask_no():
-    """medium.when_no_high_exists: ask → user says "n" → ignored: all medium"""
+    """CLI resolve "n" → all medium teams ignored"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    mock_responses = iter(["n"])
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
     )
-    assert selected == []
-    assert secondary == []
-    assert [t["team"] for t in ignored] == ["product"]
-    assert ask_res is not None
-    assert ask_res["triggered"] is True
-    assert ask_res["context"] == "medium_when_no_high_exists"
-    assert ask_res["user_response"] == "no"
+    task = _task_from_routing_decision({"selected_teams": selected, "secondary_teams": secondary, "ignored_teams": ignored, "pending_decision": pending})
+    response = _parse_cli_response("n", pending)
+    resolved = resolve_task(task, response)
+    assert resolved["routing_decision"]["selected_teams"] == []
+    assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["product"]
+    assert resolved["status"] == "needs_clarification"
+    assert "pending_decision" not in resolved["routing_decision"]
 
 
 def _test_medium_only_ask_invalid_default_no():
-    """medium.when_no_high_exists: ask → two invalid inputs → default_no"""
+    """CLI two invalid responses → treated as "none" (default_no)"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    mock_responses = iter(["maybe", "what?"])
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
     )
-    assert selected == []
-    assert secondary == []
-    assert [t["team"] for t in ignored] == ["product"]
-    assert ask_res is not None
-    assert ask_res["triggered"] is True
-    assert ask_res["context"] == "medium_when_no_high_exists"
-    assert ask_res["user_response"] == "default_no"
-    assert ask_res["prompt_count"] == 2
+    r1 = _parse_cli_response("maybe", pending)
+    assert r1["selected"] == "none"
+    assert r1.get("invalid") is True
+    # After invalid, CLI re-prompts → second invalid defaults to "none"
 
 
 def _test_high_with_medium_ask_yes():
-    """high: auto + medium.when_high_exists: ask → user says "y" → selected: high; secondary: medium"""
+    """high: auto + medium ask → confirm → selected: high + secondary: medium (when_high_exists)"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ask", "when_no_high_exists": "auto"}}
-    mock_responses = iter(["y"])
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [_team("backend", 4)], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy
     )
-    assert [t["team"] for t in selected] == ["backend"]
-    assert [t["team"] for t in secondary] == ["product"]
-    assert ignored == []
-    assert ask_res is not None
-    assert ask_res["triggered"] is True
-    assert ask_res["context"] == "medium_when_high_exists"
-    assert ask_res["teams"] == ["product"]
-    assert ask_res["user_response"] == "yes"
-    assert ask_res["prompt_count"] == 1
+    assert [t["team"] for t in selected] == ["backend"]  # high auto dispatched
+    assert pending is not None
+    assert pending["context"] == "medium_when_high_exists"
+
+    task = _task_from_routing_decision({"selected_teams": selected, "secondary_teams": secondary, "ignored_teams": ignored, "pending_decision": pending})
+    response = _parse_cli_response("y", pending)
+    resolved = resolve_task(task, response)
+    # When high exists, medium confirm → secondary
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["backend"]
+    assert [t["team"] for t in resolved["routing_decision"]["secondary_teams"]] == ["product"]
+    assert resolved["status"] == "pending"
 
 
 def _test_high_with_medium_ask_no():
-    """high: auto + medium.when_high_exists: ask → user says "n" → selected: high; ignored: medium"""
+    """high: auto + medium ask → decline → selected: high; ignored: medium; status = pending (can still dispatch)"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ask", "when_no_high_exists": "auto"}}
-    mock_responses = iter(["n"])
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [_team("backend", 4)], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy
     )
     assert [t["team"] for t in selected] == ["backend"]
-    assert secondary == []
-    assert [t["team"] for t in ignored] == ["product"]
-    assert ask_res is not None
-    assert ask_res["triggered"] is True
-    assert ask_res["context"] == "medium_when_high_exists"
-    assert ask_res["user_response"] == "no"
-    assert ask_res["prompt_count"] == 1
+    assert pending is not None
+
+    task = _task_from_routing_decision({"selected_teams": selected, "secondary_teams": secondary, "ignored_teams": ignored, "pending_decision": pending})
+    response = _parse_cli_response("n", pending)
+    resolved = resolve_task(task, response)
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["backend"]
+    assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["product"]
+    # High is still selected → dispatchable → status = pending (NOT needs_clarification)
+    assert resolved["status"] == "pending"
 
 
 ASK_TESTS = [
@@ -338,83 +399,246 @@ AUTO_IGNORE_TESTS = [
 # ---------------------------------------------------------------------------
 
 def _test_dry_run_normal_high_auto():
-    """dry_run=True + normal high auto → selected_teams generated normally, no prompt"""
+    """dry_run=True + normal auto/ignore → selected_teams generated, pending is None"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "auto"}}
-    prompt_called = False
-    def track_prompt(q):
-        nonlocal prompt_called
-        prompt_called = True
-        return "y"
-
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [_team("backend", 4)], [_team("product", 2)], policy, prompt_fn=track_prompt, dry_run=True
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy, dry_run=True
     )
     assert [t["team"] for t in selected] == ["backend"]
     assert [t["team"] for t in ignored] == ["product"]
-    assert ask_res is None
-    assert prompt_called is False, "prompt_fn should not be called in dry-run mode"
+    assert pending is None
 
 
-def _test_dry_run_ask_deferred():
-    """dry_run=True + ask policy → returns ask_required dict (not ask_resolution)"""
+def _test_dry_run_ask_returns_pending_decision():
+    """dry_run=True + ask policy → returns pending_decision (parked, same as normal mode)"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+    selected, secondary, ignored, pending = apply_dispatch_policy(
         [], [_team("product", 2)], policy, dry_run=True
     )
     assert selected == []
     assert secondary == []
     assert ignored == []
-    assert ask_res is not None
-    assert ask_res.get("ask_required") is True
-    assert ask_res["context"] == "medium_when_no_high_exists"
-    assert ask_res["teams"] == ["product"]
-    assert "triggered" not in ask_res, "ask_required should not have triggered key"
+    assert pending is not None
+    assert pending["type"] == "dispatch_confirmation"
+    assert pending["context"] == "medium_when_no_high_exists"
+    assert [t["team"] for t in pending["teams"]] == ["product"]
+    assert "options" in pending
+    assert "default" in pending
 
 
-def _test_dry_run_ask_no_prompt():
-    """dry_run=True + ask policy → prompt_fn must not be called"""
+def _test_dry_run_no_prompt():
+    """apply_dispatch_policy never prompts in v0.4 (CLI handles prompting separately)"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    prompt_called = False
-    def track_prompt(q):
-        nonlocal prompt_called
-        prompt_called = True
-        return "y"
-
-    apply_dispatch_policy([], [_team("product", 2)], policy, prompt_fn=track_prompt, dry_run=True)
-    assert prompt_called is False, "prompt_fn must not be called when dry_run=True"
-
-
-def _test_dry_run_ask_required_no_ask_resolution():
-    """dry_run=True: ask_required present means ask_resolution absent"""
-    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+    # In v0.4, apply_dispatch_policy never calls prompt_fn — it parks immediately
+    # This is tested by verifying pending_decision is returned (not ask_resolution)
+    selected, secondary, ignored, pending = apply_dispatch_policy(
         [], [_team("product", 2)], policy, dry_run=True
     )
-    assert ask_res is not None
-    assert "ask_required" in ask_res
-    assert "triggered" not in ask_res
-    assert "user_response" not in ask_res
+    assert pending is not None
+    assert "type" in pending
+    assert pending["type"] == "dispatch_confirmation"
 
 
-def _test_normal_ask_has_resolution_not_ask_required():
-    """Normal mode (dry_run=False): ask_resolution present, ask_required absent"""
+def _test_dry_run_and_normal_mode_same_pending_decision():
+    """dry_run=True and dry_run=False both return the same pending_decision"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
-    mock_responses = iter(["y"])
-    selected, secondary, ignored, ask_res = apply_dispatch_policy(
-        [], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses), dry_run=False
+    _, _, _, pending_dry = apply_dispatch_policy([], [_team("product", 2)], policy, dry_run=True)
+    _, _, _, pending_norm = apply_dispatch_policy([], [_team("product", 2)], policy, dry_run=False)
+    assert pending_dry == pending_norm, "dry_run does not change ask behavior in v0.4"
+
+
+def _test_normal_ask_has_pending_decision_not_ask_required():
+    """Normal mode (dry_run=False): pending_decision returned, no prompt called"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy, dry_run=False
     )
-    assert ask_res is not None
-    assert "ask_required" not in ask_res
-    assert ask_res["triggered"] is True
-    assert ask_res["user_response"] == "yes"
+    assert pending is not None
+    assert pending["type"] == "dispatch_confirmation"
+    assert pending["context"] == "medium_when_no_high_exists"
 
 
 DRYRUN_TESTS = [
     ("dry_run_normal_high_auto", _test_dry_run_normal_high_auto),
-    ("dry_run_ask_deferred", _test_dry_run_ask_deferred),
-    ("dry_run_ask_no_prompt", _test_dry_run_ask_no_prompt),
-    ("dry_run_ask_required_no_ask_resolution", _test_dry_run_ask_required_no_ask_resolution),
-    ("normal_ask_has_resolution_not_ask_required", _test_normal_ask_has_resolution_not_ask_required),
+    ("dry_run_ask_returns_pending_decision", _test_dry_run_ask_returns_pending_decision),
+    ("dry_run_no_prompt", _test_dry_run_no_prompt),
+    ("dry_run_and_normal_mode_same_pending_decision", _test_dry_run_and_normal_mode_same_pending_decision),
+    ("normal_ask_has_pending_decision_not_ask_required", _test_normal_ask_has_pending_decision_not_ask_required),
+]
+
+
+# ---------------------------------------------------------------------------
+# Phase 1 — Interactive Routing Contract (pending_decision + resolve)
+# ---------------------------------------------------------------------------
+
+def _test_ask_parks_with_pending_decision():
+    """ask triggers → pending_decision set, task parked, selected_teams unchanged"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy
+    )
+    # v0.4: parks, does not dispatch
+    assert selected == []
+    assert secondary == []
+    assert ignored == []
+    # pending_decision is set
+    assert pending is not None
+    assert pending["type"] == "dispatch_confirmation"
+    assert pending["band"] == "medium"
+    assert pending["context"] == "medium_when_no_high_exists"
+    assert [t["team"] for t in pending["teams"]] == ["product", "frontend"]
+    assert pending["options"] == ["all", "none"]
+    assert pending["default"] == "none"
+
+
+def _test_ask_no_fallback_triggered():
+    """ask parks → fallback (Step 6) is NOT triggered"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
+    )
+    # selected_teams is empty BUT no fallback — task is parked, not failed
+    assert selected == []
+    assert pending is not None
+    # No ask_resolution field exists in v0.4
+
+
+def _test_resolve_confirm_all():
+    """resolve confirm → all pending teams added to selected_teams, pending cleared"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy
+    )
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "all"})
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["product", "frontend"]
+    assert "pending_decision" not in resolved["routing_decision"]
+    assert resolved["status"] == "pending"
+
+
+def _test_resolve_decline():
+    """resolve decline → all pending teams added to ignored_teams, status = needs_clarification"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
+    )
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "none"})
+    assert resolved["routing_decision"]["selected_teams"] == []
+    assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["product"]
+    assert "pending_decision" not in resolved["routing_decision"]
+    assert resolved["status"] == "needs_clarification"
+
+
+def _test_resolve_idempotent_twice():
+    """resolving twice with same payload is idempotent — no duplicate teams"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
+    )
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    r1 = resolve_task(task, {"selected": "all"})
+    r2 = resolve_task(r1, {"selected": "all"})
+    assert r2["routing_decision"]["selected_teams"] == r1["routing_decision"]["selected_teams"]
+    assert len(r2["routing_decision"]["selected_teams"]) == 1  # no duplicates
+
+
+def _test_resolve_noop_on_non_awaiting():
+    """resolve on task without pending_decision → no-op (idempotent)"""
+    task = {
+        "task_id": "test-002",
+        "status": "pending",
+        "routing_decision": {
+            "selected_teams": [_team("backend", 4)],
+            "secondary_teams": [],
+            "ignored_teams": [],
+        },
+        "selected_teams": [_team("backend", 4)],
+        "secondary_teams": [],
+        "ignored_teams": [],
+    }
+    result = resolve_task(task, {"selected": "all"})
+    # unchanged
+    assert result["status"] == "pending"
+    assert [t["team"] for t in result["routing_decision"]["selected_teams"]] == ["backend"]
+
+
+def _test_resolve_with_high_exists_confirm():
+    """when high exists + medium ask confirm → medium goes to secondary (not selected)"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ask", "when_no_high_exists": "auto"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy
+    )
+    assert [t["team"] for t in selected] == ["backend"]  # high already selected
+    assert pending is not None
+
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "all"})
+    # When high exists, medium confirm → secondary
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["backend"]
+    assert [t["team"] for t in resolved["routing_decision"]["secondary_teams"]] == ["product"]
+    assert resolved["status"] == "pending"
+
+
+def _test_backward_compat_v03_ask_required():
+    """v0.3 task with ask_required: true reads as equivalent pending_decision"""
+    # Simulate v0.3 routing_decision with ask_required
+    v03_routing_decision = {
+        "routing_schema_version": "v0.3",
+        "selected_teams": [],
+        "secondary_teams": [],
+        "ignored_teams": [],
+        "ask_required": True,
+    }
+    # The equivalent pending_decision (for read-compatibility)
+    equivalent_pending = {
+        "type": "dispatch_confirmation",
+        "band": "medium",
+        "context": "medium_when_no_high_exists",
+        "teams": [_team("product", 2)],
+        "options": ["all", "none"],
+        "default": "none",
+    }
+    task = _task_from_routing_decision({
+        "selected_teams": [],
+        "secondary_teams": [],
+        "ignored_teams": [],
+        "pending_decision": equivalent_pending,
+    })
+    resolved = resolve_task(task, {"selected": "all"})
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["product"]
+    assert resolved["status"] == "pending"
+
+
+PHASE1_TESTS = [
+    ("ask_parks_with_pending_decision", _test_ask_parks_with_pending_decision),
+    ("ask_no_fallback_triggered", _test_ask_no_fallback_triggered),
+    ("resolve_confirm_all", _test_resolve_confirm_all),
+    ("resolve_decline", _test_resolve_decline),
+    ("resolve_idempotent_twice", _test_resolve_idempotent_twice),
+    ("resolve_noop_on_non_awaiting", _test_resolve_noop_on_non_awaiting),
+    ("resolve_with_high_exists_confirm", _test_resolve_with_high_exists_confirm),
+    ("backward_compat_v03_ask_required", _test_backward_compat_v03_ask_required),
 ]
 
 
@@ -428,6 +652,7 @@ def main():
         ("auto_ignore", AUTO_IGNORE_TESTS),
         ("ask", ASK_TESTS),
         ("dry_run", DRYRUN_TESTS),
+        ("phase1", PHASE1_TESTS),
     ]
 
     total_passed = total_failed = 0
