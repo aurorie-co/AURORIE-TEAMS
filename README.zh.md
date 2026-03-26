@@ -4,11 +4,13 @@
 
 **一条命令。真实产出文件。可恢复的执行。**
 
-```
+```bash
 @orchestrator "Build a SaaS for AI agents marketplace"
 ```
 
-⚡ 34 个 Agent · 10 个团队 · 1 个 Orchestrator · 100 tests green
+---
+
+### [34 个 Agent](#系统模型) · [10 个团队](#系统模型) · [1 个 Orchestrator](#orchestrator) · [100 tests green](#测试)
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
 ![Version](https://img.shields.io/badge/version-v0.6.0-blue?style=flat-square)
@@ -40,19 +42,27 @@
 
 ## 一个完整流程
 
-```
+```bash
 @orchestrator "Build a SaaS for AI agents marketplace"
 ```
 
 **Step 1 — 路由决策**
+
+```
 → backend (high, score 4) → selected
 → product (medium, score 2) → secondary
 → frontend (medium, score 1) → secondary
+```
 
 **Step 2 — 决策策略**
-→ `dispatch_policy.medium.when_high_exists: ignore` — secondary 团队被忽略
+
+```
+→ dispatch_policy.medium.when_high_exists: ignore
+   secondary 团队被忽略
+```
 
 **Step 3 — Wave 执行**
+
 ```
 Wave 1: [product-1]     → done          10:01:01
 Wave 2: [backend-1]     → done          10:02:33
@@ -60,16 +70,17 @@ Wave 3: [frontend-1]   → completed      10:04:12
 ```
 
 **输出：**
+
 ```
 .claude/workspace/
 ├── tasks/<task-id>.json       # routing + execution graph + milestone ref
 └── artifacts/
     ├── product/<task-id>/     # prd.md + summary.md
-    ├── backend/<task-id>/    # implementation + summary.md
+    ├── backend/<task-id>/     # implementation + summary.md
     └── frontend/<task-id>/    # implementation + summary.md
 ```
 
-**不是一次性的。** 某处失败了，resume 而不是 restart。
+> **不是一次性的。** 某处失败了，resume 而不是 restart。
 
 ---
 
@@ -78,25 +89,33 @@ Wave 3: [frontend-1]   → completed      10:04:12
 AURORIE TEAMS 是一个交互式运行时。每种模式都是对同一执行状态的不同操作方式。
 
 ### `@orchestrator "prompt"` — 正常执行
+
 完整路由 + 派发。团队写入 artifacts。Graph 被构建和追踪。
 
 ### `@orchestrator --debug "prompt"` — 查看完整 trace
+
 每个分数、每个评估、每个置信度区间。在任何事运行之前，你能看到系统决定了什么、为什么。
 
 ### `@orchestrator --dry-run "prompt"` — 预览，不产生副作用
+
 计算路由决策、查看执行图——但不派发任何团队。和 `--debug` 组合使用可以完整预览。
 
 ### `@orchestrator --milestone "Launch SaaS" "prompt"` — 跨任务追踪
+
 将任务归入一个共享目标。用 `--milestone-status <id>` 查询聚合进度。状态汇总规则：`partial_failed > in_progress > completed > pending`。
 
 ### `@orchestrator --resolve <task-id> all|none|selective` — 解决暂停的决策
+
 当任务暂停等待确认时，解决它——全部批准、全部拒绝、或选择性选择团队。幂等操作。
 
 ### `@orchestrator --replay <task-id>` — 检查历史执行（只读）
+
 查看任何历史任务的路由决策、wave 时间线、节点状态、milestone 引用。无状态变更。
 
 ### `@orchestrator --resume <task-id>` — 从中断处继续
+
 从部分状态继续 DAG。三条路径：
+
 - **`in_progress`** — 从当前 wave 继续
 - **`partial_failed`** — 仅重试失败的节点（done/blocked 不受影响）
 - **`blocked`** — 重新检查 `artifacts_in`，仅解除已有 artifacts 的节点
@@ -118,31 +137,36 @@ User Request → Orchestrator → Teams → Agents → Artifacts
 ```
 
 ### Orchestrator
+
 读取 `.claude/routing.json`。对每条团队规则打分。构建执行图。驱动派发。
 
 ### Teams（10 个领域）
+
 每个团队是自包含单元：agents、workflows、skills、MCP 工具访问。
 
-| 团队 | 专注领域 |
-|------|---------|
-| market | SEO、内容、Analytics |
-| product | PM、UX、研究 |
-| backend | 服务、数据层 |
-| frontend | UI、React |
-| infra | 部署、DevOps |
-| data | 分析、数据管道 |
-| design | 视觉、UX |
-| mobile | iOS、Android |
-| support | 帮助、文档 |
-| research | 市场、竞品 |
+| 团队      | 专注领域                   |
+|-----------|--------------------------|
+| market    | SEO、内容、Analytics     |
+| product   | PM、UX、研究              |
+| backend   | 服务、数据层              |
+| frontend  | UI、React                 |
+| infra     | 部署、DevOps              |
+| data      | 分析、数据管道            |
+| design    | 视觉、UX                  |
+| mobile    | iOS、Android              |
+| support   | 帮助、文档                |
+| research  | 市场、竞品                |
 
 ### 执行图
+
 基于 wave 的 DAG。依赖关系显式声明。节点在同一 wave 内并行运行。部分失败被隔离且可恢复。
 
 ### Artifacts
+
 每个团队将结构化输出写入 `.claude/workspace/artifacts/<team>/<task-id>/`。每个任务有独立 UUID 文件夹——产出文件不会相互覆盖。
 
 ### Milestones
+
 跨任务的持久协调层。任务在创建时附着到 milestone。Milestone 状态从所有附着任务聚合而来——不是控制信号。
 
 ---
@@ -155,15 +179,16 @@ cd /path/to/your-project
 /tmp/aurorie-teams/install.sh
 ```
 
-然后：
+然后运行：
 
-```
+```bash
 @orchestrator "Build me a SaaS product from scratch"
 ```
 
 **环境要求：** macOS 或 Linux · `jq` · `uuidgen` 或 `python3` · Node.js
 
 **升级：**
+
 ```bash
 git -C /tmp/aurorie-teams pull && /tmp/aurorie-teams/install.sh
 ```
@@ -172,38 +197,44 @@ git -C /tmp/aurorie-teams pull && /tmp/aurorie-teams/install.sh
 
 ## 试试看
 
-### 构建产品 ⭐
-```
+### 构建产品
+
+```bash
 @orchestrator "Create a SaaS for AI agents marketplace"
 ```
-→ Product + Backend + Frontend → PRD、实现、UI
+
+Product + Backend + Frontend → PRD、实现、UI
 
 ### 分析与调研
-```
+
+```bash
 @orchestrator "Investigate why our DAU dropped 30% last week"
 ```
-→ Data + Research → 分析报告
+
+Data + Research → 分析报告
 
 ### 协调多任务目标
-```
+
+```bash
 @orchestrator --milestone "Launch v1.0" "Build a crypto trading platform"
 ```
-→ 第一个任务附着到 milestone → `--milestone-status <id>` 追踪所有后续任务进度
+
+第一个任务附着到 milestone → `--milestone-status <id>` 追踪所有后续任务进度
 
 ---
 
 ## 自定义
 
-| 定制内容 | 路径 |
-|---------|------|
-| 团队路由规则 | `.claude/routing.json` |
-| 派发策略（auto/ask/ignore） | `.claude/routing.json` → `dispatch_policy` |
-| 团队工作流 | `.claude/workflows/<team>.md` |
-| Agent 工具权限 | `.claude/settings.json` |
+| 定制内容                     | 路径                                  |
+|----------------------------|---------------------------------------|
+| 团队路由规则                 | `.claude/routing.json`                |
+| 派发策略（auto/ask/ignore）  | `.claude/routing.json` → `dispatch_policy` |
+| 团队工作流                   | `.claude/workflows/<team>.md`          |
+| Agent 工具权限              | `.claude/settings.json`                |
 
 ---
 
-## ⚠️ 安全
+## 安全
 
 - **Agent 只生成输出——不主动执行外部操作，除非你接入它们。**
   默认行为是将文件写入 `.claude/workspace/artifacts/`。
@@ -217,7 +248,7 @@ git -C /tmp/aurorie-teams pull && /tmp/aurorie-teams/install.sh
 
 **113/113 tests green** — 每次提交都绿。
 
-```
+```bash
 bash tests/install.test.sh && bash tests/lint.test.sh
 python3 tests/routing/test_routing_cases.py
 python3 tests/routing/test_dispatch_policy.py
@@ -228,22 +259,26 @@ python3 tests/routing/test_replay_resume.py
 
 ## 路线图
 
-**v0.6 — 持久化执行运行时**（当前版本）
+### v0.6 — 持久化执行运行时（当前版本）
+
 - [x] Replay — 只读执行检查
 - [x] Resume — 从部分状态继续 DAG
 - [x] 状态优先级不变式 — `pending_decision` 始终阻止 resume
 - [x] 局部失败恢复 — 仅 failed 节点重置
 - [x] 阻塞节点恢复 — unblock 前重新检查 `artifacts_in`
 
-**v0.5 — 目标导向协调运行时**
+### v0.5 — 目标导向协调运行时
+
 - [x] Milestone 系统 — 跨任务追踪和聚合
 - [x] 选择性路由 — 选择性批准部分 medium 团队
 
-**v0.4 — 交互路由合约 + DAG 执行**
+### v0.4 — 交互路由合约 + DAG 执行
+
 - [x] `pending_decision` schema + resolve 接口
 - [x] 基于 wave 的 DAG 派发、并行节点、部分失败
 
-**长期 — AI 原生公司**
+### 长期 — AI 原生公司
+
 - [ ] 可观测性控制台
 - [ ] 自动重试
 - [ ] 跨任务 resume
