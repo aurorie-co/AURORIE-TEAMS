@@ -1,10 +1,14 @@
 # AURORIE TEAMS
 
-> 60 秒内，将 Claude Code 变成一支全功能 AI 创业团队——并产出真实文件。
+> 一个交互式的、图感知的 AI 团队编排运行时——为构建者、创始人和高级用户而生。
 
-⚡ 34 个 Agent · 10 个团队 · 1 个 Orchestrator
-⚡ 即插即用的 AI 工作流，面向真实执行场景
-⚡ 为构建者、创始人和高级用户而生
+**一条命令。真实产出文件。可恢复的执行。**
+
+```
+@orchestrator "Build a SaaS for AI agents marketplace"
+```
+
+⚡ 34 个 Agent · 10 个团队 · 1 个 Orchestrator · 100 tests green
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
 ![Version](https://img.shields.io/badge/version-v0.6.0-blue?style=flat-square)
@@ -16,23 +20,134 @@
 
 ---
 
-- [60 秒安装](#60-秒安装)
-- [实际效果](#-实际效果)
-- [工作原理](#-工作原理)
-- [为什么不直接用 ChatGPT？](#-为什么不直接用-chatgpt)
-- [智能路由](#-智能路由)
-- [系统架构](#-系统架构)
-- [安装](#-安装)
-- [试试这些 prompt](#-试试这些-prompt)
-- [自定义](#-自定义)
-- [安全说明](#️-安全说明)
-- [路线图](#-路线图)
-- [参与贡献](#-参与贡献)
-- [测试](#测试)
+## 和别的 agent 系统有什么不同
+
+大多数 agent 系统跑完就忘。AURORIE TEAMS 把每次执行都当作一等公民——可解释、可恢复。
+
+### 先决策，再执行
+
+系统在做任何事之前，先决定*做什么*和*为什么这么做*。每条路由决策都有分数、可解释、可编程——不是黑盒。每次你都能看到哪些团队被选中、哪些是次要、为什么。
+
+### 图感知执行
+
+团队不是扁平的并行执行——基于 wave 的 DAG 决定执行顺序。依赖关系被显式表达，独立节点并行运行，部分失败被隔离。不会盲目跑。
+
+### 跨任务协调
+
+一个任务是一个 milestone。跨任务、跨 graph、跨时间追踪进度。中断了？从断点继续。想回看？Replay 检查任何历史执行。系统有记忆。
 
 ---
 
-## 60 秒安装
+## 一个完整流程
+
+```
+@orchestrator "Build a SaaS for AI agents marketplace"
+```
+
+**Step 1 — 路由决策**
+→ backend (high, score 4) → selected
+→ product (medium, score 2) → secondary
+→ frontend (medium, score 1) → secondary
+
+**Step 2 — 决策策略**
+→ `dispatch_policy.medium.when_high_exists: ignore` — secondary 团队被忽略
+
+**Step 3 — Wave 执行**
+```
+Wave 1: [product-1]     → done          10:01:01
+Wave 2: [backend-1]     → done          10:02:33
+Wave 3: [frontend-1]   → completed      10:04:12
+```
+
+**输出：**
+```
+.claude/workspace/
+├── tasks/<task-id>.json       # routing + execution graph + milestone ref
+└── artifacts/
+    ├── product/<task-id>/     # prd.md + summary.md
+    ├── backend/<task-id>/    # implementation + summary.md
+    └── frontend/<task-id>/    # implementation + summary.md
+```
+
+**不是一次性的。** 某处失败了，resume 而不是 restart。
+
+---
+
+## 运行时模式
+
+AURORIE TEAMS 是一个交互式运行时。每种模式都是对同一执行状态的不同操作方式。
+
+### `@orchestrator "prompt"` — 正常执行
+完整路由 + 派发。团队写入 artifacts。Graph 被构建和追踪。
+
+### `@orchestrator --debug "prompt"` — 查看完整 trace
+每个分数、每个评估、每个置信度区间。在任何事运行之前，你能看到系统决定了什么、为什么。
+
+### `@orchestrator --dry-run "prompt"` — 预览，不产生副作用
+计算路由决策、查看执行图——但不派发任何团队。和 `--debug` 组合使用可以完整预览。
+
+### `@orchestrator --milestone "Launch SaaS" "prompt"` — 跨任务追踪
+将任务归入一个共享目标。用 `--milestone-status <id>` 查询聚合进度。状态汇总规则：`partial_failed > in_progress > completed > pending`。
+
+### `@orchestrator --resolve <task-id> all|none|selective` — 解决暂停的决策
+当任务暂停等待确认时，解决它——全部批准、全部拒绝、或选择性选择团队。幂等操作。
+
+### `@orchestrator --replay <task-id>` — 检查历史执行（只读）
+查看任何历史任务的路由决策、wave 时间线、节点状态、milestone 引用。无状态变更。
+
+### `@orchestrator --resume <task-id>` — 从中断处继续
+从部分状态继续 DAG。三条路径：
+- **`in_progress`** — 从当前 wave 继续
+- **`partial_failed`** — 仅重试失败的节点（done/blocked 不受影响）
+- **`blocked`** — 重新检查 `artifacts_in`，仅解除已有 artifacts 的节点
+
+每条 resume 路径在变更状态前都会提示确认。
+
+---
+
+## 系统模型
+
+```
+User Request → Orchestrator → Teams → Agents → Artifacts
+                    ↓
+              routing_decision (who + why)
+                    ↓
+              execution_graph (DAG + waves)
+                    ↓
+              milestone (cross-task coordination)
+```
+
+### Orchestrator
+读取 `.claude/routing.json`。对每条团队规则打分。构建执行图。驱动派发。
+
+### Teams（10 个领域）
+每个团队是自包含单元：agents、workflows、skills、MCP 工具访问。
+
+| 团队 | 专注领域 |
+|------|---------|
+| market | SEO、内容、Analytics |
+| product | PM、UX、研究 |
+| backend | 服务、数据层 |
+| frontend | UI、React |
+| infra | 部署、DevOps |
+| data | 分析、数据管道 |
+| design | 视觉、UX |
+| mobile | iOS、Android |
+| support | 帮助、文档 |
+| research | 市场、竞品 |
+
+### 执行图
+基于 wave 的 DAG。依赖关系显式声明。节点在同一 wave 内并行运行。部分失败被隔离且可恢复。
+
+### Artifacts
+每个团队将结构化输出写入 `.claude/workspace/artifacts/<team>/<task-id>/`。每个任务有独立 UUID 文件夹——产出文件不会相互覆盖。
+
+### Milestones
+跨任务的持久协调层。任务在创建时附着到 milestone。Milestone 状态从所有附着任务聚合而来——不是控制信号。
+
+---
+
+## 安装
 
 ```bash
 git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
@@ -40,599 +155,104 @@ cd /path/to/your-project
 /tmp/aurorie-teams/install.sh
 ```
 
-然后直接说：
+然后：
 
 ```
 @orchestrator "Build me a SaaS product from scratch"
 ```
 
-_（orchestrator 会读取 `.claude/routing.json` 自动分派团队）_
+**环境要求：** macOS 或 Linux · `jq` · `uuidgen` 或 `python3` · Node.js
 
-直接说你的任务——系统会自动路由到正确的团队。
-
----
-
-## 🎬 实际效果
-
-### 输入
-
-```
-@orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
-```
-
-### 内部流程
-
-1. Orchestrator 分析意图
-2. 选择相关团队：
-   - Product Team（需求）
-   - Backend Team（服务与数据层）
-   - Frontend Team（UI）
-   - Mobile Team（App 结构）
-3. 每个团队执行其工作流
-4. 输出写入结构化产出文件
-
-### 输出
-
-```
-.claude/workspace/
-├── tasks/
-│   └── <task-id>.json
-└── artifacts/
-    ├── product/<task-id>/
-    │   ├── prd.md
-    │   └── summary.md
-    ├── backend/<task-id>/
-    │   ├── backend-implementation.md
-    │   └── summary.md
-    ├── frontend/<task-id>/
-    │   ├── frontend-implementation.md
-    │   └── summary.md
-    └── mobile/<task-id>/
-        ├── ios-implementation.md
-        └── summary.md
-```
-
-每个任务有独立的文件夹（UUID），产出文件不会相互覆盖。
-
-💡 你刚刚在几秒内完成了从想法到结构化执行计划的全过程。
-
-每个文件都是可复用的产出物——不只是一段对话回复。
-
----
-
-## 🧩 工作原理
-
-你不需要直接操控 Agent——系统会替你完成这一切：
-
-```mermaid
-graph TD
-    U([User Request]) --> O[Orchestrator]
-    O --> T1[Product Team]
-    O --> T2[Backend Team]
-    O --> T3[Frontend Team]
-    O --> T4[Mobile Team]
-    O --> T5[Data Team]
-    O --> T6[... 5 more teams]
-
-    style O fill:#1a1a2e,color:#fff,stroke:#4a4a8a
-    style U fill:#16213e,color:#fff,stroke:#4a4a8a
-```
-
-三层架构：
-
-1. **Orchestrator** — 将请求路由到正确的团队
-2. **Teams（10 个领域）** — 每个团队专注于一个职能
-3. **Agents（共 34 个）** — 每个 Agent 按定义的工作流执行具体任务
-
-> ChatGPT → 一个聪明的人
-> AURORIE TEAMS → 一整家公司协同工作
-
-_想看完整系统架构？→ 查看下方[系统架构](#-系统架构)。_
-
----
-
-## ⚡ 为什么不直接用 ChatGPT？
-
-因为真实工作不是单步的。
-
-| ChatGPT | AURORIE TEAMS |
-|---------|---------------|
-| 一个回答 | 多步执行 |
-| 通才 | 专业团队 |
-| 临时输出 | 结构化产出文件 |
-| 手动思考 | 自动编排 |
-
-你不需要一个答案。
-你需要一支能执行的团队。
-
-准备好试试了吗？↓
-
----
-
-## 🧠 智能路由
-
-每次路由决策都是可解释的——不是黑箱。
-
-系统对每条团队规则进行打分：
-- **+1**：每个 `positive_keywords` 命中
-- **−2**：每个 `negative_keywords` 命中（强排除信号）
-
-分数映射到置信度区间：
-- **high**（≥ 3）→ 直接派发为主团队
-- **medium**（≥ 1）→ 无 high 团队时作为主团队，否则作为"次要相关"展示
-- **low / filtered**（< 1）→ 过滤掉，不派发
-
-示例：
-
-```
-"Add a REST endpoint for user authentication with JWT"
-→ backend: score 4, high → selected
-→ product: score 1, medium → secondary（不派发）
-→ market:  score -1, low  → filtered
-
-"Build a SaaS platform with user requirements and API endpoints"
-→ backend:   score 4, high   → selected
-→ product:   score 2, medium → secondary
-→ frontend:  score 1, medium → secondary
-→ 其余团队:  low             → filtered
-```
-
-路由在规则层面是确定性的，在系统层面是自适应的。
-
-你可以在 `.claude/routing.json` 中自定义路由规则，`routing_policy` 区块控制阈值。
-
-### 调试路由决策
-
-在任何 orchestrator 调用中加上 `--debug`，即可看到完整的路由过程：
-
-```
-@orchestrator --debug "Build a SaaS platform with user requirements and API endpoints"
-```
-
-输出示例：
-
-```
-=== ROUTING DEBUG ===
-
-Policy:
-- candidate_threshold: 1
-- confidence.high: 3
-- confidence.medium: 1
-- dispatch_policy.high: auto
-- dispatch_policy.medium.when_high_exists: ignore
-- dispatch_policy.medium.when_no_high_exists: auto
-- dispatch_strategy: conditional
-
-Evaluations:
-backend: score 4, high → selected
-  + API, endpoint, SaaS, platform
-  - (none)
-product: score 2, medium → secondary
-  + requirements, SaaS
-  - (none)
-market: score -1, low → filtered
-  + (none)
-  - iOS
-
-Dispatch:
-  Selected:  backend
-  Secondary: product, frontend
-  Ignored:   (none)
-  Filtered:  market, mobile, data, ...
-
-=== END ROUTING DEBUG ===
-```
-
-当触发 `ask` 模式时，还会额外显示 `Ask` 块，包含确认的团队和用户响应。
-
-Debug 输出是 `routing_decision` 的纯投影——不会改变派发行为。
-
----
-
-## 🕸 执行图（Execution Graph）
-
-选中的团队并非总是扁平并行执行——v0.4 构建执行图，使团队按依赖顺序执行，独立节点并行运行。
-
-**图模板（严格优先级，逐级匹配）：**
-
-| 优先级 | 条件 | 模板 |
-|--------|------|------|
-| 1 | `data` 在选中团队中 | 数据优先链 |
-| 2 | `research` 选中且无 `product` | 研究分支扇出 |
-| 3 | `backend` 或 `frontend` 选中 | 线性流水线 |
-| 4 | fallback | 扁平并行 |
-
-**线性流水线示例** — `product → backend → frontend`：
-
-```
-Wave 1: product（立即就绪）
-Wave 2: backend（product 完成后解锁）
-Wave 3: frontend（backend 完成后解锁）
-```
-
-**研究分支** — `research → [backend, frontend]` 在 research 完成后并行执行。
-
-**图运行时状态：** `pending` → `in_progress` → `completed` | `partial_failed`
-
-图存储在任务 JSON 中（`routing_decision.execution_graph`）——不仅是执行计划，更是贯穿执行全过程的运行时对象。
-
----
-
-## 🎯 Milestone — 跨任务协调层
-
-v0.5 引入 milestone 作为跨任务的持久协调层，追踪跨 task、跨 graph、跨时间的目标进度。
-
-**CLI：**
-
-```
-@orchestrator --milestone "Launch SaaS" "Build a crypto trading platform"
-@orchestrator --milestone-status ms_abc123
-```
-
-**功能：**
-
-- `--milestone "Title" "prompt"` — 将任务归入一个目标组。任务正常执行（routing + dispatch 不变），但附带 milestone 标签。Milestone 文件保存在 `.claude/workspace/milestones/<id>.json`。
-- `--milestone-status <id>` — 查询 milestone，聚合所有已附着的任务状态，输出摘要：
-
-```
-Milestone: Launch SaaS (ms_abc123)
-Status: in_progress
-Tasks: 3 total
-  - completed: 1
-  - in_progress: 1
-  - pending: 1
-```
-
-**状态聚合规则**（优先级）：
-`partial_failed` > `in_progress` > `completed` > `pending`
-
-**关键属性：**
-
-| 属性 | 值 |
-|------|-----|
-| Schema | `.claude/workspace/milestones/<id>.json` |
-| Task 引用 | `{milestone_id, title}` 嵌入 task JSON |
-| 追加写入 | 任务只能添加，不能移除 |
-| 对路由的影响 | 无 — milestone 是协调标签，不是路由信号 |
-| 状态触发时机 | Task 创建时、`--milestone-status` 查询时 |
-
----
-
-## 🏗 系统架构
-
-完整系统如下：
-
-```mermaid
-graph TD
-    U([User Request]) --> O[orchestrator<br/>reads routing.json]
-    O --> ML[market-lead]
-    O --> PL[product-lead]
-    O --> RL[research-lead]
-    O --> SL[support-lead]
-    O --> FL[frontend-lead]
-    O --> BL[backend-lead]
-    O --> IL[infra-lead]
-    O --> DL[design-lead]
-    O --> DAL[data-lead]
-    O --> MOL[mobile-lead]
-
-    ML --> MS1[seo]
-    ML --> MS2[content]
-    ML --> MS3[analytics]
-
-    PL --> PS1[pm]
-    PL --> PS2[ux]
-    PL --> PS3[researcher]
-
-    FL --> FS1[developer]
-    FL --> FS2[qa]
-    FL --> FS3[devops]
-
-    MS2 --> A1[(artifact)]
-    PS1 --> A2[(artifact)]
-    FS1 --> A3[(artifact)]
-
-    style O fill:#1a1a2e,color:#fff,stroke:#4a4a8a
-    style U fill:#16213e,color:#fff,stroke:#4a4a8a
-```
-
-每个团队包含：
-- Agents（具有明确角色的 specialist）
-- Workflows（逐步执行指南）
-- Skills（可复用任务模块）
-- MCP integrations（每个团队的工具访问权限）
-
----
-
-## 🛠 安装
-
-环境要求：macOS 或 Linux（bash 3.2+）· `jq` · `uuidgen` 或 `python3` · Node.js
-
+**升级：**
 ```bash
-# 1. 克隆库
-git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
-
-# 2. 安装到你的项目
-cd /path/to/your-project
-/tmp/aurorie-teams/install.sh
-
-# 3. 添加 API 密钥（可选但推荐）
-export GITHUB_TOKEN=...
-export EXA_API_KEY=...
-export FIRECRAWL_API_KEY=...
-export POSTGRES_URL=...
-
-# 4. 验证
-# 在 Claude Code 中：@orchestrator "Test the system"
-# 你应该能看到路由 + 任务输出。
-```
-
-完成 ✅ 你的 Claude Code 现在已经是一支 AI 创业团队了。
-
-### 安装参数
-
-```
---force-workflows   覆盖本地已修改的 workflow 和 routing 文件
---yes               跳过所有确认提示
---detect-orphans    检测已不在仓库中的过时 agent/skill 文件
-```
-
-### 升级
-
-```bash
-git -C /tmp/aurorie-teams pull
-cd /path/to/your-project && /tmp/aurorie-teams/install.sh
+git -C /tmp/aurorie-teams pull && /tmp/aurorie-teams/install.sh
 ```
 
 ---
 
-## 🧪 试试这些 prompt
+## 试试看
 
-每个 prompt 都会触发不同的团队工作流——试一个，看看系统如何运转。
-
-### 构建产品 ⭐ 初次运行首选
-
+### 构建产品 ⭐
 ```
 @orchestrator "Create a SaaS for AI agents marketplace"
 ```
+→ Product + Backend + Frontend → PRD、实现、UI
 
-触发团队：
-- Product Team
-- Backend Team
-- Frontend Team
-
-输出：
-```
-.claude/workspace/artifacts/product/<task-id>/prd.md
-.claude/workspace/artifacts/product/<task-id>/summary.md
-.claude/workspace/artifacts/backend/<task-id>/backend-implementation.md
-.claude/workspace/artifacts/backend/<task-id>/summary.md
-.claude/workspace/artifacts/frontend/<task-id>/frontend-implementation.md
-.claude/workspace/artifacts/frontend/<task-id>/summary.md
-```
-
-复制并运行——你会得到真实的产出文件。
-
----
-
-### 分析数据
-
+### 分析与调研
 ```
 @orchestrator "Investigate why our DAU dropped 30% last week"
 ```
+→ Data + Research → 分析报告
 
-触发团队：
-- Data Team
-- Research Team
-
-输出：
+### 协调多任务目标
 ```
-.claude/workspace/artifacts/data/<task-id>/analysis.md
-.claude/workspace/artifacts/data/<task-id>/summary.md
-.claude/workspace/artifacts/research/<task-id>/research-report.md
-.claude/workspace/artifacts/research/<task-id>/summary.md
+@orchestrator --milestone "Launch v1.0" "Build a crypto trading platform"
 ```
-
-复制并运行——你会得到真实的产出文件。
+→ 第一个任务附着到 milestone → `--milestone-status <id>` 追踪所有后续任务进度
 
 ---
 
-### 构建 App
+## 自定义
 
-```
-@orchestrator "Design a mobile app for habit tracking with iOS and Android support"
-```
-
-触发团队：
-- Mobile Team
-- Product Team
-
-输出：
-```
-.claude/workspace/artifacts/mobile/<task-id>/ios-implementation.md
-.claude/workspace/artifacts/mobile/<task-id>/android-implementation.md
-.claude/workspace/artifacts/mobile/<task-id>/summary.md
-.claude/workspace/artifacts/product/<task-id>/prd.md
-.claude/workspace/artifacts/product/<task-id>/summary.md
-```
-
-复制并运行——你会得到真实的产出文件。
+| 定制内容 | 路径 |
+|---------|------|
+| 团队路由规则 | `.claude/routing.json` |
+| 派发策略（auto/ask/ignore） | `.claude/routing.json` → `dispatch_policy` |
+| 团队工作流 | `.claude/workflows/<team>.md` |
+| Agent 工具权限 | `.claude/settings.json` |
 
 ---
 
-### 市场调研
+## ⚠️ 安全
 
-```
-@orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
-```
-
-触发团队：
-- Research Team
-
-输出：
-```
-.claude/workspace/artifacts/research/<task-id>/comparison-matrix.md
-.claude/workspace/artifacts/research/<task-id>/summary.md
-```
-
-复制并运行——你会得到真实的产出文件。
-
----
-
-### 构建交易系统
-
-```
-@orchestrator "Build a crypto SaaS with real-time price feeds, portfolio analytics, and a React dashboard"
-```
-
-触发团队：
-- Product Team
-- Backend Team
-- Frontend Team
-- Data Team
-
-输出：
-```
-.claude/workspace/artifacts/product/<task-id>/prd.md
-.claude/workspace/artifacts/product/<task-id>/summary.md
-.claude/workspace/artifacts/backend/<task-id>/backend-implementation.md
-.claude/workspace/artifacts/backend/<task-id>/summary.md
-.claude/workspace/artifacts/frontend/<task-id>/frontend-implementation.md
-.claude/workspace/artifacts/frontend/<task-id>/summary.md
-.claude/workspace/artifacts/data/<task-id>/report-spec.md
-.claude/workspace/artifacts/data/<task-id>/summary.md
-```
-
-复制并运行——你会得到真实的产出文件。
-
----
-
-## 🔧 自定义
-
-### 自定义行为
-编辑 `.claude/workflows/<team>.md`，修改团队的运作方式。
-
-### 自定义智能
-编辑 `.claude/routing.json`——v2 schema 每条规则支持 `positive_keywords`（+1）、`negative_keywords`（−2）和 `example_requests`。
-
-### 自定义工具
-通过 `.claude/settings.json` 扩展 MCP 集成。
-
----
-
-## ⚠️ 安全说明
-
-尽量使用只读凭证。在执行任何操作前，请先审阅生成的产出文件。
-
-### 详情
-
-- **Agent 只生成输出——除非你主动触发，否则不会执行任何外部操作。**
-  Agent 将文件写入 `.claude/workspace/artifacts/`。它们不会调用外部 API、
-  运行 shell 命令或修改数据库，除非你明确接入这些能力。
-  **默认行为是本地文件生成，输出目录为 `.claude/workspace/artifacts/`。**
-- **没有你的确认，什么都不会执行。**
-- 初始设置阶段，避免在生产系统上运行。
-- 查看 `.claude/settings.json` 了解并控制每个 Agent 的工具访问权限。
-
----
-
-## 🗺 路线图
-
-我们在构建 AI 公司操作系统。
-
-**v0.1 — 基础能力**
-- [x] 10 个专业团队，34 个 Agent
-- [x] 正负分值 v2 路由
-- [x] Lint + install 测试套件
-
-**v0.2 — 可观测路由**
-- [x] 置信度路由（high / medium / filtered）
-- [x] 路由测试套件——5 个回归 case，集成 CI
-- [x] `--debug` flag——在终端输出完整的逐团队路由详情
-
-**v0.3 — 可控执行**
-- [x] `dispatch_policy` 配置——routing.json 中按置信度控制派发行为
-- [x] `normalize_dispatch_policy`——纯函数，用 v0.2 等价默认值填充缺失键
-- [x] `apply_dispatch_policy`——Step 5.5 执行：auto / ignore / ask 三种模式
-- [x] Ask mode MVP——medium 置信度团队派发前交互确认（每轮最多一次）
-- [x] Dispatch policy 测试套件——47 个 case：normalize、auto/ignore、ask、dry-run、phase1、graph
-- [x] `--dry-run` flag——计算路由但不派发团队
-- [x] `--debug --dry-run` 组合模式
-
-**v0.4 — 交互路由 + DAG 执行**
-- [x] `pending_decision` schema——替换 `ask_required: true`
-- [x] `awaiting_dispatch_decision` 任务状态
-- [x] Resolve 接口：`--resolve <task-id> all|none`
-- [x] 执行图：基于 wave 的 DAG 派发、并行节点、部分失败处理
-
-**v0.5 — 目标导向协调运行时**
-- [x] **Milestone 系统**
-  - 跨任务和 graph 的持久协调层
-  - 状态聚合：partial_failed > in_progress > completed > pending
-  - 追加写入：任务只能添加，不能移除
-  - CLI：`--milestone "title" "prompt"` 和 `--milestone-status <id>`
-- [x] **选择性路由**
-  - 决策范围：all | none | selective
-  - `@orchestrator --resolve <task-id> selective backend,product`
-  - 用户选择部分 medium 置信度团队确认
-
-**v0.6 — 持久化执行运行时**（当前版本）
-- [x] **Replay（回放）**——`@orchestrator --replay <task-id>`（只读执行检查）
-- [x] **Resume（续传）**——`@orchestrator --resume <task-id>`（从中间状态继续 DAG）
-- [x] **状态优先级不变式**——`pending_decision` 始终阻止 resume；由 `validate_resume()` 强制执行
-- [x] **局部失败恢复**——仅重置 failed 节点；done/blocked/running 节点不受影响
-- [x] **阻塞节点恢复**——unblock 前重新检查 `artifacts_in`
-
-**v0.6 添加了时间维度——系统记住执行过程并能从中断处继续。**
-
-**长期 — AI 原生公司**
-- [ ] 可观测性控制台
-- [ ] Agent 市场
-- [ ] 记忆系统
-- [ ] 跨项目编排
-
----
-
-## 🤝 参与贡献
-
-我们在构建 AI 公司操作系统——而且我们对此有明确的主张。
-
-欢迎贡献：
-- 新增团队
-- 优化路由逻辑
-- 构建工作流
-- 分享使用案例
-
-我们重视一致性，而非数量。
-
-请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，再提交 PR 🚀
+- **Agent 只生成输出——不主动执行外部操作，除非你接入它们。**
+  默认行为是将文件写入 `.claude/workspace/artifacts/`。
+- **没有你的确认，什么都不会执行。** `ask` 模式会暂停等待确认。
+- **尽量使用只读凭证。**
+- 查看 `.claude/settings.json` 控制每个 Agent 的工具访问权限。
 
 ---
 
 ## 测试
 
-`tests/` 目录中有四个测试套件：
+**113/113 tests green** — 每次提交都绿。
 
-| 脚本 | 测试内容 |
-|--------|--------------|
-| `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
-| `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
-| `tests/routing/test_routing_cases.py` | 5 个确定性路由 case：置信度区间、派发、fallback、负关键词过滤 |
-| `tests/routing/test_dispatch_policy.py` | 83 个 case：dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
-| `tests/routing/test_replay_resume.py` | 17 个 case：replay (5) + resume 验证 (7) + reconstruct/reset/unblock (5) |
-
-**100/100 tests green**（总计）
-
-开 PR 或修改 routing/workflows 后，运行全部测试：
-
-```bash
-bash tests/install.test.sh && bash tests/lint.test.sh
 ```
-
-也可单独运行：
-
-```bash
+bash tests/install.test.sh && bash tests/lint.test.sh
 python3 tests/routing/test_routing_cases.py
 python3 tests/routing/test_dispatch_policy.py
 python3 tests/routing/test_replay_resume.py
 ```
+
+---
+
+## 路线图
+
+**v0.6 — 持久化执行运行时**（当前版本）
+- [x] Replay — 只读执行检查
+- [x] Resume — 从部分状态继续 DAG
+- [x] 状态优先级不变式 — `pending_decision` 始终阻止 resume
+- [x] 局部失败恢复 — 仅 failed 节点重置
+- [x] 阻塞节点恢复 — unblock 前重新检查 `artifacts_in`
+
+**v0.5 — 目标导向协调运行时**
+- [x] Milestone 系统 — 跨任务追踪和聚合
+- [x] 选择性路由 — 选择性批准部分 medium 团队
+
+**v0.4 — 交互路由合约 + DAG 执行**
+- [x] `pending_decision` schema + resolve 接口
+- [x] 基于 wave 的 DAG 派发、并行节点、部分失败
+
+**长期 — AI 原生公司**
+- [ ] 可观测性控制台
+- [ ] 自动重试
+- [ ] 跨任务 resume
+- [ ] Agent 市场
+
+---
+
+## 参与贡献
+
+我们在构建 AI 公司操作系统——有主张，且公开。
+
+参与前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。
