@@ -1358,6 +1358,133 @@ def _test_attach_same_task_idempotent():
     assert ms["tasks"] == ["task_x"]
 
 
+# ---------------------------------------------------------------------------
+# Milestone E2E orchestrator wiring tests
+# ---------------------------------------------------------------------------
+
+import json
+import os
+import tempfile
+import shutil
+
+
+def _temp_workspace():
+    """Create a temp workspace dir simulating .claude/workspace."""
+    ws = tempfile.mkdtemp()
+    os.makedirs(os.path.join(ws, "tasks"))
+    os.makedirs(os.path.join(ws, "milestones"))
+    return ws
+
+
+def _write_json(path, data):
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def _read_json(path):
+    with open(path) as f:
+        return json.load(f)
+
+
+def _test_e2e_milestone_create_and_attach():
+    """
+    E2E 1: Create milestone, create task with milestone ref, attach task.
+    Verifies:
+    - milestone file created at correct path
+    - task JSON contains milestone ref
+    - milestone.tasks contains task_id
+    - milestone status is pending (one task, status=pending)
+    """
+    ws = _temp_workspace()
+    try:
+        milestone_title = "Launch SaaS"
+        task_id = "task_abc123"
+
+        # Step 1: orchestrator creates milestone
+        ms = create_milestone(milestone_title, "ms_e2e001")
+        milestone_path = os.path.join(ws, "milestones", f"{ms['milestone_id']}.json")
+        _write_json(milestone_path, ms)
+
+        # Step 2: task JSON written (Step A) with milestone ref
+        task = {
+            "task_id": task_id,
+            "status": "pending",
+            "milestone": get_milestone_ref(ms),
+        }
+        task_path = os.path.join(ws, "tasks", f"{task_id}.json")
+        _write_json(task_path, task)
+
+        # Step 3: attach task to milestone (after task exists)
+        ms = _read_json(milestone_path)
+        ms = attach_task_to_milestone(ms, task_id)
+        _write_json(milestone_path, ms)
+
+        # Step 4: aggregate status
+        ms = _read_json(milestone_path)  # re-read to get updated tasks list
+        statuses = [_read_json(os.path.join(ws, "tasks", tid + ".json"))["status"] for tid in ms["tasks"]]
+        ms["status"] = aggregate_milestone_status(statuses)
+        _write_json(milestone_path, ms)
+
+        # Assertions
+        assert os.path.exists(milestone_path), "milestone file must exist"
+        ms = _read_json(milestone_path)
+        assert ms["milestone_id"] == "ms_e2e001"
+        assert ms["title"] == milestone_title
+        assert ms["tasks"] == [task_id], f"expected [{task_id}], got {ms['tasks']}"
+        assert ms["status"] == "pending"
+
+        task = _read_json(task_path)
+        assert task["milestone"] == {"milestone_id": "ms_e2e001", "title": milestone_title}
+        assert "tasks" not in task["milestone"]
+    finally:
+        shutil.rmtree(ws)
+
+
+def _test_e2e_milestone_second_task_append_only():
+    """
+    E2E 2: Second task attached to same milestone.
+    Verifies:
+    - append-only: task_id not duplicated
+    - aggregate: pending+pending → pending
+    - aggregate: pending+in_progress → in_progress
+    - milestone_ref embedded in second task
+    """
+    ws = _temp_workspace()
+    try:
+        ms = create_milestone("Multi-task Goal", "ms_e2e002")
+        milestone_path = os.path.join(ws, "milestones", f"{ms['milestone_id']}.json")
+        _write_json(milestone_path, ms)
+
+        task1_id = "task_t1"
+        task2_id = "task_t2"
+
+        # Task 1 created
+        task1 = {"task_id": task1_id, "status": "pending", "milestone": get_milestone_ref(ms)}
+        _write_json(os.path.join(ws, "tasks", f"{task1_id}.json"), task1)
+        ms = attach_task_to_milestone(ms, task1_id)
+        ms["status"] = aggregate_milestone_status(["pending"])
+        _write_json(milestone_path, ms)
+
+        # Task 2 created
+        task2 = {"task_id": task2_id, "status": "in_progress", "milestone": get_milestone_ref(ms)}
+        _write_json(os.path.join(ws, "tasks", f"{task2_id}.json"), task2)
+        ms = attach_task_to_milestone(ms, task2_id)
+        ms["status"] = aggregate_milestone_status(["pending", "in_progress"])
+        _write_json(milestone_path, ms)
+
+        ms = _read_json(milestone_path)
+        # Append-only: task1 not duplicated
+        assert ms["tasks"].count(task1_id) == 1, f"append-only violated: {ms['tasks']}"
+        assert ms["tasks"] == [task1_id, task2_id]
+        assert ms["status"] == "in_progress"
+
+        # Second task has milestone ref
+        t2 = _read_json(os.path.join(ws, "tasks", f"{task2_id}.json"))
+        assert t2["milestone"] == {"milestone_id": "ms_e2e002", "title": "Multi-task Goal"}
+    finally:
+        shutil.rmtree(ws)
+
+
 MILESTONE_TESTS = [
     ("milestone_create", _test_milestone_create),
     ("milestone_create_auto_id", _test_milestone_create_auto_id),
@@ -1373,8 +1500,9 @@ MILESTONE_TESTS = [
     ("get_milestone_ref", _test_get_milestone_ref),
     ("aggregate_mixed_with_partial_failed", _test_aggregate_mixed_with_partial_failed),
     ("attach_same_task_idempotent", _test_attach_same_task_idempotent),
+    ("e2e_milestone_create_and_attach", _test_e2e_milestone_create_and_attach),
+    ("e2e_milestone_second_task_append_only", _test_e2e_milestone_second_task_append_only),
 ]
-
 
 # ---------------------------------------------------------------------------
 # Runner

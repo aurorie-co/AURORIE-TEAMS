@@ -7,6 +7,25 @@ and synthesizes results for the user.
 ## Skills
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all task file writes
 
+## Libraries
+
+### Milestone (`lib/milestone.py`)
+Pure functions for milestone business logic. Import and use directly — do not rewrite the logic.
+
+```python
+import sys
+sys.path.insert(0, "<project-root>/lib")
+from milestone import (
+    make_milestone_id,   # → "ms_<8-char-id>"
+    create_milestone,    # (title, milestone_id=None) → milestone dict
+    attach_task_to_milestone,  # (milestone, task_id) → new milestone dict
+    aggregate_milestone_status, # (task_statuses[]) → status string
+    get_milestone_ref,    # (milestone) → {milestone_id, title}
+)
+```
+
+**Orchestrator is the I/O layer only.** Never inline milestone logic — always call these functions.
+
 ## Routing
 
 ### Step 0 — Parse flags
@@ -556,10 +575,10 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 
 1. Read milestone JSON from `.claude/workspace/milestones/<milestone-id>.json`.
 2. If milestone does not exist: output `Milestone <milestone-id> not found.` and exit.
-3. Collect all task statuses from `milestone.tasks[]` (each is a task-id).
-4. For each task-id, read the task JSON and extract `status`.
-5. Aggregate statuses via `aggregate_milestone_status(task_statuses[])`.
-6. Update `milestone.status` and `milestone.updated_at` in the milestone JSON.
+3. Collect task statuses from `milestone.tasks[]`. For each task-id, attempt to read `.claude/workspace/tasks/<task-id>.json` and extract `status`. If task file does not exist, treat its status as `"pending"`.
+4. Count statuses: `completed`, `in_progress`, `partial_failed`, `pending`.
+5. Aggregate via `aggregate_milestone_status(task_statuses[])`.
+6. Update `milestone.status` and `milestone.updated_at` in the milestone JSON. Write back to file.
 7. Output milestone summary:
 ```
 Milestone: <milestone.title> (<milestone-id>)
@@ -575,9 +594,9 @@ Tasks: <N> total
 
 **CLI:** `@orchestrator --milestone "<title>" "<prompt>"`
 
-This runs alongside normal routing (Steps 1–7). Milestone is a coordination label — it does NOT affect routing decisions.
+Milestone is a coordination label — it does NOT affect routing decisions. Routing runs normally (Steps 1–7). Milestone is attached *after* the task is successfully created.
 
-**Steps:**
+**Setup before routing:**
 
 1. Generate `milestone_id = "ms_" + uuid[:8]`.
 2. Create milestone JSON at `.claude/workspace/milestones/<milestone-id>.json`:
@@ -591,16 +610,21 @@ This runs alongside normal routing (Steps 1–7). Milestone is a coordination la
   "updated_at": "<ISO8601>"
 }
 ```
-3. Write task JSON (Step A or Step B) with `milestone` field added:
+3. Store `milestone_title` for use in Step A/B.
+
+**Attach after task creation (Step A or Step B):**
+
+4. Write task JSON with `milestone` field added:
 ```json
 "milestone": {
   "milestone_id": "<milestone-id>",
   "title": "<milestone_title>"
 }
 ```
-4. Attach task-id to milestone: add task-id to `milestone.tasks[]`.
-5. Aggregate milestone status: `aggregate_milestone_status([task.status for each task])`.
-6. Write updated milestone JSON.
+5. Attach task-id to milestone: read milestone JSON, call `attach_task_to_milestone(milestone, task_id)`, write updated milestone JSON.
+6. Aggregate milestone status: `aggregate_milestone_status(["pending"])`. With only the new task, milestone stays `"pending"`. Write updated milestone JSON.
+
+**Critical ordering constraint:** Create milestone *before* routing. Attach task-id *after* task JSON is written. If routing fails (fallback / declined), milestone stays with empty `tasks[]` — this is fine. Do not attach a task that was never created.
 
 **Milestone status aggregation** (`aggregate_milestone_status`):
 ```
