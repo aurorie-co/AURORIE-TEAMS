@@ -31,16 +31,35 @@ Inspect the raw user input before any routing begins.
 - `--resolve` does NOT set `debug_mode = true` by itself.
 - `--resolve` can be combined with `--debug` (shows resolve trace).
 
+**If `--milestone-status <milestone-id>` appears:**
+- `milestone_status_mode = true`
+- `milestone_status_id = "<milestone-id>"`
+- Strip all milestone-status tokens from the input.
+- Display milestone status and exit. Do not proceed to Steps 1–8.
+
+**If `--milestone "<title>" "<prompt>"` appears:**
+- `milestone_mode = true`
+- `milestone_title = "<title>"`
+- Use the remaining text as `clean_prompt` for all subsequent steps.
+- Create milestone file at `.claude/workspace/milestones/<milestone-id>.json` before Step 1.
+- Milestone does NOT influence routing decisions — it is purely a coordination label.
+
 **Otherwise:**
 - `debug_mode = false`
 - `dry_run_mode = false`
 - `resolve_mode = false`
+- `milestone_mode = false`
+- `milestone_status_mode = false`
 
 Use the remaining text as `clean_prompt` for all subsequent steps.
 
 **Step 0 does nothing else.** Do not read routing.json, score teams, or produce output here.
 
 **Resolve mode** (`resolve_mode = true`): Skip Steps 1–8 entirely. Read the task JSON for `resolve_task_id`, apply the decision, update the task, and resume from Step C. See Resolve Interface (below).
+
+**Milestone status mode** (`milestone_status_mode = true`): Skip Steps 1–8. Read milestone JSON, aggregate task statuses, display summary, and exit.
+
+**Milestone mode** (`milestone_mode = true`): Proceed through Steps 1–7 normally. After task JSON is written (Step 7), attach the task to the milestone and update milestone status. See Milestone Interface (below).
 
 ### Step 1 — Read policy
 
@@ -446,7 +465,7 @@ Rules:
 
 1. Generate task-id: `uuidgen | tr '[:upper:]' '[:lower:]'`
    Fallback: `python3 -c "import uuid; print(uuid.uuid4())"`
-2. Write task file to `.claude/workspace/tasks/<task-id>.json` with fields: `task_id`, `created_at` (ISO8601), `description`, `assigned_team`, `status: "pending"`, `input_context: ""`, `artifact_path`, and `routing_decision`.
+2. Write task file to `.claude/workspace/tasks/<task-id>.json` with fields: `task_id`, `created_at` (ISO8601), `description`, `assigned_team`, `status: "pending"`, `input_context: ""`, `artifact_path`, `routing_decision`, and `milestone` (present only when `milestone_mode = true`).
 3. Invoke team lead via Agent tool:
    ```
    Task file: .claude/workspace/tasks/<task-id>.json
@@ -468,7 +487,7 @@ Rules:
 **Skip entirely if `dry_run_mode = true`.**
 
 1. Generate one task-id per selected team.
-2. Write one task file per team (each with its own `routing_decision`).
+2. Write one task file per team (each with its own `routing_decision`). When `milestone_mode = true`, include `milestone` ref in each task JSON.
 3. Invoke all team leads simultaneously via parallel Agent tool calls using the Step A prompt template.
 4. Await all responses.
 5. Synthesize summaries. Return combined summary to user.
@@ -526,6 +545,83 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 **Idempotency:** If task status is not `"awaiting_dispatch_decision"` or `pending_decision` is absent, resolve is a no-op. Resolving twice with the same action is also a no-op.
 
 **`declined_after_ask` is a transient system-internal flag** — not a long-term field. It exists only to carry context from `resolve_task` into Step 6 re-evaluation.
+
+## Milestone Interface
+
+### Milestone Status Query (`milestone_status_mode = true`)
+
+**CLI:** `@orchestrator --milestone-status <milestone-id>`
+
+**Steps:**
+
+1. Read milestone JSON from `.claude/workspace/milestones/<milestone-id>.json`.
+2. If milestone does not exist: output `Milestone <milestone-id> not found.` and exit.
+3. Collect all task statuses from `milestone.tasks[]` (each is a task-id).
+4. For each task-id, read the task JSON and extract `status`.
+5. Aggregate statuses via `aggregate_milestone_status(task_statuses[])`.
+6. Update `milestone.status` and `milestone.updated_at` in the milestone JSON.
+7. Output milestone summary:
+```
+Milestone: <milestone.title> (<milestone-id>)
+Status: <aggregated_status>
+Tasks: <N> total
+  - completed: <count>
+  - in_progress: <count>
+  - partial_failed: <count>
+  - pending: <count>
+```
+
+### Milestone Creation and Task Attachment (`milestone_mode = true`)
+
+**CLI:** `@orchestrator --milestone "<title>" "<prompt>"`
+
+This runs alongside normal routing (Steps 1–7). Milestone is a coordination label — it does NOT affect routing decisions.
+
+**Steps:**
+
+1. Generate `milestone_id = "ms_" + uuid[:8]`.
+2. Create milestone JSON at `.claude/workspace/milestones/<milestone-id>.json`:
+```json
+{
+  "milestone_id": "<milestone-id>",
+  "title": "<milestone_title>",
+  "status": "pending",
+  "tasks": [],
+  "created_at": "<ISO8601>",
+  "updated_at": "<ISO8601>"
+}
+```
+3. Write task JSON (Step A or Step B) with `milestone` field added:
+```json
+"milestone": {
+  "milestone_id": "<milestone-id>",
+  "title": "<milestone_title>"
+}
+```
+4. Attach task-id to milestone: add task-id to `milestone.tasks[]`.
+5. Aggregate milestone status: `aggregate_milestone_status([task.status for each task])`.
+6. Write updated milestone JSON.
+
+**Milestone status aggregation** (`aggregate_milestone_status`):
+```
+if any task status == "partial_failed" → milestone.status = "partial_failed"
+elif any task status == "in_progress"  → milestone.status = "in_progress"
+elif all tasks status == "completed"   → milestone.status = "completed"
+elif all tasks status == "pending"     → milestone.status = "pending"
+else                                     milestone.status = "in_progress" (mixed)
+```
+
+### Milestone Status Update Triggers
+
+Milestone status is re-aggregated at these events:
+
+1. **Task creation** (Step A/Step B with `milestone_mode = true`): attach task to milestone, aggregate.
+2. **Task status change** (when a task JSON's `status` field is updated): re-read all tasks in `milestone.tasks[]`, re-aggregate.
+3. **Graph completion/failure** (Step C node completion): after each `advance_node()`, re-aggregate milestone status.
+
+**Append-only constraint (v0.5):** Tasks can be added to a milestone, but never removed. Milestone `tasks[]` only grows — no removal operation exists.
+
+**Milestone does NOT influence routing:** `milestone_id` and `milestone.title` are read-only labels on the task. Routing decisions (team selection, dispatch policy, graph building) are unaffected by milestone membership.
 
 ## Sequential Cross-Team Workflows
 Defined as multi-step sequences in the project's CLAUDE.md — not as a single

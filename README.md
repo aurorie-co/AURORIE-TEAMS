@@ -641,10 +641,11 @@ We're building the AI company OS.
 
 v0.5 introduces a persistent coordination layer across tasks.
 
-- [ ] **Milestone system**
+- [~] **Milestone system** (spec + unit tests done; orchestrator integration pending)
   - Group tasks under a shared goal
-  - Aggregate status across tasks (pending / in_progress / completed)
-  - Track progress across time and execution graphs
+  - Aggregate status across tasks (pending / in_progress / completed / partial_failed)
+  - Append-only: tasks can be added, never removed
+  - CLI: `--milestone "title" "prompt"` and `--milestone-status <id>`
 
 - [ ] **Selective routing**
   - Extend decision resolution from all|none → all|none|selective

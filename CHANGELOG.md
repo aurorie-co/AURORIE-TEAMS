@@ -2,14 +2,22 @@
 
 ## [Unreleased] — v0.5.0
 
-### Planned
+### In Progress
 
 #### Milestone Coordination
 - Introduce milestone as a persistent, cross-task coordination layer
-- Aggregate task states into milestone-level progress (pending / in_progress / completed)
+- Aggregate task states into milestone-level progress (pending / in_progress / completed / partial_failed)
 - Support milestone-scoped task grouping and tracking
 - Milestone does NOT influence routing decisions (v0.5 constraint)
-- Tasks can be added to a milestone, but not removed (v0.5 constraint)
+- Tasks can be added to a milestone, but not removed (append-only constraint)
+- Schema: `.claude/workspace/milestones/<milestone-id>.json` with `milestone_id`, `title`, `status`, `tasks[]`, `created_at`, `updated_at`
+- Task JSON embeds lightweight `milestone` ref: `{milestone_id, title}`
+- CLI: `--milestone "<title>" "<prompt>"` creates milestone and attaches task
+- CLI: `--milestone-status <milestone-id>` queries and displays aggregated status
+- Pure functions: `create_milestone`, `attach_task_to_milestone`, `aggregate_milestone_status`, `get_milestone_ref`
+- 12 unit tests: create, attach, append-only, aggregation rules, ref extraction
+
+### Planned
 
 #### Selective Interactive Routing
 - Extend resolve interface: all | none | selective

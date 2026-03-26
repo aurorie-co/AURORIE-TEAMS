@@ -522,10 +522,11 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 v0.5 引入跨任务的持久协调层。
 
-- [ ] **Milestone 系统**
+- [~] **Milestone 系统**（spec + 单元测试完成；orchestrator 集成待完成）
   - 按共享目标分组任务
-  - 聚合任务状态（pending / in_progress / completed）
-  - 跨时间和执行图追踪进度
+  - 聚合任务状态（pending / in_progress / completed / partial_failed）
+  - 追加写入：任务只能添加，不能移除
+  - CLI：`--milestone "title" "prompt"` 和 `--milestone-status <id>`
 
 - [ ] **选择性路由**
   - 决策范围从 all|none 扩展至 all|none|selective
