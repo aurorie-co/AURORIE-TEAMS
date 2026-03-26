@@ -3,7 +3,7 @@
 > **Reviewer:** Senior QA Engineer
 > **Scope:** dispatch_policy (v0.3), pending_decision + DAG execution (v0.4), milestone coordination (v0.5)
 > **Date:** 2026-03-26
-> **Status:** 77/77 tests green (72 dispatch/routing + 5 routing cases)
+> **Status:** 83/83 tests green (78 dispatch/routing + 5 routing cases)
 > **Last updated:** After G-20/G-22 blocked node tests
 
 ---
@@ -16,7 +16,7 @@
 | v0.4 | Interactive routing (pending_decision + resolve) | ✅ Good | 14 Phase1 + 3 E2E runtime tests |
 | v0.4 | DAG execution (Step C) | ✅ Good | Template selection + 6 P0 runtime + 3 blocked node tests |
 | v0.5 | Milestone coordination | ✅ Good | 14 unit + 2 E2E wiring |
-| v0.5 | Selective routing | ⚠️ Spec only | Design done; no implementation tests yet |
+| v0.5 | Selective routing | ✅ Good | 6 selective resolve tests |
 
 **Overall verdict:** P0 runtime gaps now closed. Core logic well-tested. Remaining gaps are lower-risk integration and CLI contract tests.
 
@@ -236,19 +236,25 @@
 
 ---
 
-## v0.5 — Selective Routing (Spec Only ⚠️)
+## v0.5 — Selective Routing (6/6 ✅)
 
-**No tests yet** — implementation not started.
+| # | Test Case | Scenario | Status |
+|---|----------|----------|--------|
+| 1 | `selective_single_team` | Pending: [product, frontend]; resolve selective [product] → product selected, frontend ignored | ✅ |
+| 2 | `selective_multiple_teams` | Pending: [product, frontend]; resolve selective [both] → both selected | ✅ |
+| 3 | `selective_empty_subset_declined` | Empty selective → same as 'none' → declined_after_ask=True | ✅ |
+| 4 | `selective_invalid_team_ignored` | Team not in pending → silently ignored | ✅ |
+| 5 | `selective_idempotent_twice` | Same selective payload twice → same result, no duplicates | ✅ |
+| 6 | `selective_with_high_exists_goes_to_secondary` | High exists + selective medium → medium goes to secondary | ✅ |
 
-| Design Point | Test Needed | Priority |
-|------------|------------|---------|
-| `--resolve <id> selective backend,product` parsing | Token extraction + team-id validation | P1 |
-| `resolve_action = "selective"` → partial selection | Only selected added to selected_teams | P1 |
-| Invalid team-id in selective list | Error: "team not in pending_decision" | P1 |
-| Selective + all teams selected → equivalent to `all` | No behavioral difference | P2 |
-| Selective + 0 teams selected → equivalent to `none` | Declined flow | P1 |
-| Selective + some teams + high teams also present | High always dispatched; selective only for medium | P1 |
-| Idempotent selective resolve | Resolve same task twice with same teams | P2 |
+**Assessment:** All core selective dispatch paths covered.
+
+**Missing test cases:**
+| Gap | Scenario | Risk |
+|-----|---------|------|
+| G-S1 | CLI parsing: `--resolve <id> selective backend, product` (extra spaces) | Low |
+| G-S2 | Case sensitivity: `Backend` vs `backend` in team-id | Low |
+| G-S3 | Selective + all teams NOT in pending (e.g., resolve selective data,research when pending is product,frontend) | Medium |
 
 ---
 
@@ -365,7 +371,7 @@ main()
 
 # Count test cases by group
 python3 tests/routing/test_dispatch_policy.py 2>&1 | grep "  ✓" | wc -l
-# Expected: 72
+# Expected: 78
 ```
 
 ---

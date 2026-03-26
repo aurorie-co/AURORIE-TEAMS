@@ -15,17 +15,19 @@
 - CLI: `--milestone "<title>" "<prompt>"` creates milestone and attaches task
 - CLI: `--milestone-status <milestone-id>` queries and displays aggregated status
 - Pure functions: `create_milestone`, `attach_task_to_milestone`, `aggregate_milestone_status`, `get_milestone_ref`
-- 63/63 tests passing (14 unit + 2 E2E wiring + 47 prior dispatch/routing)
-
-### Planned
+- 83/83 tests passing (16 unit + 2 E2E wiring + 65 prior dispatch/routing/graph/milestone)
 
 #### Selective Interactive Routing
 - Extend resolve interface: `all | none | selective`
-- CLI: `@orchestrator --resolve <task-id> selective <team1,team2>`
+- CLI: `@orchestrator --resolve <task-id> selective <team1,team2,...>`
 - `pending_decision.options` extends to `["all", "none", "selective"]`
 - User picks which medium teams to approve — partial dispatch
-- `ask_resolution.selected_teams[]` carries the selective choice
-- Status aggregation unchanged
+- `resolve_task()` handles selective: confirmed → selected_teams (or secondary when high exists), unconfirmed → ignored_teams
+- Empty selective list → same as `none` (declined_after_ask set)
+- Invalid team-ids in selective list → silently ignored (no error)
+- Idempotent: same selective payload resolved twice → same result
+
+### Planned
 
 #### DAG Dry-Run
 - Add execution graph preview mode

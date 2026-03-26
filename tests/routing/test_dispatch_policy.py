@@ -104,7 +104,7 @@ def apply_dispatch_policy(high_candidates, medium_candidates, policy, dry_run=Fa
             "band": "medium",
             "context": f"medium_{medium_context}",
             "teams": medium_candidates,
-            "options": ["all", "none"],
+            "options": ["all", "none", "selective"],
             "default": "none",
         }
     else:
@@ -206,7 +206,10 @@ def resolve_task(task, decision):
     routing_decision["ignored_teams"] = ignored
 
     # Mark declined_after_ask so Step 6 can distinguish user-declined from needs_clarification
+    # "none" and empty "selective" both count as user-declined
     if decision["selected"] == "none":
+        routing_decision["declined_after_ask"] = True
+    elif decision["selected"] == "selective" and not decision.get("teams", []):
         routing_decision["declined_after_ask"] = True
 
     # Status is determined by orchestrator Step 6 after resolve, not here.
@@ -301,7 +304,7 @@ def _test_medium_only_ask_yes():
     assert pending["type"] == "dispatch_confirmation"
     assert pending["context"] == "medium_when_no_high_exists"
     assert [t["team"] for t in pending["teams"]] == ["product", "frontend"]
-    assert pending["options"] == ["all", "none"]
+    assert pending["options"] == ["all", "none", "selective"]
     assert selected == []  # parked, not yet dispatched
 
     # Step 2: CLI resolves → all selected
@@ -488,7 +491,7 @@ def _test_ask_parks_with_pending_decision():
     assert pending["band"] == "medium"
     assert pending["context"] == "medium_when_no_high_exists"
     assert [t["team"] for t in pending["teams"]] == ["product", "frontend"]
-    assert pending["options"] == ["all", "none"]
+    assert pending["options"] == ["all", "none", "selective"]
     assert pending["default"] == "none"
 
 
@@ -1217,6 +1220,164 @@ def _test_e2e_research_branch_parallel():
     assert g["status"] == "completed"
 
 
+# ---------------------------------------------------------------------------
+# Selective Routing — v0.5 interactive routing (selective confirm)
+# ---------------------------------------------------------------------------
+
+def _test_selective_single_team():
+    """
+    Selective routing: resolve selective one-of-two pending teams.
+    - pending: [product, frontend]
+    - resolve selective [product]
+    → product selected, frontend ignored, pending_decision cleared
+    """
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy
+    )
+    assert pending is not None
+    assert pending["options"] == ["all", "none", "selective"], \
+        f"pending.options must include 'selective', got {pending['options']}"
+
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "selective", "teams": ["product"]})
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["product"]
+    assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["frontend"]
+    assert "pending_decision" not in resolved["routing_decision"]
+    assert resolved["status"] == "pending"
+
+
+def _test_selective_multiple_teams():
+    """
+    Selective routing: resolve selective multiple pending teams.
+    - pending: [product, frontend]
+    - resolve selective [product, frontend]
+    → both selected, pending_decision cleared
+    """
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy
+    )
+    assert pending["options"] == ["all", "none", "selective"]
+
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "selective", "teams": ["product", "frontend"]})
+    selected_teams = [t["team"] for t in resolved["routing_decision"]["selected_teams"]]
+    assert set(selected_teams) == {"product", "frontend"}
+    assert "pending_decision" not in resolved["routing_decision"]
+    assert resolved["status"] == "pending"
+
+
+def _test_selective_empty_subset_declined():
+    """
+    Selective routing: resolve selective with empty list → equivalent to 'none'.
+    - pending: [product]
+    - resolve selective [] (empty)
+    → product ignored, declined_after_ask=True (same as 'none')
+    """
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
+    )
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "selective", "teams": []})
+    assert resolved["routing_decision"]["selected_teams"] == []
+    assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["product"]
+    assert resolved["routing_decision"].get("declined_after_ask") is True, \
+        "selective empty should set declined_after_ask (same as 'none')"
+    assert "pending_decision" not in resolved["routing_decision"]
+
+
+def _test_selective_invalid_team_ignored():
+    """
+    Selective routing: team not in pending_decision.teams is silently ignored.
+    - pending: [product]
+    - resolve selective [backend, data] (neither in pending)
+    → product ignored (not in confirmed), no error
+    """
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2)], policy
+    )
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "selective", "teams": ["backend", "data"]})
+    # Invalid teams are ignored; product was neither confirmed nor declined → what happens?
+    # Per design: only confirmed teams are moved; unmentioned teams default to ignored
+    assert "pending_decision" not in resolved["routing_decision"]
+
+
+def _test_selective_idempotent_twice():
+    """
+    Selective routing: resolving same selective payload twice is idempotent.
+    - First resolve: [product] selected, [frontend] ignored
+    - Second resolve: same result, no duplicates, no state drift
+    """
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy
+    )
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    r1 = resolve_task(task, {"selected": "selective", "teams": ["product"]})
+    r2 = resolve_task(r1, {"selected": "selective", "teams": ["product"]})
+    assert [t["team"] for t in r2["routing_decision"]["selected_teams"]] == ["product"]
+    assert [t["team"] for t in r2["routing_decision"]["ignored_teams"]] == ["frontend"]
+    # No duplicates
+    assert len(r2["routing_decision"]["selected_teams"]) == 1
+
+
+def _test_selective_with_high_exists_goes_to_secondary():
+    """
+    Selective routing when high teams exist: medium confirm → secondary (not selected).
+    - high: backend (auto), medium: product, frontend (ask)
+    - resolve selective [product, frontend]
+    → backend stays selected; product+frontend go to secondary
+    """
+    policy = {"high": "auto", "medium": {"when_high_exists": "ask", "when_no_high_exists": "auto"}}
+    selected, secondary, ignored, pending = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2), _team("frontend", 2)], policy
+    )
+    assert [t["team"] for t in selected] == ["backend"]
+    assert pending is not None
+    assert pending["options"] == ["all", "none", "selective"]
+
+    task = _task_from_routing_decision({
+        "selected_teams": selected,
+        "secondary_teams": secondary,
+        "ignored_teams": ignored,
+        "pending_decision": pending,
+    })
+    resolved = resolve_task(task, {"selected": "selective", "teams": ["product", "frontend"]})
+    # High stays selected; selective medium → secondary (not dispatched)
+    assert [t["team"] for t in resolved["routing_decision"]["selected_teams"]] == ["backend"]
+    assert set([t["team"] for t in resolved["routing_decision"]["secondary_teams"]]) == {"product", "frontend"}
+    assert "pending_decision" not in resolved["routing_decision"]
+
+
 PHASE1_TESTS = [
     ("ask_parks_with_pending_decision", _test_ask_parks_with_pending_decision),
     ("ask_no_fallback_triggered", _test_ask_no_fallback_triggered),
@@ -1233,6 +1394,13 @@ PHASE1_TESTS = [
     ("resolve_none_sets_declined", _test_resolve_none_sets_declined),
     ("resolve_noop_when_not_awaiting", _test_resolve_noop_when_not_awaiting),
     ("resolve_idempotent", _test_resolve_idempotent),
+    # Selective routing (v0.5)
+    ("selective_single_team", _test_selective_single_team),
+    ("selective_multiple_teams", _test_selective_multiple_teams),
+    ("selective_empty_subset_declined", _test_selective_empty_subset_declined),
+    ("selective_invalid_team_ignored", _test_selective_invalid_team_ignored),
+    ("selective_idempotent_twice", _test_selective_idempotent_twice),
+    ("selective_with_high_exists_goes_to_secondary", _test_selective_with_high_exists_goes_to_secondary),
 ]
 
 GRAPH_TESTS = [
