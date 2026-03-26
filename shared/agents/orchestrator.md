@@ -40,7 +40,7 @@ Use the remaining text as `clean_prompt` for all subsequent steps.
 
 **Step 0 does nothing else.** Do not read routing.json, score teams, or produce output here.
 
-**Resolve mode** (`resolve_mode = true`): Skip Steps 1–8 entirely. Read the task JSON for `resolve_task_id`, apply the decision, update the task, and resume from Step A/B. See Resolve Interface (below).
+**Resolve mode** (`resolve_mode = true`): Skip Steps 1–8 entirely. Read the task JSON for `resolve_task_id`, apply the decision, update the task, and resume from Step C. See Resolve Interface (below).
 
 ### Step 1 — Read policy
 
@@ -282,12 +282,27 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
     ],
     "options": ["all", "none"],
     "default": "none"
+  },
+  "execution_graph": {
+    "nodes": [
+      {
+        "node_id": "<team>-1",
+        "team": "<team-id>",
+        "depends_on": [],
+        "status": "pending",
+        "artifacts_in": [],
+        "artifacts_out": ["artifacts/<team>/<task-id>/<artifact>.md"]
+      }
+    ],
+    "edges": [["<upstream-node-id>", "<downstream-node-id>"]],
+    "status": "pending"
   }
 }
 ```
 
 Notes:
 - `pending_decision` is present only when ask is triggered and task is parked in `awaiting_dispatch_decision` status. Absent otherwise.
+- `execution_graph` is written in Step 7 only when `pending_decision` is absent (normal dispatch without ask). When ask is triggered, graph is built in the Resolve Interface after decision is resolved.
 - `ignored_teams` is present and may be empty when no teams were suppressed.
 - v0.3 backward compatibility: tasks with `ask_required: true` (no `pending_decision`) are equivalent to `pending_decision` with `options: ["all", "none"]` and `default: "none"`. Read both fields; treat `ask_required: true` as equivalent `pending_decision`.
 
@@ -458,6 +473,28 @@ Rules:
 4. Await all responses.
 5. Synthesize summaries. Return combined summary to user.
 
+### Step C — DAG Dispatch Loop
+
+**When `execution_graph` is present** (resolve path or graph-built in Step 7): iterate over the graph in dependency order.
+
+**When `execution_graph` is absent:** fall back to Steps A/B directly.
+
+**DAG dispatch loop:**
+
+1. If `execution_graph` status is `completed` or `partial_failed` or `user_declined_dispatch` → STOP. No more nodes to dispatch.
+2. Get ready nodes: `get_ready_nodes(execution_graph)`.
+3. If `ready_nodes` is empty and graph status is not terminal → STOP (blocked, no forward progress possible).
+4. For each `ready_node` in `ready_nodes`:
+   a. Build `artifacts_in` list from `depends_on` nodes' `artifacts_out`.
+   b. Write one task JSON per node.
+   c. Invoke all ready nodes in parallel via Step B.
+   d. Wait for all to complete.
+   e. For each completed node: update its status in `execution_graph` via `advance_node()`.
+   f. If any node failed: `execution_graph.status = "partial_failed"`, STOP.
+5. Repeat from step 1.
+
+**Artifact handoff:** Before dispatching a node, confirm all `artifacts_in` paths exist. If any are missing, mark node as `blocked` and do not dispatch it. Update graph status to `in_progress` once the first wave starts.
+
 ### Resolve Interface
 
 Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action>`).
@@ -476,7 +513,7 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 6. Write updated task JSON.
 
 **Step 6 Re-evaluation (after resolve):**
-- If `selected_teams` is non-empty: set `status = "pending"`, proceed to Step A/B.
+- If `selected_teams` is non-empty: set `status = "pending"`, build `execution_graph` using `build_execution_graph(task_id, selected_teams)`, add to task JSON, proceed to Step A/B.
 - If `selected_teams` is empty AND `declined_after_ask = true`: set `status = "user_declined_dispatch"`, output summary, do NOT dispatch.
 - If `selected_teams` is empty AND no `declined_after_ask`: set `status = "needs_clarification"`, output clarifying question.
 

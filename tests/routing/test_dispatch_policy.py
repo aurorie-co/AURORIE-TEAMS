@@ -674,13 +674,335 @@ def _test_step6_re_evaluation_declined_with_high_selected():
     assert task["status"] == "pending"
 
 
+# ---------------------------------------------------------------------------
+# Phase 2: DAG Execution — graph functions
+# ---------------------------------------------------------------------------
+
+# Artifact path templates (per team, relative to workspace root)
+ARTIFACT_OUT = {
+    "product":  "artifacts/product/{task_id}/prd.md",
+    "backend":  "artifacts/backend/{task_id}/backend-implementation.md",
+    "frontend": "artifacts/frontend/{task_id}/frontend-implementation.md",
+    "mobile":   "artifacts/mobile/{task_id}/mobile-implementation.md",
+    "data":     "artifacts/data/{task_id}/analysis.md",
+    "research": "artifacts/research/{task_id}/research-report.md",
+    "infra":    "artifacts/infra/{task_id}/infra-spec.md",
+    "design":   "artifacts/design/{task_id}/design-spec.md",
+    "market":   "artifacts/market/{task_id}/market-analysis.md",
+    "support":  "artifacts/support/{task_id}/support-playbook.md",
+}
+
+
+def select_graph_template(selected_teams):
+    """
+    Selects execution graph template using strict priority.
+    Pure function.
+
+    Priority (first match wins):
+    1. 'data' in selected_teams                  → data-first
+    2. 'research' in selected and 'product' not  → research-branch
+    3. 'backend' in selected or 'frontend' in    → linear-pipeline
+    4. fallback                                   → flat-parallel
+
+    Args:
+        selected_teams: list of team dicts with 'team' key
+
+    Returns:
+        str: one of 'data-first', 'research-branch', 'linear-pipeline', 'flat-parallel'
+    """
+    team_ids = {t["team"] for t in selected_teams}
+
+    if "data" in team_ids:
+        return "data-first"
+    if "research" in team_ids and "product" not in team_ids:
+        return "research-branch"
+    if "backend" in team_ids or "frontend" in team_ids:
+        return "linear-pipeline"
+    return "flat-parallel"
+
+
+def build_execution_graph(task_id, selected_teams):
+    """
+    Builds execution_graph for selected_teams using the selected template.
+    Pure function — no side effects.
+
+    Args:
+        task_id: str UUID for this task
+        selected_teams: list of team dicts with 'team', 'score', 'confidence'
+
+    Returns:
+        dict with keys: nodes[], edges[], status
+
+    Templates:
+    - data-first:   data → research → product → backend → frontend
+    - research-branch: research → [backend, frontend] (parallel)
+    - linear-pipeline: product → backend → frontend
+    - flat-parallel: all selected teams in parallel (no edges)
+    """
+    template = select_graph_template(selected_teams)
+    team_ids = [t["team"] for t in selected_teams]
+    nodes = []
+    edges = []
+
+    def make_node(team):
+        return {
+            "node_id": f"{team}-1",
+            "team": team,
+            "depends_on": [],
+            "status": "pending",
+            "artifacts_in": [],
+            "artifacts_out": [ARTIFACT_OUT.get(team, "").format(task_id=task_id)],
+        }
+
+    if template == "data-first":
+        # data → research → product → backend → frontend
+        chain = ["data", "research", "product", "backend", "frontend"]
+        present = [t for t in chain if t in team_ids]
+        nodes = [{"node_id": f"{t}-1", "team": t, "depends_on": [], "status": "pending",
+                  "artifacts_in": [], "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)]} for t in present]
+        for i, node in enumerate(nodes):
+            if i > 0:
+                prev = nodes[i - 1]
+                node["depends_on"] = [prev["node_id"]]
+                edges.append([prev["node_id"], node["node_id"]])
+
+    elif template == "research-branch":
+        # research → [backend, frontend] (parallel after research)
+        order = ["research", "backend", "frontend"]
+        present = [t for t in order if t in team_ids]
+        research_node = None
+        nodes = []
+        for t in present:
+            node = {
+                "node_id": f"{t}-1",
+                "team": t,
+                "depends_on": [],
+                "status": "pending",
+                "artifacts_in": [],
+                "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)],
+            }
+            if t == "research":
+                research_node = node
+            elif t in ("backend", "frontend"):
+                if research_node:
+                    node["depends_on"] = [research_node["node_id"]]
+                    edges.append([research_node["node_id"], node["node_id"]])
+            nodes.append(node)
+
+    elif template == "linear-pipeline":
+        # product → backend → frontend
+        chain = ["product", "backend", "frontend"]
+        present = [t for t in chain if t in team_ids]
+        nodes = [{"node_id": f"{t}-1", "team": t, "depends_on": [], "status": "pending",
+                  "artifacts_in": [], "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)]} for t in present]
+        for i, node in enumerate(nodes):
+            if i > 0:
+                prev = nodes[i - 1]
+                node["depends_on"] = [prev["node_id"]]
+                edges.append([prev["node_id"], node["node_id"]])
+
+    else:  # flat-parallel
+        # All selected teams as independent parallel nodes
+        for t in team_ids:
+            nodes.append({
+                "node_id": f"{t}-1",
+                "team": t,
+                "depends_on": [],
+                "status": "pending",
+                "artifacts_in": [],
+                "artifacts_out": [ARTIFACT_OUT.get(t, "").format(task_id=task_id)],
+            })
+
+    # Populate artifacts_in for each node based on depends_on
+    node_map = {n["node_id"]: n for n in nodes}
+    for node in nodes:
+        for dep_id in node.get("depends_on", []):
+            dep_node = node_map.get(dep_id)
+            if dep_node:
+                node["artifacts_in"].extend(dep_node["artifacts_out"])
+
+    return {"nodes": nodes, "edges": edges, "status": "pending"}
+
+
+def get_ready_nodes(graph):
+    """
+    Returns list of node_ids that are ready to dispatch.
+    A node is ready when:
+    - status == 'pending'
+    - all depends_on nodes have status == 'done'
+    """
+    node_map = {n["node_id"]: n for n in graph["nodes"]}
+    ready = []
+    for node in graph["nodes"]:
+        if node["status"] != "pending":
+            continue
+        if all(node_map[dep_id]["status"] == "done" for dep_id in node.get("depends_on", [])):
+            ready.append(node["node_id"])
+    return ready
+
+
+def advance_node(graph, node_id, new_status):
+    """
+    Updates a node's status. Returns updated graph (pure — copies).
+    Does NOT check ready condition; caller is responsible.
+    """
+    graph = {"nodes": list(graph["nodes"]), "edges": list(graph["edges"]),
+             "status": graph["status"]}
+    node_map = {n["node_id"]: n for n in graph["nodes"]}
+    if node_id in node_map:
+        idx = graph["nodes"].index(node_map[node_id])
+        updated = dict(node_map[node_id])
+        updated["status"] = new_status
+        graph["nodes"][idx] = updated
+    # Update graph status
+    if new_status == "running" and graph["status"] == "pending":
+        graph["status"] = "in_progress"
+    elif new_status == "done":
+        if all(n["status"] == "done" for n in graph["nodes"]):
+            graph["status"] = "completed"
+    elif new_status == "failed":
+        graph["status"] = "partial_failed"
+    return graph
+
+
+# ---------------------------------------------------------------------------
+# Phase 2: DAG Execution — tests
+# ---------------------------------------------------------------------------
+
+def _test_template_data_first():
+    """data in selected_teams → data-first template"""
+    teams = [_team("data"), _team("backend")]
+    assert select_graph_template(teams) == "data-first"
+
+
+def _test_template_research_branch():
+    """research selected, no product → research-branch template"""
+    teams = [_team("research"), _team("backend")]
+    assert select_graph_template(teams) == "research-branch"
+
+
+def _test_template_linear_pipeline():
+    """backend selected → linear-pipeline template"""
+    teams = [_team("backend"), _team("frontend")]
+    assert select_graph_template(teams) == "linear-pipeline"
+
+
+def _test_template_flat_parallel():
+    """no backend/frontend/data → flat-parallel fallback"""
+    teams = [_team("product"), _team("market")]
+    assert select_graph_template(teams) == "flat-parallel"
+
+
+def _test_graph_linear_pipeline():
+    """product → backend → frontend"""
+    teams = [_team("product", 2), _team("backend", 4), _team("frontend", 3)]
+    graph = build_execution_graph("task-001", teams)
+    assert graph["status"] == "pending"
+    node_ids = [n["node_id"] for n in graph["nodes"]]
+    assert "product-1" in node_ids
+    assert "backend-1" in node_ids
+    assert "frontend-1" in node_ids
+    # Check edges
+    edges = graph["edges"]
+    assert ["product-1", "backend-1"] in edges
+    assert ["backend-1", "frontend-1"] in edges
+    # backend depends on product
+    backend = next(n for n in graph["nodes"] if n["node_id"] == "backend-1")
+    assert backend["depends_on"] == ["product-1"]
+    # frontend depends on backend
+    frontend = next(n for n in graph["nodes"] if n["node_id"] == "frontend-1")
+    assert frontend["depends_on"] == ["backend-1"]
+
+
+def _test_graph_research_branch():
+    """research → [backend, frontend] parallel"""
+    teams = [_team("research"), _team("backend"), _team("frontend")]
+    graph = build_execution_graph("task-002", teams)
+    research = next(n for n in graph["nodes"] if n["node_id"] == "research-1")
+    backend = next(n for n in graph["nodes"] if n["node_id"] == "backend-1")
+    frontend = next(n for n in graph["nodes"] if n["node_id"] == "frontend-1")
+    # Both depend on research
+    assert backend["depends_on"] == ["research-1"]
+    assert frontend["depends_on"] == ["research-1"]
+    # No edge between backend and frontend
+    edges = graph["edges"]
+    assert ["research-1", "backend-1"] in edges
+    assert ["research-1", "frontend-1"] in edges
+    edge_ids = {tuple(e) for e in edges}
+    assert ("backend-1", "frontend-1") not in edge_ids
+    assert ("frontend-1", "backend-1") not in edge_ids
+
+
+def _test_graph_data_first():
+    """data → research → product → backend → frontend (all present)"""
+    teams = [_team("data"), _team("research"), _team("product"), _team("backend"), _team("frontend")]
+    graph = build_execution_graph("task-003", teams)
+    node_ids = [n["node_id"] for n in graph["nodes"]]
+    assert node_ids == ["data-1", "research-1", "product-1", "backend-1", "frontend-1"]
+    edges = graph["edges"]
+    assert ["data-1", "research-1"] in edges
+    assert ["research-1", "product-1"] in edges
+    assert ["product-1", "backend-1"] in edges
+    assert ["backend-1", "frontend-1"] in edges
+
+
+def _test_graph_flat_parallel():
+    """product + market → no edges"""
+    teams = [_team("product"), _team("market")]
+    graph = build_execution_graph("task-004", teams)
+    assert graph["edges"] == []
+    for node in graph["nodes"]:
+        assert node["depends_on"] == []
+
+
+def _test_ready_nodes_no_deps():
+    """flat parallel: all nodes ready initially"""
+    teams = [_team("product"), _team("market")]
+    graph = build_execution_graph("task-005", teams)
+    ready = get_ready_nodes(graph)
+    assert set(ready) == {"product-1", "market-1"}
+
+
+def _test_ready_nodes_linear():
+    """linear: first node ready, second not until first done"""
+    teams = [_team("product"), _team("backend")]
+    graph = build_execution_graph("task-006", teams)
+    ready = get_ready_nodes(graph)
+    assert ready == ["product-1"]  # only first
+    # Advance product to done
+    graph = advance_node(graph, "product-1", "done")
+    ready = get_ready_nodes(graph)
+    assert ready == ["backend-1"]
+
+
+def _test_ready_nodes_research_parallel():
+    """research done → backend and frontend both ready"""
+    teams = [_team("research"), _team("backend"), _team("frontend")]
+    graph = build_execution_graph("task-007", teams)
+    graph = advance_node(graph, "research-1", "done")
+    ready = get_ready_nodes(graph)
+    assert set(ready) == {"backend-1", "frontend-1"}
+
+
+def _test_graph_status_done():
+    """all nodes done → graph status = completed"""
+    teams = [_team("product"), _team("backend")]
+    graph = build_execution_graph("task-008", teams)
+    graph = advance_node(graph, "product-1", "done")
+    graph = advance_node(graph, "backend-1", "done")
+    assert graph["status"] == "completed"
+
+
+def _test_graph_status_partial_failed():
+    """node failed → graph status = partial_failed"""
+    teams = [_team("product"), _team("backend"), _team("frontend")]
+    graph = build_execution_graph("task-009", teams)
+    graph = advance_node(graph, "product-1", "done")
+    graph = advance_node(graph, "backend-1", "failed")
+    assert graph["status"] == "partial_failed"
+
+
 def _orchestrator_resolve_flow(task_id, action):
-    """
-    Simulates orchestrator resolve flow:
-    1. resolve_task(task, {selected: action})
-    2. Step 6 re-evaluation
-    Returns final task dict.
-    """
     # Load task from workspace (simulated)
     task = {
         "task_id": task_id,
@@ -789,6 +1111,26 @@ PHASE1_TESTS = [
     ("resolve_idempotent", _test_resolve_idempotent),
 ]
 
+GRAPH_TESTS = [
+    # Template selector
+    ("template_data_first", _test_template_data_first),
+    ("template_research_branch", _test_template_research_branch),
+    ("template_linear_pipeline", _test_template_linear_pipeline),
+    ("template_flat_parallel", _test_template_flat_parallel),
+    # Graph builder
+    ("graph_linear_pipeline", _test_graph_linear_pipeline),
+    ("graph_research_branch", _test_graph_research_branch),
+    ("graph_data_first", _test_graph_data_first),
+    ("graph_flat_parallel", _test_graph_flat_parallel),
+    # Ready nodes
+    ("ready_nodes_no_deps", _test_ready_nodes_no_deps),
+    ("ready_nodes_linear", _test_ready_nodes_linear),
+    ("ready_nodes_research_parallel", _test_ready_nodes_research_parallel),
+    # Graph status
+    ("graph_status_done", _test_graph_status_done),
+    ("graph_status_partial_failed", _test_graph_status_partial_failed),
+]
+
 
 # ---------------------------------------------------------------------------
 # Runner
@@ -801,6 +1143,7 @@ def main():
         ("ask", ASK_TESTS),
         ("dry_run", DRYRUN_TESTS),
         ("phase1", PHASE1_TESTS),
+        ("graph", GRAPH_TESTS),
     ]
 
     total_passed = total_failed = 0
