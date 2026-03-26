@@ -57,7 +57,7 @@ Step 8   ← UNCHANGED: normal summary + dispatch
 
 Inspect the raw user input before any routing begins:
 
-1. If `--debug` is present:
+1. If `--debug` is present **as a standalone token** (not embedded in natural language, e.g. `"build --debug mode"` does not trigger it):
    - Set `debug_mode = true`
    - Strip `--debug` (and `--dry-run` if present — reserved, no-op for now) from the input
    - The remaining text is `clean_prompt` — pass this to Steps 1–7
@@ -79,7 +79,7 @@ The only input change is that `clean_prompt` has had `--debug` stripped. The rou
 **Precondition:** `debug_mode = true` AND Step 7 has written `routing_decision`.
 
 **Source:** `routing_decision` only — specifically:
-- `policy_snapshot` (candidate_threshold, confidence_thresholds, dispatch_strategy)
+- `policy_snapshot` — must include all routing_policy fields required to interpret the routing result: `candidate_threshold`, `confidence_thresholds` (high + medium), and `dispatch_strategy`
 - `selected_teams[]` — each entry has `team`, `score`, `confidence`, `matched_positive`, `matched_negative`
 - `secondary_teams[]` — same fields
 - `filtered_teams[]` — same fields
@@ -112,11 +112,13 @@ Dispatch:
 **Rendering rules:**
 
 - `score` is read directly from `routing_decision` — never recomputed
+- `confidence` values: `high` and `medium` are assigned by `confidence_thresholds`; `low` is assigned when `score < confidence_thresholds.medium` (implicit, not configurable)
 - `state` label: `selected`, `secondary`, or `filtered`
 - Empty lists render as `(none)` — the three-section structure is always present
-- Teams are listed in the order they appear in `routing_decision` (score desc)
+- Teams are listed ordered: selected group → secondary group → filtered group. Within each group, order is `(score desc, positive_count desc, negative_count asc)` — matching routing Step 3.5
 - All teams from all three lists are printed — no team is omitted
 - `matched_positive` and `matched_negative` are printed verbatim from `routing_decision`
+- **Fallback case:** when no teams are selected or secondary, the Dispatch block must show `Selected: (none)` and `Secondary: (none)`, with all teams appearing under `Filtered`
 
 **Example output:**
 
