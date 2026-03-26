@@ -7,7 +7,7 @@
 ⚡ Built for builders, founders, and power users
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
-![Version](https://img.shields.io/badge/version-v0.5.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-v0.6.0-blue?style=flat-square)
 ![Agents](https://img.shields.io/badge/agents-34-informational?style=flat-square)
 ![Teams](https://img.shields.io/badge/teams-10-informational?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
@@ -686,7 +686,7 @@ We're building the AI company OS.
 - [x] Resolve interface: `--resolve <task-id> all|none`
 - [x] Execution graph: wave-based DAG dispatch, parallel nodes, partial failure handling
 
-**v0.5 — Goal-Oriented Coordination Runtime** *(current)*
+**v0.5 — Goal-Oriented Coordination Runtime**
 - [x] **Milestone system**
   - Persistent coordination layer across tasks and graphs
   - Aggregate status: partial_failed > in_progress > completed > pending
@@ -697,12 +697,14 @@ We're building the AI company OS.
   - `@orchestrator --resolve <task-id> selective backend,product`
   - Users choose which medium-confidence teams to approve
 
-**v0.5 moves from task orchestration to goal-oriented coordination.**
+**v0.6 — Persistent Execution Runtime** *(current)*
+- [x] **Replay** — `@orchestrator --replay <task-id>` (read-only execution inspection)
+- [x] **Resume** — `@orchestrator --resume <task-id>` (continue DAG from partial state)
+- [x] **State priority invariant** — `pending_decision` always blocks resume; enforced by `validate_resume()`
+- [x] **Partial failed recovery** — only failed nodes reset; done/blocked/running untouched
+- [x] **Blocked node recovery** — re-checks `artifacts_in` before unblocking
 
-**v0.6 — Persistent Execution Runtime** *(next)*
-- [ ] **Replay** — `@orchestrator --replay <task-id>` (read-only execution inspection)
-- [ ] **Resume** — `@orchestrator --resume <task-id>` (continue DAG from partial state)
-- [ ] **Execution trace foundation** — structured history[] for audit and optimization loops
+**v0.6 adds persistence over time — the system remembers what it did and can continue where it left off.**
 
 **Long-term — AI-native companies**
 - [ ] Observability dashboard
@@ -737,7 +739,10 @@ Four test suites in `tests/`, all green on every commit:
 | `tests/install.test.sh` | Install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree contract: agent/workflow/skill/routing validation |
 | `tests/routing/test_routing_cases.py` | 5 routing regression cases: confidence bands, dispatch, fallback, negative keyword suppression |
-| `tests/routing/test_dispatch_policy.py` | 78 cases: dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
+| `tests/routing/test_dispatch_policy.py` | 83 cases: dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
+| `tests/routing/test_replay_resume.py` | 17 cases: replay (5) + resume validation (7) + reconstruct/reset/unblock (5) |
+
+**100/100 tests green** (combined)
 
 Run all tests before opening a PR:
 
@@ -750,6 +755,7 @@ Or run routing tests standalone:
 ```bash
 python3 tests/routing/test_routing_cases.py
 python3 tests/routing/test_dispatch_policy.py
+python3 tests/routing/test_replay_resume.py
 ```
 
 ---

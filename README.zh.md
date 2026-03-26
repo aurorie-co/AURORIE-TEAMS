@@ -7,7 +7,7 @@
 ⚡ 为构建者、创始人和高级用户而生
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
-![Version](https://img.shields.io/badge/version-v0.5.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-v0.6.0-blue?style=flat-square)
 ![Agents](https://img.shields.io/badge/agents-34-informational?style=flat-square)
 ![Teams](https://img.shields.io/badge/teams-10-informational?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
@@ -565,7 +565,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - [x] Resolve 接口：`--resolve <task-id> all|none`
 - [x] 执行图：基于 wave 的 DAG 派发、并行节点、部分失败处理
 
-**v0.5 — 目标导向协调运行时**（当前版本）
+**v0.5 — 目标导向协调运行时**
 - [x] **Milestone 系统**
   - 跨任务和 graph 的持久协调层
   - 状态聚合：partial_failed > in_progress > completed > pending
@@ -576,12 +576,14 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
   - `@orchestrator --resolve <task-id> selective backend,product`
   - 用户选择部分 medium 置信度团队确认
 
-**v0.5：从任务编排走向目标导向协调。**
+**v0.6 — 持久化执行运行时**（当前版本）
+- [x] **Replay（回放）**——`@orchestrator --replay <task-id>`（只读执行检查）
+- [x] **Resume（续传）**——`@orchestrator --resume <task-id>`（从中间状态继续 DAG）
+- [x] **状态优先级不变式**——`pending_decision` 始终阻止 resume；由 `validate_resume()` 强制执行
+- [x] **局部失败恢复**——仅重置 failed 节点；done/blocked/running 节点不受影响
+- [x] **阻塞节点恢复**——unblock 前重新检查 `artifacts_in`
 
-**v0.6 — 持久化执行运行时**（下一步）
-- [ ] **Replay（回放）**——`@orchestrator --replay <task-id>`（只读执行检查）
-- [ ] **Resume（续传）**——`@orchestrator --resume <task-id>`（从中间状态继续 DAG）
-- [ ] **执行轨迹基础**——在 execution_graph 中加入结构化 `history[]`，用于审计和优化
+**v0.6 添加了时间维度——系统记住执行过程并能从中断处继续。**
 
 **长期 — AI 原生公司**
 - [ ] 可观测性控制台
@@ -616,7 +618,10 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 | `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
 | `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
 | `tests/routing/test_routing_cases.py` | 5 个确定性路由 case：置信度区间、派发、fallback、负关键词过滤 |
-| `tests/routing/test_dispatch_policy.py` | 78 个 case：dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
+| `tests/routing/test_dispatch_policy.py` | 83 个 case：dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
+| `tests/routing/test_replay_resume.py` | 17 个 case：replay (5) + resume 验证 (7) + reconstruct/reset/unblock (5) |
+
+**100/100 tests green**（总计）
 
 开 PR 或修改 routing/workflows 后，运行全部测试：
 
@@ -629,4 +634,5 @@ bash tests/install.test.sh && bash tests/lint.test.sh
 ```bash
 python3 tests/routing/test_routing_cases.py
 python3 tests/routing/test_dispatch_policy.py
+python3 tests/routing/test_replay_resume.py
 ```

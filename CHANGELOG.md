@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.6.0 — 2026-03-26
+
+### Added
+
+#### Replay Interface
+- `@orchestrator --replay <task-id>` — read-only inspection of past task execution
+- `format_replay_output(task)` — pure function producing structured replay output
+- `reconstruct_waves(nodes)` — pure function reconstructing wave order from `depends_on` depth
+- Handles old task JSONs gracefully: missing `waves`, `started_at`, `completed_at` display as `—`
+- Output includes: prompt, status, routing (selected/secondary/ignored), wave timeline, final status, milestone ref
+
+#### Resume Interface
+- `@orchestrator --resume <task-id>` — continue DAG execution from partial state
+- `validate_resume(task)` — pure function enforcing strict state priority:
+  - `pending_decision` present → NOT resumable (must `--resolve` first)
+  - `execution_graph` absent → no graph found
+  - `execution_graph.status = completed` → already done
+  - `execution_graph.status = pending` → nothing to resume
+  - `execution_graph.status = user_declined_dispatch` → declined
+- **Resume from `in_progress`**: Step C dispatch loop from current state
+- **Resume from `partial_failed`**: `reset_partial_failed_graph(graph)` — only `failed` nodes reset to `pending`; done/blocked/running untouched
+- **Resume from `blocked`**: `unblock_graph(graph, artifact_map)` — re-checks `artifacts_in` before unblocking; only nodes with all artifacts present are unblocked
+- Human-in-the-loop: partial_failed and blocked paths prompt for confirmation before mutating state
+- After terminal state reached: writes updated task JSON + milestone re-aggregation if milestone attached
+
+#### State Priority Invariant
+- Critical invariant codified: `pending_decision` presence always blocks resume
+- `pending_decision` is a human decision marker — never bypassed by `--resume`
+- `task.status` is derived/secondary; `execution_graph.status` is the control signal
+
+### Changed
+
+- Orchestrator Step 0 extended with `--replay <task-id>` and `--resume <task-id>` flag parsing
+- `shared/agents/orchestrator.md` and `.claude/agents/orchestrator.md` kept in sync
+
+### Test Coverage
+- 17 new replay/resume tests: 5 replay + 7 resume validation + 2 reconstruct_waves + 1 reset_partial_failed_graph + 2 unblock_graph
+- Combined with v0.5 suites: **100/100 tests green**
+
+### Planned
+- `--resume --force` — skip confirmation prompt for automated recovery (P2)
+- Graph visualization — visual display of execution graph and wave progression (v0.7)
+- Automatic retry — retry failed nodes without user confirmation (v0.7)
+- Cross-task resume — resume all tasks in a milestone at once (v0.8)
+
+---
+
 ## 0.5.0 — 2026-03-26
 
 ### Added

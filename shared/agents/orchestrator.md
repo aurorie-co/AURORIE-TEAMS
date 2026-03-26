@@ -64,6 +64,18 @@ Inspect the raw user input before any routing begins.
 - Create milestone file at `.claude/workspace/milestones/<milestone-id>.json` before Step 1.
 - Milestone does NOT influence routing decisions — it is purely a coordination label.
 
+**If `--replay <task-id>` appears:**
+- `replay_mode = true`
+- `replay_task_id = "<task-id>"`
+- Strip all replay tokens from the input.
+- **Read-only:** no state mutation, no dispatch. See Replay Interface.
+
+**If `--resume <task-id>` appears:**
+- `resume_mode = true`
+- `resume_task_id = "<task-id>"`
+- Strip all resume tokens from the input.
+- See Resume Interface.
+
 **Otherwise:**
 - `debug_mode = false`
 - `dry_run_mode = false`
@@ -573,6 +585,86 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 **Idempotency:** If task status is not `"awaiting_dispatch_decision"` or `pending_decision` is absent, resolve is a no-op. Resolving twice with the same action is also a no-op.
 
 **`declined_after_ask` is a transient system-internal flag** — not a long-term field. It exists only to carry context from `resolve_task` into Step 6 re-evaluation.
+
+### Replay Interface
+
+Triggered when `replay_mode = true` (Step 0 parsed `--replay <task-id>`).
+
+**CLI:** `@orchestrator --replay <task-id>`
+
+**Behavior:** Read-only inspection of a past task execution. No state mutation, no dispatch.
+
+**Steps:**
+
+1. Read task JSON from `.claude/workspace/tasks/<replay_task_id>.json`.
+2. If task does not exist: output `Task <task-id> not found.` and exit.
+3. Call `format_replay_output(task)` to produce the formatted replay output.
+4. Print the output.
+5. Exit — no state mutation, no dispatch.
+
+**Output format:**
+
+```
+=== REPLAY: <task-id> ===
+
+Prompt: <task prompt>
+Status: <task status>
+
+Routing:
+  Selected:  product, backend, frontend
+  Secondary: market
+  Ignored:   support, data
+
+Execution Graph:
+  Wave 1: [product-1]     → done          2026-03-26 10:01:01
+  Wave 2: [backend-1]     → done          2026-03-26 10:02:33
+  Wave 3: [frontend-1]   → completed      2026-03-26 10:04:12
+
+Final status: completed
+Milestone: Launch SaaS (ms_abc123)
+
+=== END REPLAY ===
+```
+
+**Graceful handling of missing fields:** Old task JSONs may not have `started_at`, `completed_at`, or `waves`. Missing timestamps display as `—`. Missing `waves` field: `reconstruct_waves(nodes)` is called internally to reconstruct wave order from node `depends_on` depth.
+
+### Resume Interface
+
+Triggered when `resume_mode = true` (Step 0 parsed `--resume <task-id>`).
+
+**CLI:** `@orchestrator --resume <task-id>`
+
+**Pre-conditions (checked in order via `validate_resume(task)`):**
+
+1. `pending_decision` present → no-op, print "task awaits human decision — use --resolve"
+2. `execution_graph` absent → no-op, print "no execution graph found"
+3. `execution_graph.status = completed` → no-op, print "task already completed"
+4. `execution_graph.status = pending` → no-op, print "no execution graph to resume"
+5. `execution_graph.status = user_declined_dispatch` → no-op, print "task was declined by user"
+
+**Resume from `in_progress`:**
+- Enter Step C dispatch loop immediately.
+- `get_ready_nodes` returns currently ready (pending, depends satisfied) nodes.
+- Dispatch, advance_node per result.
+- Repeat until graph reaches terminal state.
+
+**Resume from `partial_failed`:**
+1. Show partial failure summary (which nodes failed).
+2. Prompt for confirmation before retrying.
+3. **On confirm:** call `reset_partial_failed_graph(execution_graph)` — only `failed` nodes are reset to `pending`; `done`, `blocked`, `running` nodes are untouched.
+4. Re-evaluate `get_ready_nodes` — only failed nodes that now have satisfied depends are ready.
+5. Enter dispatch loop for ready nodes.
+
+**Resume from `blocked`:**
+1. Show blocked nodes + missing `artifacts_in` for each.
+2. Prompt for confirmation before recovering.
+3. **On confirm:** re-check `artifacts_in` for each blocked node using `check_artifacts_in(node, artifact_map)`.
+4. Only unblock nodes whose `artifacts_in` are now satisfied; call `unblock_graph(execution_graph, artifact_map)`.
+5. Re-enter dispatch loop for unblocked nodes.
+
+**After resume reaches terminal state (`completed` | `partial_failed`):**
+- Write updated task JSON.
+- Trigger milestone re-aggregation if milestone attached.
 
 ## Milestone Interface
 
