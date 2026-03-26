@@ -824,7 +824,12 @@ def build_execution_graph(task_id, selected_teams):
             if dep_node:
                 node["artifacts_in"].extend(dep_node["artifacts_out"])
 
-    return {"nodes": nodes, "edges": edges, "status": "pending"}
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "status": "pending",
+        "metadata": {"graph_template": select_graph_template(selected_teams)},
+    }
 
 
 def check_blocked(node):
@@ -1403,6 +1408,25 @@ PHASE1_TESTS = [
     ("selective_with_high_exists_goes_to_secondary", _test_selective_with_high_exists_goes_to_secondary),
 ]
 
+
+# ---------------------------------------------------------------------------
+# Graph metadata tests
+# ---------------------------------------------------------------------------
+
+def _test_build_execution_graph_stores_template():
+    """metadata.graph_template is set from select_graph_template."""
+    teams = [_team("backend"), _team("frontend")]
+    graph = build_execution_graph("t1", teams)
+    assert graph["metadata"]["graph_template"] == "linear-pipeline"
+
+
+def _test_build_execution_graph_metadata_template_data_first():
+    """data team → data-first template."""
+    teams = [_team("data"), _team("backend")]
+    graph = build_execution_graph("t2", teams)
+    assert graph["metadata"]["graph_template"] == "data-first"
+
+
 GRAPH_TESTS = [
     # Template selector
     ("template_data_first", _test_template_data_first),
@@ -1414,6 +1438,9 @@ GRAPH_TESTS = [
     ("graph_research_branch", _test_graph_research_branch),
     ("graph_data_first", _test_graph_data_first),
     ("graph_flat_parallel", _test_graph_flat_parallel),
+    # Graph metadata
+    ("graph_metadata_template_stores", _test_build_execution_graph_stores_template),
+    ("graph_metadata_template_data_first", _test_build_execution_graph_metadata_template_data_first),
     # Ready nodes
     ("ready_nodes_no_deps", _test_ready_nodes_no_deps),
     ("ready_nodes_linear", _test_ready_nodes_linear),
