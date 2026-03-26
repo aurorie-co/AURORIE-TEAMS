@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.1 — 2026-03-26
+
+### Added
+- `--dry-run` flag — compute routing decision without dispatching teams
+- `ask_required` in `routing_decision` — deferred ask marker for dry-run mode
+- 5 dry-run test cases — total dispatch policy suite now 18 cases (normalize 4, auto/ignore 4, ask 5, dry-run 5)
+- `--dry-run` section in README.md with example output
+- `.claude/agents/orchestrator.md` synced with shared Step 0 flag parsing
+
+### Changed
+- orchestrator.md Step 0 — `--dry-run` parsed as standalone flag, sets `dry_run_mode = true`
+- orchestrator.md Step 5.5 — ask defers to `ask_required` dict when `dry_run_mode = true`
+- orchestrator.md Step 6 — `ask_required` included in fallback `routing_decision`
+- orchestrator.md Step 7.5 — debug trace shows `dry_run: true` line when applicable
+- orchestrator.md Step 8 — dry-run appends "Dry run — no teams were dispatched." and ask deferral note
+- orchestrator.md Steps A/B — skipped entirely when `dry_run_mode = true`
+- Tests paragraph updated — 73 total (50 lint + 5 routing + 18 dispatch)
+- RELEASE.md — test counts updated to 73 / 18
+
+---
+
 ## 0.3.0 — 2026-03-26
 
 ### Added

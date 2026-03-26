@@ -485,7 +485,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - ✓ `normalize_dispatch_policy`——纯函数，用 v0.2 等价默认值填充缺失键
 - ✓ `apply_dispatch_policy`——Step 5.5 执行：auto / ignore / ask 三种模式
 - ✓ Ask mode——medium 置信度团队派发前交互确认（每轮最多一次）
-- ✓ Dispatch policy 测试套件——13 个 case：normalize (4)、auto/ignore (4)、ask mode (5)
+- ✓ Dispatch policy 测试套件——18 个 case：normalize (4)、auto/ignore (4)、ask (5)、dry-run (5)
 - [ ] 任务图——跨团队 DAG 执行
 
 **长期 — AI 原生公司**
@@ -521,7 +521,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 | `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
 | `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
 | `tests/routing/test_routing_cases.py` | 5 个确定性路由 case：置信度区间、派发、fallback、负关键词过滤 |
-| `tests/routing/test_dispatch_policy.py` | 13 个 v0.3 dispatch_policy case：normalize (4)、auto/ignore (4)、ask mode (5) |
+| `tests/routing/test_dispatch_policy.py` | 18 个 v0.3 dispatch_policy case：normalize (4)、auto/ignore (4)、ask (5)、dry-run (5) |
 
 开 PR 或修改 routing/workflows 后，运行全部测试：
 

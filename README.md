@@ -22,6 +22,7 @@
 - [Intelligent Routing](#-intelligent-routing)
 - [Decision Policy](#-decision-policy)
 - [Debug Mode](#-debug-mode)
+- [Dry Run Mode](#-dry-run-mode)
 - [Architecture](#-architecture)
 - [Installation](#-installation)
 - [Try these prompts](#-try-these-prompts)
@@ -312,6 +313,37 @@ When `ask` mode fires, an `Ask:` block is appended showing context, user respons
 
 ---
 
+## ⏸ Dry Run Mode
+
+`--dry-run` shows what would happen without dispatching any teams:
+
+```
+@orchestrator --dry-run "Build a crypto SaaS with real-time price feeds"
+```
+
+```
+Routed to:
+- backend (high, score 4)
+- product (medium, score 2)
+
+Dry run — no teams were dispatched.
+```
+
+**What it does:**
+- Full routing decision is computed and displayed
+- Steps A/B (actual team dispatch) are skipped
+- `--ask` prompts are deferred — `ask_required: true` is recorded instead
+
+**Combine with `--debug` for the full trace without side effects:**
+
+```
+@orchestrator --debug --dry-run "Build a crypto SaaS"
+```
+
+Both flags work together — `--debug` shows the trace, `--dry-run` prevents dispatch.
+
+---
+
 ## 🏗 Architecture
 
 Here's the full system:
@@ -569,8 +601,8 @@ We're building the AI company OS.
 - [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
 - [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
 - [x] Ask mode — interactive confirmation for medium-confidence teams (at most once per routing)
-- [x] Dispatch policy test suite — 13 cases: normalize (4), auto/ignore (4), ask mode (5)
-- [ ] Interactive routing — confirm medium teams before dispatch (Step 5.5 integration)
+- [x] Dispatch policy test suite — 18 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5)
+- [x] Interactive routing — confirm medium teams before dispatch (Step 5.5 integration)
 - [ ] Task graph — DAG execution across teams
 
 **Long-term — AI-native companies**
@@ -606,7 +638,7 @@ Four test suites in `tests/`, all green on every commit:
 | `tests/install.test.sh` | Install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree contract: agent/workflow/skill/routing validation |
 | `tests/routing/test_routing_cases.py` | 5 routing regression cases: confidence bands, dispatch, fallback, negative keyword suppression |
-| `tests/routing/test_dispatch_policy.py` | 13 dispatch policy cases: normalize (4), auto/ignore (4), ask mode (5) |
+| `tests/routing/test_dispatch_policy.py` | 18 dispatch policy cases: normalize (4), auto/ignore (4), ask (5), dry-run (5) |
 
 Run all tests before opening a PR:
 
