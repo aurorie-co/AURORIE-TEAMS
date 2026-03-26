@@ -662,65 +662,47 @@ Use read-only credentials where possible. Review generated artifacts before acti
 We're building the AI company OS.
 
 **v0.1 — Foundation**
-- ✓ 10 specialized teams, 34 agents
-- ✓ v2 routing with positive/negative scoring
-- ✓ Lint + install test suites
+- [x] 10 specialized teams, 34 agents
+- [x] v2 routing with positive/negative scoring
+- [x] Lint + install test suites
 
 **v0.2 — Observable routing**
-- ✓ Confidence-based routing (high / medium / filtered)
-- ✓ Routing test suite — 5 regression cases, CI-integrated
-- ✓ `--debug` flag — full per-team routing trace in terminal
+- [x] Confidence-based routing (high / medium / filtered)
+- [x] Routing test suite — 5 regression cases, CI-integrated
+- [x] `--debug` flag — full per-team routing trace in terminal
 
 **v0.3 — Controllable execution**
 - [x] `dispatch_policy` config — per-confidence-band behavior in routing.json
 - [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
 - [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
 - [x] Ask mode MVP — interactive confirmation for medium-confidence teams (at most once per routing)
-- [x] Dispatch policy test suite — 47 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (14), graph (15)
+- [x] Dispatch policy test suite — 47 cases: normalize, auto/ignore, ask, dry-run, phase1, graph
 - [x] `--dry-run` flag — compute routing without dispatching
 - [x] `--debug --dry-run` combined mode
 
-**v0.4 — Interactive Routing Contract + DAG Execution (complete)**
+**v0.4 — Interactive Routing Contract + DAG Execution**
 - [x] `pending_decision` schema — replaces `ask_required: true` with full structured payload
 - [x] `awaiting_dispatch_decision` task status
+- [x] Resolve interface: `--resolve <task-id> all|none`
+- [x] Execution graph: wave-based DAG dispatch, parallel nodes, partial failure handling
+
 **v0.5 — Goal-Oriented Coordination Runtime** *(current)*
-
-v0.5 introduces a persistent coordination layer across tasks.
-
-- [x] **Milestone system** (complete)
+- [x] **Milestone system**
   - Persistent coordination layer across tasks and graphs
   - Aggregate status: partial_failed > in_progress > completed > pending
   - Append-only: tasks can be added, never removed
   - CLI: `--milestone "title" "prompt"` and `--milestone-status <id>`
-  - Pure functions: `lib/milestone.py` — 83/83 tests passing
-
-- [x] **Selective routing** (complete)
+- [x] **Selective routing**
   - Decision resolution: all | none | selective
   - `@orchestrator --resolve <task-id> selective backend,product`
   - Users choose which medium-confidence teams to approve
-  - Empty selective list → declined (same as "none"); invalid team names → silently ignored
 
 **v0.5 moves from task orchestration to goal-oriented coordination.**
 
----
-
 **v0.6 — Persistent Execution Runtime** *(next)*
-
-v0.6 adds the time dimension: making execution replayable and resumable.
-
-- [ ] **Replay** — inspect past decisions and execution timeline
-  - `@orchestrator --replay <task-id>`
-  - Read-only: shows routing decision, execution graph, wave timeline, final status
-  - No state mutation; pure inspection
-- [ ] **Resume** — continue DAG execution from partial state
-  - `@orchestrator --resume <task-id>`
-  - Load execution_graph; find pending / blocked / failed nodes; enter Step C dispatch loop
-  - Makes DAG execution interruptible and recoverable
-- [ ] **Execution trace foundation**
-  - Structured `history[]` in execution_graph for audit / optimization loops
-  - Enables future: failure recovery, automated retry, behavioral learning
-
-**v0.6 makes execution persistent over time — the system remembers what it did and can continue.**
+- [ ] **Replay** — `@orchestrator --replay <task-id>` (read-only execution inspection)
+- [ ] **Resume** — `@orchestrator --resume <task-id>` (continue DAG from partial state)
+- [ ] **Execution trace foundation** — structured history[] for audit and optimization loops
 
 **Long-term — AI-native companies**
 - [ ] Observability dashboard

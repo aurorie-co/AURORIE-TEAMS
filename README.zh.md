@@ -541,62 +541,47 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 我们在构建 AI 公司操作系统。
 
 **v0.1 — 基础能力**
-- ✓ 10 个专业团队，34 个 Agent
-- ✓ 正负分值 v2 路由
-- ✓ Lint + install 测试套件
+- [x] 10 个专业团队，34 个 Agent
+- [x] 正负分值 v2 路由
+- [x] Lint + install 测试套件
 
-**v0.2 — 可观测路由（当前版本）**
-- ✓ 置信度路由（high / medium / filtered）
-- ✓ 路由测试套件——5 个回归 case，集成 CI
-- ✓ `--debug` flag——在终端输出完整的逐团队路由详情
+**v0.2 — 可观测路由**
+- [x] 置信度路由（high / medium / filtered）
+- [x] 路由测试套件——5 个回归 case，集成 CI
+- [x] `--debug` flag——在终端输出完整的逐团队路由详情
 
 **v0.3 — 可控执行**
-- ✓ `dispatch_policy` 配置——routing.json 中按置信度控制派发行为
-- ✓ `normalize_dispatch_policy`——纯函数，用 v0.2 等价默认值填充缺失键
-- ✓ `apply_dispatch_policy`——Step 5.5 执行：auto / ignore / ask 三种模式
-- ✓ Ask mode MVP——medium 置信度团队派发前交互确认（每轮最多一次）
-- ✓ Dispatch policy 测试套件——47 个 case：normalize (4)、auto/ignore (4)、ask (5)、dry-run (5)、phase1 (14)、graph (15)
-- ✓ `--dry-run` flag——计算路由但不派发团队
-- ✓ `--debug --dry-run` 组合模式
+- [x] `dispatch_policy` 配置——routing.json 中按置信度控制派发行为
+- [x] `normalize_dispatch_policy`——纯函数，用 v0.2 等价默认值填充缺失键
+- [x] `apply_dispatch_policy`——Step 5.5 执行：auto / ignore / ask 三种模式
+- [x] Ask mode MVP——medium 置信度团队派发前交互确认（每轮最多一次）
+- [x] Dispatch policy 测试套件——47 个 case：normalize、auto/ignore、ask、dry-run、phase1、graph
+- [x] `--dry-run` flag——计算路由但不派发团队
+- [x] `--debug --dry-run` 组合模式
+
+**v0.4 — 交互路由 + DAG 执行**
+- [x] `pending_decision` schema——替换 `ask_required: true`
+- [x] `awaiting_dispatch_decision` 任务状态
+- [x] Resolve 接口：`--resolve <task-id> all|none`
+- [x] 执行图：基于 wave 的 DAG 派发、并行节点、部分失败处理
 
 **v0.5 — 目标导向协调运行时**（当前版本）
-
-v0.5 引入跨任务的持久协调层。
-
-- [x] **Milestone 系统**（已完成）
+- [x] **Milestone 系统**
   - 跨任务和 graph 的持久协调层
   - 状态聚合：partial_failed > in_progress > completed > pending
   - 追加写入：任务只能添加，不能移除
   - CLI：`--milestone "title" "prompt"` 和 `--milestone-status <id>`
-  - 纯函数：`lib/milestone.py` — 83/83 测试通过
-
-- [x] **选择性路由**（已完成）
+- [x] **选择性路由**
   - 决策范围：all | none | selective
   - `@orchestrator --resolve <task-id> selective backend,product`
   - 用户选择部分 medium 置信度团队确认
-  - 空 selective → 等同于 decline；无效 team 名静默忽略
 
 **v0.5：从任务编排走向目标导向协调。**
 
----
-
 **v0.6 — 持久化执行运行时**（下一步）
-
-v0.6 加入时间维度：使执行可回放、可续传。
-
-- [ ] **Replay（回放）** — 查看历史决策和执行时间线
-  - `@orchestrator --replay <task-id>`
-  - 只读：展示 routing decision、execution graph、wave timeline、最终状态
-  - 不修改任何状态
-- [ ] **Resume（续传）** — 从中间状态继续 DAG 执行
-  - `@orchestrator --resume <task-id>`
-  - 加载 execution_graph；找到 pending / blocked / failed 节点；进入 Step C dispatch loop
-  - 使 DAG 执行可中断、可恢复
-- [ ] **执行轨迹基础**
-  - 在 execution_graph 中加入结构化 `history[]`，用于审计和优化循环
-  - 为未来：故障恢复、自动重试、行为学习铺路
-
-**v0.6：让执行在时间维度上持久化——系统记住它做过什么，并能够继续。**
+- [ ] **Replay（回放）**——`@orchestrator --replay <task-id>`（只读执行检查）
+- [ ] **Resume（续传）**——`@orchestrator --resume <task-id>`（从中间状态继续 DAG）
+- [ ] **执行轨迹基础**——在 execution_graph 中加入结构化 `history[]`，用于审计和优化
 
 **长期 — AI 原生公司**
 - [ ] 可观测性控制台
