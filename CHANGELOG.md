@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased] — v0.5.0
+
+### Planned
+
+#### Milestone Coordination
+- Introduce milestone as a persistent, cross-task coordination layer
+- Aggregate task states into milestone-level progress (pending / in_progress / completed)
+- Support milestone-scoped task grouping and tracking
+- Milestone does NOT influence routing decisions (v0.5 constraint)
+- Tasks can be added to a milestone, but not removed (v0.5 constraint)
+
+#### Selective Interactive Routing
+- Extend resolve interface: all | none | selective
+- Allow partial approval of medium-confidence teams
+
+#### DAG Dry-Run
+- Add execution graph preview mode
+- Display wave order and dependencies without dispatch
+
+---
+
 ## 0.4.0 — 2026-03-26
 
 ### Added

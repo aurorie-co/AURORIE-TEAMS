@@ -637,9 +637,24 @@ We're building the AI company OS.
 **v0.4 — Interactive Routing Contract + DAG Execution (complete)**
 - [x] `pending_decision` schema — replaces `ask_required: true` with full structured payload
 - [x] `awaiting_dispatch_decision` task status
-- [x] Resolve interface — `--resolve <task-id> all|none` (Phase 1 complete)
-- [x] Phase 2: DAG execution — static graph templates, dependency-ordered wave dispatch, graph runtime state (pending → in_progress → completed | partial_failed)
-- [ ] Phase 1 follow-up: Selective routing (all / none / selective team subset)
+**v0.5 — Goal-Oriented Coordination Runtime**
+
+v0.5 introduces a persistent coordination layer across tasks.
+
+- [ ] **Milestone system**
+  - Group tasks under a shared goal
+  - Aggregate status across tasks (pending / in_progress / completed)
+  - Track progress across time and execution graphs
+
+- [ ] **Selective routing**
+  - Extend decision resolution from all|none → all|none|selective
+  - Allow users to choose a subset of medium-confidence teams
+
+- [ ] **DAG dry-run**
+  - Preview execution_graph and wave order before dispatch
+  - Make dependencies explicit prior to execution
+
+**v0.5 moves from task orchestration to goal-oriented coordination.**
 
 **Long-term — AI-native companies**
 - [ ] Observability dashboard

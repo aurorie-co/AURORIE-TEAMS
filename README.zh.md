@@ -518,12 +518,24 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - ✓ `--dry-run` flag——计算路由但不派发团队
 - ✓ `--debug --dry-run` 组合模式
 
-**v0.4 — Interactive Routing Contract + DAG Execution（已完成）**
-- ✓ `pending_decision` schema——替换 `ask_required: true`，完整结构化 payload
-- ✓ `awaiting_dispatch_decision` 任务状态
-- ✓ Resolve 接口——`--resolve <task-id> all|none`（Phase 1 完成）
-- ✓ Phase 2：DAG 执行——静态图模板，按依赖顺序波次执行，图运行时状态（pending → in_progress → completed | partial_failed）
-- [ ] Phase 1 后续：选择性路由（all / none / selective 团队子集）
+**v0.5 — 目标导向协调运行时**
+
+v0.5 引入跨任务的持久协调层。
+
+- [ ] **Milestone 系统**
+  - 按共享目标分组任务
+  - 聚合任务状态（pending / in_progress / completed）
+  - 跨时间和执行图追踪进度
+
+- [ ] **选择性路由**
+  - 决策范围从 all|none 扩展至 all|none|selective
+  - 允许用户选择部分 medium 置信度团队
+
+- [ ] **DAG dry-run**
+  - 在 dispatch 前预览 execution_graph 和 wave 顺序
+  - 在执行前明确依赖关系
+
+**v0.5：从任务编排走向目标导向协调。**
 
 **长期 — AI 原生公司**
 - [ ] 可观测性控制台
