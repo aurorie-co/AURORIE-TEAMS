@@ -1,5 +1,12 @@
 {
   "version": "2",
+  "routing_policy": {
+    "candidate_threshold": 1,
+    "confidence_thresholds": {
+      "high": 3,
+      "medium": 1
+    }
+  },
   "rules": [
     {
       "team": "backend",
