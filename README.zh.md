@@ -7,6 +7,7 @@
 ⚡ 为构建者、创始人和高级用户而生
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square)
+![Version](https://img.shields.io/badge/version-v0.5.0-blue?style=flat-square)
 ![Agents](https://img.shields.io/badge/agents-34-informational?style=flat-square)
 ![Teams](https://img.shields.io/badge/teams-10-informational?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
