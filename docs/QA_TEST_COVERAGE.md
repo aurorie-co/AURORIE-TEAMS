@@ -3,7 +3,8 @@
 > **Reviewer:** Senior QA Engineer
 > **Scope:** dispatch_policy (v0.3), pending_decision + DAG execution (v0.4), milestone coordination (v0.5)
 > **Date:** 2026-03-26
-> **Status:** 68/68 tests green
+> **Status:** 77/77 tests green (72 dispatch/routing + 5 routing cases)
+> **Last updated:** After G-20/G-22 blocked node tests
 
 ---
 
@@ -12,12 +13,12 @@
 | Layer | Feature | Coverage | Notes |
 |-------|---------|----------|-------|
 | v0.3 | Dispatch policy (normalize, auto, ask) | ✅ Strong | 18 cases, pure functions well-tested |
-| v0.4 | Interactive routing (pending_decision + resolve) | ✅ Good | 14 Phase1 cases + 16 graph cases |
-| v0.4 | DAG execution (Step C) | ✅ Good | Template selection, ready nodes, status transitions |
+| v0.4 | Interactive routing (pending_decision + resolve) | ✅ Good | 14 Phase1 + 3 E2E runtime tests |
+| v0.4 | DAG execution (Step C) | ✅ Good | Template selection + 6 P0 runtime + 3 blocked node tests |
 | v0.5 | Milestone coordination | ✅ Good | 14 unit + 2 E2E wiring |
 | v0.5 | Selective routing | ⚠️ Spec only | Design done; no implementation tests yet |
 
-**Overall verdict:** Core logic is well-tested. Gaps are in integration wiring, error handling, and CLI contract validation.
+**Overall verdict:** P0 runtime gaps now closed. Core logic well-tested. Remaining gaps are lower-risk integration and CLI contract tests.
 
 ---
 
@@ -152,7 +153,7 @@
 
 ---
 
-### GRAPH — Execution + Status (12/12 ✅)
+### GRAPH — Execution + Status (15/15 ✅)
 
 | # | Test Case | Scenario | Status |
 |---|----------|----------|--------|
@@ -167,17 +168,20 @@
 | 9 | `graph_status_partial_failed` | any node partial_failed → graph status = partial_failed | ✅ |
 | 10 | `e2e_linear_pipeline` | Full Step C: build graph → advance → completion | ✅ |
 | 11 | `e2e_research_branch_parallel` | Full Step C: fan-out + parallel dispatch | ✅ |
+| 12 | `blocked_node_excluded_from_ready` | artifacts_in missing → node blocked, excluded from ready | ✅ G-22 |
+| 13 | `blocked_graph_becomes_blocked_status` | all non-terminal nodes blocked → graph status = blocked | ✅ G-20 |
+| 14 | `unblock_and_redispatch` | node unblocked when artifacts appear → becomes ready | ✅ |
+| 15 | `get_ready_nodes_on_partial_failed_graph` | partial_failed graph → get_ready_nodes returns [] | ✅ G-16 |
 
-**Missing test cases:**
+**Previously missing (now covered):**
+- G-16: `get_ready_nodes` on terminal graph → empty ✅ (test #15)
+- G-17: `advance_node` on done node → idempotent ✅ (P0-RT-02)
+- G-18: Wave 2 fails → partial_failed ✅ (P0-E2E-02)
+
+**Still missing:**
 | Gap | Scenario | Risk |
 |-----|---------|------|
-| G-16 | `get_ready_nodes` when graph status is already terminal → returns empty | High |
-| G-17 | `advance_node` on already-completed node → idempotent | Medium |
-| G-18 | Graph with 3+ waves: wave 3 waits for wave 2 → wave 2 fails → partial_failed | High |
-| G-19 | Node status `partial_failed` → `advance_node` does not re-advance | Medium |
-| G-20 | `blocked` node never dispatched → graph stops at step 3 (ready_nodes empty, not terminal) | High |
 | G-21 | Two nodes depend on same upstream → both unblocked when upstream completes | Low |
-| G-22 | Artifact path mismatch: `artifacts_in` file missing → node marked blocked | High |
 
 ---
 
@@ -294,9 +298,6 @@ These are the orchestrator-level behaviors that the spec defines but no test sui
 | ID | Gap | Feature |
 |----|-----|---------|
 | G-10 | Task JSON missing before resolve | Phase1 resolve |
-| G-18 | Graph wave 2 fails → partial_failed | Graph execution |
-| G-20 | Ready nodes empty + non-terminal graph | Graph execution |
-| G-22 | Missing artifact_in → node blocked | Graph execution |
 | G-27 | Milestone not found → error message | Milestone CLI |
 | G-34 | `--debug` trace format correctness | CLI contract |
 | G-36 | Step 8 output per scenario | CLI contract |
@@ -318,6 +319,8 @@ These are the orchestrator-level behaviors that the spec defines but no test sui
 | G-14 | research + product → branch NOT selected | Graph template |
 | G-16 | get_ready_nodes on terminal graph → empty | Graph execution |
 | G-19 | advance_node on partial_failed → idempotent | Graph execution |
+| G-20 | Ready nodes empty + non-terminal graph → blocked | Graph execution |
+| G-22 | Missing artifact_in → node blocked | Graph execution |
 | G-30 | Task JSON has correct milestone ref field | Milestone wiring |
 | G-31 | --milestone-status re-aggregation + write | Milestone wiring |
 | G-44 | Tie-breaking deterministic | Routing |
@@ -362,7 +365,7 @@ main()
 
 # Count test cases by group
 python3 tests/routing/test_dispatch_policy.py 2>&1 | grep "  ✓" | wc -l
-# Expected: 63
+# Expected: 72
 ```
 
 ---
@@ -370,16 +373,19 @@ python3 tests/routing/test_dispatch_policy.py 2>&1 | grep "  ✓" | wc -l
 ## Recommendation
 
 **Immediate (P0 gaps → before any release):**
-1. Add orchestrator E2E tests for Step A/B/C dispatch (currently no test exercises the full orchestrator I/O loop)
-2. Add graph partial failure test: wave N fails → partial_failed, loop stops
-3. Add milestone-status on nonexistent ID → graceful error
-4. Add `--debug` trace format validation test
-5. Add Step 7 routing_decision schema completeness test
+1. ~~Add orchestrator E2E tests for Step A/B/C dispatch~~ ✅ (P0-E2E-01)
+2. ~~Add graph partial failure test: wave N fails → partial_failed, loop stops~~ ✅ (P0-E2E-02, P0-E2E-03)
+3. ~~Add graph blocked node handling~~ ✅ (P1-RT: blocked_node_excluded, blocked_graph_becomes_blocked, unblock_and_redispatch)
+4. G-10: Resolve with missing task JSON → graceful error
+5. G-27: milestone-status on nonexistent ID → graceful error
+6. G-34: `--debug` trace format validation
+7. G-36/G-37: Step 7/8 CLI contract (schema + output)
+8. G-39/G-40/G-41/G-42: Step A/B/C orchestrator dispatch contract
 
 **Next sprint (P1 gaps):**
-- Graph blocked node handling
-- Resolve with missing task
-- Milestone attach wiring verification
+- G-30: Task JSON has correct milestone ref field
+- G-31: --milestone-status re-aggregation + write
+- G-13/G-14: Graph template priority cases
 
 **Backlog (P2 gaps):**
 - All low-risk items

@@ -824,17 +824,28 @@ def build_execution_graph(task_id, selected_teams):
     return {"nodes": nodes, "edges": edges, "status": "pending"}
 
 
+def check_blocked(node):
+    """
+    Returns True if the node's input artifacts are missing (blocked).
+    In production, this checks the filesystem. In tests, use the BLOCKED_NODES set.
+    """
+    return node.get("blocked", False)
+
+
 def get_ready_nodes(graph):
     """
     Returns list of node_ids that are ready to dispatch.
     A node is ready when:
     - status == 'pending'
     - all depends_on nodes have status == 'done'
+    - not blocked (artifacts_in exist)
     """
     node_map = {n["node_id"]: n for n in graph["nodes"]}
     ready = []
     for node in graph["nodes"]:
         if node["status"] != "pending":
+            continue
+        if check_blocked(node):
             continue
         if all(node_map[dep_id]["status"] == "done" for dep_id in node.get("depends_on", [])):
             ready.append(node["node_id"])
@@ -845,6 +856,8 @@ def advance_node(graph, node_id, new_status):
     """
     Updates a node's status. Returns updated graph (pure — copies).
     Does NOT check ready condition; caller is responsible.
+
+    new_status: 'running' | 'done' | 'failed' | 'blocked'
     """
     graph = {"nodes": list(graph["nodes"]), "edges": list(graph["edges"]),
              "status": graph["status"]}
@@ -862,6 +875,11 @@ def advance_node(graph, node_id, new_status):
             graph["status"] = "completed"
     elif new_status == "failed":
         graph["status"] = "partial_failed"
+    elif new_status == "blocked":
+        # Graph is blocked when all non-done, non-failed nodes are also blocked
+        non_terminal = [n for n in graph["nodes"] if n["status"] not in ("done", "failed")]
+        if non_terminal and all(n["status"] == "blocked" for n in non_terminal):
+            graph["status"] = "blocked"
     return graph
 
 
@@ -1639,6 +1657,104 @@ def _test_get_ready_nodes_on_partial_failed_graph():
     assert ready == [], f"Expected [] on partial_failed graph, got {ready}"
 
 
+def _test_blocked_node_excluded_from_ready():
+    """
+    G-22: Node with blocked=True (artifacts_in missing) is excluded from get_ready_nodes.
+    Confirms: blocked nodes are not dispatched even when depends_on are satisfied.
+    """
+    teams = [_team("research", 3), _team("backend", 4), _team("frontend", 2)]
+    graph = build_execution_graph("test-blocked", teams)
+    assert select_graph_template(teams) == "research-branch"
+
+    # Wave 1: research completes
+    g = advance_node(graph, "research-1", "done")
+    wave2 = get_ready_nodes(g)
+    assert set(wave2) == {"backend-1", "frontend-1"}  # both ready
+
+    # Backend has missing artifacts_in → mark it blocked
+    node_map = {n["node_id"]: n for n in g["nodes"]}
+    idx = g["nodes"].index(node_map["backend-1"])
+    g["nodes"][idx] = dict(g["nodes"][idx])
+    g["nodes"][idx]["blocked"] = True
+
+    # Backend is now blocked; frontend should still be ready
+    ready = get_ready_nodes(g)
+    assert "backend-1" not in ready, "blocked node should not be in ready set"
+    assert "frontend-1" in ready, "frontend should still be ready"
+
+    # Frontend completes
+    g = advance_node(g, "frontend-1", "done")
+
+    # Backend is still blocked; no nodes ready; graph stays pending (not terminal)
+    ready = get_ready_nodes(g)
+    assert ready == [], "no ready nodes when blocked node remains"
+    assert g["status"] == "pending", f"graph pending (blocked not terminal), got {g['status']}"
+
+
+def _test_blocked_graph_becomes_blocked_status():
+    """
+    G-20: When ALL non-terminal nodes are blocked → graph status becomes 'blocked'.
+    Confirms the terminal blocked state: all remaining work is stuck on missing artifacts.
+    """
+    teams = [_team("product", 3), _team("backend", 4)]
+    graph = build_execution_graph("test-all-blocked", teams)
+    assert select_graph_template(teams) == "linear-pipeline"
+
+    # Wave 1: product completes → backend has depends satisfied
+    g = advance_node(graph, "product-1", "done")
+
+    # Backend's artifacts_in are missing → mark blocked
+    node_map = {n["node_id"]: n for n in g["nodes"]}
+    idx = g["nodes"].index(node_map["backend-1"])
+    g["nodes"][idx] = dict(g["nodes"][idx])
+    g["nodes"][idx]["blocked"] = True
+
+    # No ready nodes
+    ready = get_ready_nodes(g)
+    assert ready == []
+
+    # Graph transitions to blocked (all non-done nodes are blocked)
+    g = advance_node(g, "backend-1", "blocked")
+    assert g["status"] == "blocked", f"Expected blocked, got {g['status']}"
+
+    # Terminal: get_ready_nodes returns [] on blocked graph
+    ready = get_ready_nodes(g)
+    assert ready == [], "get_ready_nodes returns [] on blocked graph"
+
+
+def _test_unblock_and_redispatch():
+    """
+    Unblock scenario: node has blocked=True, then blocked=False when artifacts appear.
+    The node's status must also be set back to 'pending' for get_ready_nodes to include it.
+    """
+    teams = [_team("product", 3), _team("backend", 4)]
+    graph = build_execution_graph("test-unblock", teams)
+
+    # Wave 1: product completes
+    g = advance_node(graph, "product-1", "done")
+
+    # Backend is blocked (artifacts_in missing)
+    node_map = {n["node_id"]: n for n in g["nodes"]}
+    idx = g["nodes"].index(node_map["backend-1"])
+    g["nodes"][idx] = dict(g["nodes"][idx])
+    g["nodes"][idx]["blocked"] = True
+
+    # Backend is blocked
+    assert "backend-1" not in get_ready_nodes(g)
+
+    # Artifacts appear: unblock backend (set blocked=False and status=pending)
+    # Must re-fetch node_map since we replaced the node dict above
+    node_map = {n["node_id"]: n for n in g["nodes"]}
+    idx = g["nodes"].index(node_map["backend-1"])
+    g["nodes"][idx] = dict(g["nodes"][idx])
+    g["nodes"][idx]["blocked"] = False
+    g["nodes"][idx]["status"] = "pending"
+
+    # Backend is now ready
+    ready = get_ready_nodes(g)
+    assert "backend-1" in ready, "unblocked node should be ready"
+
+
 RUNTIME_TESTS = [
     # P0-E2E: Orchestrator integration — ask/resolve → DAG dispatch
     ("e2e_ask_resolve_dag", _test_e2e_ask_resolve_dag),
@@ -1648,6 +1764,10 @@ RUNTIME_TESTS = [
     ("ready_nodes_empty_on_terminal_graph", _test_ready_nodes_empty_on_terminal_graph),
     ("advance_node_idempotent_done", _test_advance_node_idempotent_on_done),
     ("get_ready_nodes_on_partial_failed_graph", _test_get_ready_nodes_on_partial_failed_graph),
+    # P1-RT: Blocked node handling (G-20, G-22)
+    ("blocked_node_excluded_from_ready", _test_blocked_node_excluded_from_ready),
+    ("blocked_graph_becomes_blocked_status", _test_blocked_graph_becomes_blocked_status),
+    ("unblock_and_redispatch", _test_unblock_and_redispatch),
 ]
 
 
