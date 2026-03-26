@@ -108,11 +108,13 @@ done < <(find "$REPO_ROOT/teams" "$REPO_ROOT/shared/agents" -name "*.md" -type f
 [[ $skill_errors -eq 0 ]] && echo "  ✓ all skill references resolve" && (( PASS += 1 ))
 
 echo ""
-echo "=== Routing: run deterministic routing test suite ==="
-python3 "$(dirname "$0")/routing/test_routing_cases.py"
-
-echo ""
 echo "=== Results ==="
 echo "  Passed: $PASS"
 echo "  Failed: $FAIL"
-[[ $FAIL -eq 0 ]] && exit 0 || exit 1
+
+echo ""
+echo "=== Routing: run deterministic routing test suite ==="
+python3 "$(dirname "$0")/routing/test_routing_cases.py"
+ROUTING_EXIT=$?
+
+[[ $FAIL -eq 0 && $ROUTING_EXIT -eq 0 ]] && exit 0 || exit 1
