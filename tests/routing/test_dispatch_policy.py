@@ -93,7 +93,7 @@ def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=
     medium_context = "when_high_exists" if high_candidates else "when_no_high_exists"
     medium_action = normalized["medium"][medium_context]
 
-    if medium_action == "ask":
+    if medium_action == "ask" and medium_candidates:
         ask_resolution = _handle_ask(medium_candidates, medium_context, selected, secondary, ignored, prompt_fn)
     else:
         for team in medium_candidates:
