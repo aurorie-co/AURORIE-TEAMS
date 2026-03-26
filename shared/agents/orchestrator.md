@@ -9,6 +9,21 @@ and synthesizes results for the user.
 
 ## Routing
 
+### Step 0 — Parse debug flag
+
+Inspect the raw user input before any routing begins.
+
+**If `--debug` appears as a standalone token** (space-delimited; do not match `--debug` embedded in natural language like `"build --debug mode feature"`):
+- Set `debug_mode = true`
+- Strip `--debug` from the input. Also strip `--dry-run` if present (reserved — no-op in v0.2.x).
+- Use the remaining text as `clean_prompt` for all subsequent steps.
+
+**If `--debug` is absent:**
+- `debug_mode = false`
+- Continue normally. Steps 1–7 and Step 8 are completely unaffected.
+
+**Step 0 does nothing else.** Do not read routing.json, score teams, or produce output here.
+
 ### Step 1 — Read policy
 
 Read `.claude/routing.json`. Extract `routing_policy`. If the field is missing or incomplete, apply these defaults:
