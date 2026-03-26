@@ -1245,91 +1245,20 @@ GRAPH_TESTS = [
 # Milestone pure functions
 # ---------------------------------------------------------------------------
 
-def _make_milestone_id():
-    """Generate a stable milestone ID. In tests: deterministic for reproducibility."""
-    import uuid
-    return "ms_" + str(uuid.uuid4())[:8]
+# ---------------------------------------------------------------------------
+# Milestone pure functions (imported from lib — single source of truth)
+# ---------------------------------------------------------------------------
 
-
-def create_milestone(title, milestone_id=None):
-    """
-    Creates a new milestone dict. Pure function.
-
-    Args:
-        title: human-readable title
-        milestone_id: optional id (auto-generated if not provided)
-
-    Returns:
-        milestone dict with tasks=[], status="pending"
-    """
-    from datetime import datetime, timezone
-    return {
-        "milestone_id": milestone_id or _make_milestone_id(),
-        "title": title,
-        "status": "pending",
-        "tasks": [],
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
-
-
-def attach_task_to_milestone(milestone, task_id):
-    """
-    Appends a task_id to milestone['tasks']. Returns updated milestone (copy).
-    Tasks can only be added, never removed (append-only constraint).
-    Idempotent: adding the same task twice is a no-op.
-    """
-    milestone = dict(milestone)
-    milestone["tasks"] = list(milestone.get("tasks", []))
-    if task_id not in milestone["tasks"]:
-        milestone["tasks"].append(task_id)
-    from datetime import datetime, timezone
-    milestone["updated_at"] = datetime.now(timezone.utc).isoformat()
-    return milestone
-
-
-def aggregate_milestone_status(task_statuses):
-    """
-    Aggregates a list of task statuses into a milestone status.
-
-    Rules:
-    - any task is partial_failed → milestone = partial_failed
-    - any task is in_progress → milestone = in_progress
-    - all tasks are completed → milestone = completed
-    - all tasks are pending → milestone = pending
-    - otherwise → in_progress (mixed pending + completed)
-
-    Args:
-        task_statuses: list of task status strings
-
-    Returns:
-        milestone status string
-    """
-    if not task_statuses:
-        return "pending"
-
-    if any(s == "partial_failed" for s in task_statuses):
-        return "partial_failed"
-    if any(s == "in_progress" for s in task_statuses):
-        return "in_progress"
-    if all(s == "completed" for s in task_statuses):
-        return "completed"
-    if all(s == "pending" for s in task_statuses):
-        return "pending"
-    # Mixed pending + completed (no in_progress) — treat as in_progress
-    return "in_progress"
-
-
-def get_milestone_ref(milestone):
-    """
-    Extracts the lightweight ref to embed in a task JSON.
-    Returns: {"milestone_id": "...", "title": "..."}
-    """
-    return {
-        "milestone_id": milestone["milestone_id"],
-        "title": milestone["title"],
-    }
-
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../lib"))
+from milestone import (
+    make_milestone_id,
+    create_milestone,
+    attach_task_to_milestone,
+    aggregate_milestone_status,
+    get_milestone_ref,
+)
 
 # ---------------------------------------------------------------------------
 # Milestone tests
@@ -1415,6 +1344,20 @@ def _test_get_milestone_ref():
     assert "status" not in ref
 
 
+def _test_aggregate_mixed_with_partial_failed():
+    """partial_failed takes priority over in_progress and completed"""
+    assert aggregate_milestone_status(["completed", "in_progress", "partial_failed"]) == "partial_failed"
+    assert aggregate_milestone_status(["pending", "in_progress", "partial_failed"]) == "partial_failed"
+
+
+def _test_attach_same_task_idempotent():
+    """attaching the same task twice does not duplicate"""
+    ms = create_milestone("Test", "ms_idem")
+    ms = attach_task_to_milestone(ms, "task_x")
+    ms = attach_task_to_milestone(ms, "task_x")
+    assert ms["tasks"] == ["task_x"]
+
+
 MILESTONE_TESTS = [
     ("milestone_create", _test_milestone_create),
     ("milestone_create_auto_id", _test_milestone_create_auto_id),
@@ -1428,6 +1371,8 @@ MILESTONE_TESTS = [
     ("aggregate_mixed_no_in_progress", _test_aggregate_mixed_no_in_progress),
     ("aggregate_empty", _test_aggregate_empty),
     ("get_milestone_ref", _test_get_milestone_ref),
+    ("aggregate_mixed_with_partial_failed", _test_aggregate_mixed_with_partial_failed),
+    ("attach_same_task_idempotent", _test_attach_same_task_idempotent),
 ]
 
 
