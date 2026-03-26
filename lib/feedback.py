@@ -99,3 +99,41 @@ def aggregate_team_stats(events):
             "success_rate": data["successes"] / data["runs"] if data["runs"] > 0 else 0.0,
         }
     return result
+
+
+def aggregate_template_stats(events):
+    """
+    Aggregates template-level success_rate and runs from initial-run events only.
+
+    Success = final_status == "completed"
+    Failure = final_status in {"partial_failed", "blocked"}
+
+    Resume runs (run_kind != "initial") are excluded.
+
+    Returns:
+        {
+            "linear":    {"runs": int, "successes": int, "success_rate": float},
+            "flat":      {"runs": int, "successes": int, "success_rate": float},
+            ...
+        }
+    """
+    totals = {}  # template -> {"runs": int, "successes": int}
+
+    for event in events:
+        if event.get("run_kind") != "initial":
+            continue
+        tpl = event.get("graph_template")
+        if tpl not in totals:
+            totals[tpl] = {"runs": 0, "successes": 0}
+        totals[tpl]["runs"] += 1
+        if event.get("final_status") == "completed":
+            totals[tpl]["successes"] += 1
+
+    result = {}
+    for tpl, data in totals.items():
+        result[tpl] = {
+            "runs": data["runs"],
+            "successes": data["successes"],
+            "success_rate": data["successes"] / data["runs"] if data["runs"] > 0 else 0.0,
+        }
+    return result

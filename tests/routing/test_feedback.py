@@ -222,6 +222,42 @@ def _test_aggregate_team_stats_resume_excluded():
     assert stats["backend"]["successes"] == 0
 
 
+def _make_event_tpl(task_id, run_kind, final_status, graph_template):
+    return build_feedback_event(
+        task_id=task_id,
+        run_n=1 if run_kind == "initial" else 2,
+        run_kind=run_kind,
+        teams=["backend"],
+        graph_template=graph_template,
+        final_status=final_status,
+        failed_nodes=[],
+        resumed=(run_kind == "resume"),
+    )
+
+
+def _test_aggregate_template_stats():
+    """
+    G1: 5 linear + 2 flat runs -> correct per-template stats.
+    Only run_kind='initial' counted.
+    """
+    from lib.feedback import aggregate_template_stats
+    events = [
+        _make_event_tpl("t1", "initial", "completed", "linear"),
+        _make_event_tpl("t2", "initial", "completed", "linear"),
+        _make_event_tpl("t3", "initial", "completed", "linear"),
+        _make_event_tpl("t4", "initial", "partial_failed", "linear"),
+        _make_event_tpl("t5", "initial", "partial_failed", "linear"),
+        _make_event_tpl("t6", "initial", "completed", "flat"),
+        _make_event_tpl("t7", "initial", "partial_failed", "flat"),
+        _make_event_tpl("t8", "resume", "completed", "linear"),   # excluded
+    ]
+    stats = aggregate_template_stats(events)
+    assert stats["linear"]["runs"] == 5   # t8 excluded (resume)
+    assert stats["linear"]["success_rate"] == 3/5
+    assert stats["flat"]["runs"] == 2
+    assert stats["flat"]["success_rate"] == 0.5
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -237,6 +273,7 @@ TESTS = [
     ("aggregate_team_stats_single_team", _test_aggregate_team_stats_single_team),
     ("aggregate_team_stats_multiple_teams", _test_aggregate_team_stats_multiple_teams),
     ("aggregate_team_stats_resume_excluded", _test_aggregate_team_stats_resume_excluded),
+    ("aggregate_template_stats", _test_aggregate_template_stats),
 ]
 
 
