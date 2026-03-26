@@ -58,3 +58,44 @@ def load_events(path: Path) -> list[dict]:
             if line:
                 events.append(json.loads(line))
     return events
+
+
+# ─────────────────────────────
+# Section 3 — Aggregation
+# ─────────────────────────────
+
+def aggregate_team_stats(events):
+    """
+    Aggregates team-level success_rate and runs from initial-run events only.
+
+    Success = final_status == "completed"
+    Failure = final_status in {"partial_failed", "blocked"}
+
+    Resume runs (run_kind != "initial") are excluded from statistics.
+
+    Returns:
+        {
+            "backend": {"runs": int, "successes": int, "success_rate": float},
+            ...
+        }
+    """
+    totals = {}  # team -> {"runs": int, "successes": int}
+
+    for event in events:
+        if event.get("run_kind") != "initial":
+            continue
+        for team in event.get("teams", []):
+            if team not in totals:
+                totals[team] = {"runs": 0, "successes": 0}
+            totals[team]["runs"] += 1
+            if event.get("final_status") == "completed":
+                totals[team]["successes"] += 1
+
+    result = {}
+    for team, data in totals.items():
+        result[team] = {
+            "runs": data["runs"],
+            "successes": data["successes"],
+            "success_rate": data["successes"] / data["runs"] if data["runs"] > 0 else 0.0,
+        }
+    return result

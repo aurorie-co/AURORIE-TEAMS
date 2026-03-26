@@ -144,6 +144,85 @@ def _test_load_events_missing_file():
 
 
 # ---------------------------------------------------------------------------
+# Aggregation tests
+# ---------------------------------------------------------------------------
+
+def _make_event(task_id, run_kind, final_status, teams):
+    return build_feedback_event(
+        task_id=task_id,
+        run_n=1 if run_kind == "initial" else 2,
+        run_kind=run_kind,
+        teams=teams,
+        graph_template="linear",
+        final_status=final_status,
+        failed_nodes=[],
+        resumed=(run_kind == "resume"),
+    )
+
+
+def _test_aggregate_team_stats_empty():
+    """
+    F6: Empty event list -> empty stats.
+    """
+    from lib.feedback import aggregate_team_stats
+    stats = aggregate_team_stats([])
+    assert stats == {}
+
+
+def _test_aggregate_team_stats_single_team():
+    """
+    F7: 3 completed + 2 partial_failed -> success_rate=0.6.
+    Only run_kind='initial' counts.
+    """
+    from lib.feedback import aggregate_team_stats
+    events = [
+        _make_event("t1", "initial", "completed", ["backend"]),
+        _make_event("t2", "initial", "completed", ["backend"]),
+        _make_event("t3", "initial", "completed", ["backend"]),
+        _make_event("t4", "initial", "partial_failed", ["backend"]),
+        _make_event("t5", "initial", "partial_failed", ["backend"]),
+        _make_event("t6", "resume", "completed", ["backend"]),   # excluded
+    ]
+    stats = aggregate_team_stats(events)
+    assert "backend" in stats
+    assert stats["backend"]["runs"] == 5        # only initial counted
+    assert stats["backend"]["successes"] == 3
+    assert stats["backend"]["success_rate"] == 0.6
+
+
+def _test_aggregate_team_stats_multiple_teams():
+    """
+    F8: 2 teams -> correct per-team stats.
+    """
+    from lib.feedback import aggregate_team_stats
+    events = [
+        _make_event("t1", "initial", "completed", ["backend", "frontend"]),
+        _make_event("t2", "initial", "partial_failed", ["backend"]),
+        _make_event("t3", "initial", "completed", ["frontend"]),
+        _make_event("t4", "initial", "blocked", ["frontend"]),
+    ]
+    stats = aggregate_team_stats(events)
+    assert stats["backend"]["runs"] == 2
+    assert stats["backend"]["success_rate"] == 0.5
+    assert stats["frontend"]["runs"] == 3
+    assert stats["frontend"]["success_rate"] == 2/3  # 2 completed, 1 blocked
+
+
+def _test_aggregate_team_stats_resume_excluded():
+    """
+    F5: resume runs are excluded from stats entirely.
+    """
+    from lib.feedback import aggregate_team_stats
+    events = [
+        _make_event("t1", "initial", "partial_failed", ["backend"]),
+        _make_event("t2", "resume", "completed", ["backend"]),   # must NOT count
+    ]
+    stats = aggregate_team_stats(events)
+    assert stats["backend"]["runs"] == 1
+    assert stats["backend"]["successes"] == 0
+
+
+# ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
 
@@ -154,6 +233,10 @@ TESTS = [
     ("append_and_load_jsonl", _test_append_and_load_jsonl),
     ("load_events_empty", _test_load_events_empty),
     ("load_events_missing_file", _test_load_events_missing_file),
+    ("aggregate_team_stats_empty", _test_aggregate_team_stats_empty),
+    ("aggregate_team_stats_single_team", _test_aggregate_team_stats_single_team),
+    ("aggregate_team_stats_multiple_teams", _test_aggregate_team_stats_multiple_teams),
+    ("aggregate_team_stats_resume_excluded", _test_aggregate_team_stats_resume_excluded),
 ]
 
 
