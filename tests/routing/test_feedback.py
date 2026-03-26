@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Feedback Event test suite — v0.7 Adaptive Execution Runtime.
-Tests build_feedback_event() pure function.
+Tests build_feedback_event() pure function and JSONL store.
 """
 
-from lib.feedback import build_feedback_event
+from pathlib import Path
+from lib.feedback import build_feedback_event, append_event, load_events
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +81,69 @@ def _test_build_feedback_event_partial_failed():
 
 
 # ---------------------------------------------------------------------------
+# JSONL Store tests
+# ---------------------------------------------------------------------------
+
+def _test_append_and_load_jsonl():
+    """
+    F4: Append events to JSONL, load back, verify content and line count.
+    """
+    import json
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        history_path = tmp_path / "execution_history.jsonl"
+
+        event1 = build_feedback_event(
+            task_id="task_001", run_n=1, run_kind="initial",
+            teams=["backend"], graph_template="linear",
+            final_status="completed", failed_nodes=[], resumed=False,
+        )
+        event2 = build_feedback_event(
+            task_id="task_002", run_n=1, run_kind="initial",
+            teams=["frontend"], graph_template="flat",
+            final_status="partial_failed", failed_nodes=["frontend-1"], resumed=False,
+        )
+
+        append_event(history_path, event1)
+        append_event(history_path, event2)
+
+        events = load_events(history_path)
+        assert len(events) == 2
+        assert events[0]["task_id"] == "task_001"
+        assert events[1]["task_id"] == "task_002"
+        assert events[1]["final_status"] == "partial_failed"
+
+        # Verify raw lines are valid JSON
+        with open(history_path) as f:
+            lines = f.readlines()
+        assert len(lines) == 2
+        json.loads(lines[0])
+        json.loads(lines[1])
+
+
+def _test_load_events_empty():
+    """
+    F4b: Empty JSONL returns empty list.
+    """
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        history_path = tmp_path / "empty.jsonl"
+        history_path.write_text("")
+        events = load_events(history_path)
+        assert events == []
+
+
+def _test_load_events_missing_file():
+    """
+    F4c: Missing JSONL file returns empty list (no exception).
+    """
+    events = load_events(Path("/nonexistent/path.jsonl"))
+    assert events == []
+
+
+# ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
 
@@ -87,6 +151,9 @@ TESTS = [
     ("build_feedback_event_initial", _test_build_feedback_event_initial),
     ("build_feedback_event_resume", _test_build_feedback_event_resume),
     ("build_feedback_event_partial_failed", _test_build_feedback_event_partial_failed),
+    ("append_and_load_jsonl", _test_append_and_load_jsonl),
+    ("load_events_empty", _test_load_events_empty),
+    ("load_events_missing_file", _test_load_events_missing_file),
 ]
 
 
