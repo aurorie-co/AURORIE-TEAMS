@@ -91,10 +91,10 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
 "routing_decision": {
   "routing_schema_version": "v0.2",
   "policy_snapshot": {
-    "candidate_threshold": 1,
+    "candidate_threshold": "<routing_policy.candidate_threshold>",
     "confidence_thresholds": {
-      "high": 3,
-      "medium": 1
+      "high": "<routing_policy.confidence_thresholds.high>",
+      "medium": "<routing_policy.confidence_thresholds.medium>"
     },
     "dispatch_policy": {
       "high": "selected",
