@@ -86,7 +86,7 @@ Triggered when Step 5 dispatch logic finds no selected teams (no high or medium 
     "dispatch_strategy": "fallback",
     "selected_teams": [],
     "secondary_teams": [],
-    "filtered_teams": ["<all teams that were scored and filtered>"]
+    "filtered_teams": [{ "team": "<team-id>", "score": 0, "confidence": "low", "matched_positive": [], "matched_negative": [] }]
   }
   ```
 - Output exactly one clarifying question — no preamble, no explanation, just the question (e.g. "Is this a backend API task or a UI feature?")
