@@ -186,3 +186,50 @@ def compute_template_bias(template_stats: dict) -> dict:
         tpl: feedback_multiplier(data["success_rate"], data["runs"])
         for tpl, data in template_stats.items()
     }
+
+
+# ─────────────────────────────
+# Section 5 — Apply to Routing
+# ─────────────────────────────
+
+def apply_team_bias(candidates: list[dict], team_bias: dict,
+                    team_stats: dict = None) -> list[dict]:
+    """
+    Applies feedback bias to team candidates at the score level.
+
+    Each candidate dict is extended with:
+      - adjusted_score: raw_score * bias_multiplier
+      - feedback_bias: the multiplier used
+      - runs (if team_stats provided)
+      - success_rate (if team_stats provided)
+
+    Candidates not in team_bias receive bias=1.0.
+    """
+    result = []
+    for c in candidates:
+        team = c["team"]
+        multiplier = team_bias.get(team, 1.0)
+        new_c = dict(c)
+        new_c["feedback_bias"] = multiplier
+        new_c["adjusted_score"] = c["raw_score"] * multiplier
+        if team_stats and team in team_stats:
+            new_c["runs"] = team_stats[team]["runs"]
+            new_c["success_rate"] = team_stats[team]["success_rate"]
+        result.append(new_c)
+    return result
+
+
+def apply_template_bias(candidates: list[str], template_bias: dict) -> dict:
+    """
+    Applies feedback bias to template candidates.
+
+    Returns dict of {template: {"feedback_bias": float}}.
+
+    Templates not in template_bias receive bias=1.0.
+    """
+    result = {}
+    for tpl in candidates:
+        result[tpl] = {
+            "feedback_bias": template_bias.get(tpl, 1.0),
+        }
+    return result

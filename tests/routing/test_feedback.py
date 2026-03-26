@@ -341,6 +341,89 @@ def _test_compute_template_bias():
 
 
 # ---------------------------------------------------------------------------
+# Apply to Routing tests
+# ---------------------------------------------------------------------------
+
+def _test_apply_team_bias_reduces_score():
+    """
+    F14: Team with low success_rate -> adjusted_score < raw_score.
+    """
+    from lib.feedback import apply_team_bias
+    bias = {"backend": 0.9}
+    candidates = [
+        {"team": "backend", "raw_score": 3, "confidence": "high"},
+    ]
+    adjusted = apply_team_bias(candidates, bias)
+    assert adjusted[0]["adjusted_score"] == 2.7
+    assert adjusted[0]["feedback_bias"] == 0.9
+
+
+def _test_apply_team_bias_no_bias_when_insufficient():
+    """
+    F15: runs < 5 -> feedback_bias=1.0, adjusted_score = raw_score.
+    """
+    from lib.feedback import apply_team_bias
+    bias = {"backend": 1.0}
+    candidates = [
+        {"team": "backend", "raw_score": 3, "confidence": "high"},
+    ]
+    adjusted = apply_team_bias(candidates, bias)
+    assert adjusted[0]["adjusted_score"] == 3.0
+    assert adjusted[0]["feedback_bias"] == 1.0
+
+
+def _test_apply_team_bias_high_rate_no_change():
+    """
+    F16: success_rate >= 0.8 -> adjusted_score = raw_score.
+    """
+    from lib.feedback import apply_team_bias
+    bias = {"frontend": 1.0}
+    candidates = [
+        {"team": "frontend", "raw_score": 4, "confidence": "high"},
+    ]
+    adjusted = apply_team_bias(candidates, bias)
+    assert adjusted[0]["adjusted_score"] == 4.0
+
+
+def _test_apply_team_bias_includes_stats():
+    """
+    F17b: adjusted team includes runs + success_rate for debug output.
+    """
+    from lib.feedback import apply_team_bias
+    team_stats = {"backend": {"runs": 12, "success_rate": 0.58, "successes": 7}}
+    bias = {"backend": 0.9}
+    candidates = [{"team": "backend", "raw_score": 3, "confidence": "high"}]
+    adjusted = apply_team_bias(candidates, bias, team_stats)
+    assert adjusted[0]["runs"] == 12
+    assert adjusted[0]["success_rate"] == 0.58
+    assert adjusted[0]["feedback_bias"] == 0.9
+    assert adjusted[0]["adjusted_score"] == 2.7
+
+
+def _test_apply_template_bias_multiple_candidates():
+    """
+    G3: Multiple templates available -> bias applied to each.
+    """
+    from lib.feedback import apply_template_bias
+    bias = {"linear": 0.9, "flat": 1.0}
+    candidates = ["linear", "flat"]
+    adjusted = apply_template_bias(candidates, bias)
+    assert adjusted["linear"]["feedback_bias"] == 0.9
+    assert adjusted["flat"]["feedback_bias"] == 1.0
+
+
+def _test_apply_template_bias_insufficient_data():
+    """
+    G3b: runs < 5 -> no bias applied.
+    """
+    from lib.feedback import apply_template_bias
+    bias = {"experimental": 1.0}
+    candidates = ["experimental"]
+    adjusted = apply_template_bias(candidates, bias)
+    assert adjusted["experimental"]["feedback_bias"] == 1.0
+
+
+# ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
 
@@ -363,6 +446,12 @@ TESTS = [
     ("feedback_multiplier_very_low_rate", _test_feedback_multiplier_very_low_rate),
     ("compute_team_bias", _test_compute_team_bias),
     ("compute_template_bias", _test_compute_template_bias),
+    ("apply_team_bias_reduces_score", _test_apply_team_bias_reduces_score),
+    ("apply_team_bias_no_bias_when_insufficient", _test_apply_team_bias_no_bias_when_insufficient),
+    ("apply_team_bias_high_rate_no_change", _test_apply_team_bias_high_rate_no_change),
+    ("apply_team_bias_includes_stats", _test_apply_team_bias_includes_stats),
+    ("apply_template_bias_multiple_candidates", _test_apply_template_bias_multiple_candidates),
+    ("apply_template_bias_insufficient_data", _test_apply_template_bias_insufficient_data),
 ]
 
 
