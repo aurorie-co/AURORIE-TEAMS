@@ -155,28 +155,70 @@ Each routing decision is explainable — not a black box.
 Each request is scored against every team rule:
 - **+1** for each `positive_keywords` match
 - **−2** for each `negative_keywords` match (strong disqualifier)
-- `example_requests` break ties
+
+Scores map to confidence bands:
+- **high** (score ≥ 3) → dispatched immediately as primary team
+- **medium** (score ≥ 1) → dispatched as secondary when no high team, or surfaced as "also relevant"
+- **low / filtered** (score < 1) → suppressed
 
 Example:
 
 ```
-"Why did revenue drop?"
-→ Data     (+score: dropped, metrics, root cause)
-→ Research (+score: why did, investigate)
-→ Backend  (no match)
-Final: Data + Research
+"Add a REST endpoint for user authentication with JWT"
+→ backend: score 4, high → selected
+→ product: score 1, medium → secondary (not dispatched)
+→ market:  score -1, low  → filtered
 
-"Build a crypto SaaS with React dashboard"
-→ Frontend (+score: SaaS, React)
-→ Backend  (+score: SaaS)
-→ Product  (+score: SaaS)
-→ Data     (+score: dashboard)
-Final: Frontend + Backend + Product + Data
+"Build a SaaS platform with user requirements and API endpoints"
+→ backend:   score 4, high   → selected
+→ product:   score 2, medium → secondary
+→ frontend:  score 1, medium → secondary
+→ remaining: low             → filtered
 ```
 
 Routing is deterministic at the rule level, and adaptive at the system level.
 
-You can customize routing in `.claude/routing.json`.
+You can customize routing in `.claude/routing.json`. The `routing_policy` block controls thresholds.
+
+### Debug routing decisions
+
+Add `--debug` to any orchestrator call to see the full trace:
+
+```
+@orchestrator --debug "Build a SaaS platform with user requirements and API endpoints"
+```
+
+Output:
+
+```
+=== ROUTING DEBUG ===
+
+Policy:
+- candidate_threshold: 1
+- confidence.high: 3
+- confidence.medium: 1
+- dispatch_strategy: conditional
+
+Evaluations:
+backend: score 4, high → selected
+  + API, endpoint, SaaS, platform
+  - (none)
+product: score 2, medium → secondary
+  + requirements, SaaS
+  - (none)
+market: score -1, low → filtered
+  + (none)
+  - iOS
+
+Dispatch:
+  Selected:  backend
+  Secondary: product, frontend
+  Filtered:  market, mobile, data, ...
+
+=== END ROUTING DEBUG ===
+```
+
+Debug output is a pure projection of `routing_decision` — it does not change dispatch behavior.
 
 ---
 
@@ -422,17 +464,23 @@ Use read-only credentials where possible. Review generated artifacts before acti
 
 We're building the AI company OS.
 
-**v1.x — Reliable execution**
+**v0.1 — Foundation**
 - ✓ 10 specialized teams, 34 agents
 - ✓ v2 routing with positive/negative scoring
 - ✓ Lint + install test suites
 
-**v2.0 — Intelligent systems**
-- [ ] Confidence-based routing
-- [ ] UI dashboard
-- [ ] Visual workflow editor
+**v0.2 — Observable routing (current)**
+- ✓ Confidence-based routing (high / medium / filtered)
+- ✓ Routing test suite — 5 regression cases, CI-integrated
+- ✓ `--debug` flag — full per-team routing trace in terminal
+
+**v0.3 — Controllable execution**
+- [ ] Interactive routing — confirm medium teams before dispatch
+- [ ] `dispatch_policy` config — per-confidence-band behavior in routing.json
+- [ ] Task graph — DAG execution across teams
 
 **Long-term — AI-native companies**
+- [ ] Observability dashboard
 - [ ] Agent marketplace
 - [ ] Memory system
 - [ ] Cross-project orchestration
@@ -457,17 +505,26 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR 🚀
 
 ## Tests
 
-Two test suites live in `tests/`:
+Three test suites live in `tests/`:
 
 | Script | What it tests |
 |--------|--------------|
 | `tests/install.test.sh` | Full install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree consistency: agent/workflow/skill/routing contract validation |
+| `tests/routing/test_routing_cases.py` | 5 deterministic routing cases: confidence bands, dispatch, fallback, negative keyword suppression |
 
-Run both before opening a PR or after changing routing/workflows:
+Run before opening a PR or after changing routing/workflows:
 
 ```bash
 bash tests/install.test.sh && bash tests/lint.test.sh
+```
+
+The routing test suite runs automatically as part of `tests/lint.test.sh`.
+
+To run routing tests standalone:
+
+```bash
+python3 tests/routing/test_routing_cases.py
 ```
 
 ---

@@ -155,28 +155,70 @@ _想看完整系统架构？→ 查看下方[系统架构](#-系统架构)。_
 系统对每条团队规则进行打分：
 - **+1**：每个 `positive_keywords` 命中
 - **−2**：每个 `negative_keywords` 命中（强排除信号）
-- 同分时用 `example_requests` 决胜
+
+分数映射到置信度区间：
+- **high**（≥ 3）→ 直接派发为主团队
+- **medium**（≥ 1）→ 无 high 团队时作为主团队，否则作为"次要相关"展示
+- **low / filtered**（< 1）→ 过滤掉，不派发
 
 示例：
 
 ```
-"Why did revenue drop?"
-→ Data     (+score: dropped, metrics, root cause)
-→ Research (+score: why did, investigate)
-→ Backend  (no match)
-Final: Data + Research
+"Add a REST endpoint for user authentication with JWT"
+→ backend: score 4, high → selected
+→ product: score 1, medium → secondary（不派发）
+→ market:  score -1, low  → filtered
 
-"Build a crypto SaaS with React dashboard"
-→ Frontend (+score: SaaS, React)
-→ Backend  (+score: SaaS)
-→ Product  (+score: SaaS)
-→ Data     (+score: dashboard)
-Final: Frontend + Backend + Product + Data
+"Build a SaaS platform with user requirements and API endpoints"
+→ backend:   score 4, high   → selected
+→ product:   score 2, medium → secondary
+→ frontend:  score 1, medium → secondary
+→ 其余团队:  low             → filtered
 ```
 
 路由在规则层面是确定性的，在系统层面是自适应的。
 
-你可以在 `.claude/routing.json` 中自定义路由规则。
+你可以在 `.claude/routing.json` 中自定义路由规则，`routing_policy` 区块控制阈值。
+
+### 调试路由决策
+
+在任何 orchestrator 调用中加上 `--debug`，即可看到完整的路由过程：
+
+```
+@orchestrator --debug "Build a SaaS platform with user requirements and API endpoints"
+```
+
+输出示例：
+
+```
+=== ROUTING DEBUG ===
+
+Policy:
+- candidate_threshold: 1
+- confidence.high: 3
+- confidence.medium: 1
+- dispatch_strategy: conditional
+
+Evaluations:
+backend: score 4, high → selected
+  + API, endpoint, SaaS, platform
+  - (none)
+product: score 2, medium → secondary
+  + requirements, SaaS
+  - (none)
+market: score -1, low → filtered
+  + (none)
+  - iOS
+
+Dispatch:
+  Selected:  backend
+  Secondary: product, frontend
+  Filtered:  market, mobile, data, ...
+
+=== END ROUTING DEBUG ===
+```
+
+Debug 输出是 `routing_decision` 的纯投影——不会改变派发行为。
 
 ---
 
@@ -422,17 +464,23 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 我们在构建 AI 公司操作系统。
 
-**v1.x — 可靠执行**
+**v0.1 — 基础能力**
 - ✓ 10 个专业团队，34 个 Agent
 - ✓ 正负分值 v2 路由
 - ✓ Lint + install 测试套件
 
-**v2.0 — 智能系统**
-- [ ] 置信度路由
-- [ ] UI 控制台
-- [ ] 可视化工作流编辑器
+**v0.2 — 可观测路由（当前版本）**
+- ✓ 置信度路由（high / medium / filtered）
+- ✓ 路由测试套件——5 个回归 case，集成 CI
+- ✓ `--debug` flag——在终端输出完整的逐团队路由详情
+
+**v0.3 — 可控执行**
+- [ ] 交互式路由——派发前确认 medium 团队
+- [ ] `dispatch_policy` 配置——routing.json 中按置信度控制派发行为
+- [ ] 任务图——跨团队 DAG 执行
 
 **长期 — AI 原生公司**
+- [ ] 可观测性控制台
 - [ ] Agent 市场
 - [ ] 记忆系统
 - [ ] 跨项目编排
@@ -457,15 +505,24 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 ## 测试
 
-`tests/` 目录中有两个测试套件：
+`tests/` 目录中有三个测试套件：
 
 | 脚本 | 测试内容 |
 |--------|--------------|
 | `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
 | `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
+| `tests/routing/test_routing_cases.py` | 5 个确定性路由 case：置信度区间、派发、fallback、负关键词过滤 |
 
-在开 PR 或修改 routing/workflows 后，运行全部测试：
+开 PR 或修改 routing/workflows 后，运行全部测试：
 
 ```bash
 bash tests/install.test.sh && bash tests/lint.test.sh
+```
+
+路由测试套件已集成到 `tests/lint.test.sh`，会自动运行。
+
+也可单独运行：
+
+```bash
+python3 tests/routing/test_routing_cases.py
 ```
