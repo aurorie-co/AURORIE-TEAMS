@@ -456,8 +456,8 @@ def _test_maybe_append_one_per_run():
 
         _RUN_WRITTEN = {}  # simulate in-memory guard
 
-        maybe_append_feedback_event(history_path, task, "task_xyz_run_1", _RUN_WRITTEN)
-        maybe_append_feedback_event(history_path, task, "task_xyz_run_1", _RUN_WRITTEN)
+        maybe_append_feedback_event(history_path, task, "task_xyz_run_1", _RUN_WRITTEN, "initial")
+        maybe_append_feedback_event(history_path, task, "task_xyz_run_1", _RUN_WRITTEN, "initial")
 
         events = load_events(history_path)
         assert len(events) == 1  # second call was deduplicated
@@ -473,7 +473,7 @@ def _test_maybe_append_only_on_terminal_state():
         history_path = Path(tmp_dir) / "history.jsonl"
         task = {"task_id": "t1", "status": "in_progress"}
         written = {}
-        maybe_append_feedback_event(history_path, task, "t1_run_1", written)
+        maybe_append_feedback_event(history_path, task, "t1_run_1", written, "initial")
         assert len(load_events(history_path)) == 0
 
 

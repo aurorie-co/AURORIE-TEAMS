@@ -228,7 +228,8 @@ def get_failed_nodes(task: dict) -> list[str]:
 
 
 def maybe_append_feedback_event(path: Path, task: dict,
-                                run_id: str, run_written: dict) -> None:
+                                run_id: str, run_written: dict,
+                                run_kind: str) -> None:
     """
     Hook for orchestrator: appends feedback event only on terminal state,
     and only once per run (deduplicated by run_written dict).
@@ -238,6 +239,7 @@ def maybe_append_feedback_event(path: Path, task: dict,
         task: full task dict
         run_id: the run_id for this event
         run_written: in-memory dict used as guard {run_id: True}
+        run_kind: "initial" or "resume" — must be set by the orchestrator
     """
     if run_id in run_written:
         return  # already written for this run
@@ -251,12 +253,10 @@ def maybe_append_feedback_event(path: Path, task: dict,
     teams = get_teams_from_task(task)
     graph_template = get_graph_template(task)
     failed_nodes = get_failed_nodes(task)
-    resumed = "resume" in task.get("task_id", "") or task.get("resumed", False)
+    resumed = bool(task.get("resumed", False))
     milestone_id = task.get("milestone", {}).get("milestone_id") if task.get("milestone") else None
 
-    # Determine run_kind from run_id suffix
     run_n = int(run_id.rsplit("_", 1)[-1])
-    run_kind = "initial" if run_n == 1 else "resume"
 
     event = build_feedback_event(
         task_id=task["task_id"],
