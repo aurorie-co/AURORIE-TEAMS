@@ -197,6 +197,9 @@ Policy:
 - candidate_threshold: 1
 - confidence.high: 3
 - confidence.medium: 1
+- dispatch_policy.high: auto
+- dispatch_policy.medium.when_high_exists: ignore
+- dispatch_policy.medium.when_no_high_exists: auto
 - dispatch_strategy: conditional
 
 Evaluations:
@@ -213,10 +216,13 @@ market: score -1, low → filtered
 Dispatch:
   Selected:  backend
   Secondary: product, frontend
+  Ignored:   (none)
   Filtered:  market, mobile, data, ...
 
 === END ROUTING DEBUG ===
 ```
+
+When `ask` mode is triggered, an additional `Ask` block appears showing the prompted teams and user response.
 
 Debug output is a pure projection of `routing_decision` — it does not change dispatch behavior.
 
