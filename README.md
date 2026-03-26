@@ -20,6 +20,8 @@
 - [How it works](#-how-it-works)
 - [Why not just use ChatGPT?](#-why-not-just-use-chatgpt)
 - [Intelligent Routing](#-intelligent-routing)
+- [Decision Policy](#-decision-policy)
+- [Debug Mode](#-debug-mode)
 - [Architecture](#-architecture)
 - [Installation](#-installation)
 - [Try these prompts](#-try-these-prompts)
@@ -225,6 +227,88 @@ Dispatch:
 When `ask` mode is triggered, an additional `Ask` block appears showing the prompted teams and user response.
 
 Debug output is a pure projection of `routing_decision` — it does not change dispatch behavior.
+
+---
+
+## 🧠 Decision Policy
+
+Control what happens per confidence band after classification — not a black box, a programmable policy.
+
+```json
+"dispatch_policy": {
+  "high": "auto",
+  "medium": {
+    "when_high_exists": "ignore",
+    "when_no_high_exists": "ask"
+  }
+}
+```
+
+Three actions:
+- **`auto`** — dispatch immediately
+- **`ask`** — prompt for confirmation before dispatching (medium band only in v0.3)
+- **`ignore`** — suppress the team entirely
+
+**Ask mode example** — when a medium-only prompt triggers `ask`:
+
+```
+Medium-confidence teams identified:
+- product (score 2)
+- frontend (score 1)
+Dispatch these teams? [Y/n]
+```
+
+- `y` / `yes` / `<empty>` → dispatch all prompted teams
+- `n` / `no` → suppress all
+- Two invalid replies → treated as `no` (records `user_response: "default_no"`)
+
+Ask fires at most once per routing invocation. High-confidence teams are never affected.
+
+Customize in `.claude/routing.json`. The default policy reproduces v0.2 behavior exactly — no change required unless you want custom control.
+
+---
+
+## 🔍 Debug Mode
+
+`--debug` exposes the full routing trace — every score, every decision, every field:
+
+```
+@orchestrator --debug "Build a SaaS platform with user requirements and API endpoints"
+```
+
+```
+=== ROUTING DEBUG ===
+
+Policy:
+- candidate_threshold: 1
+- confidence.high: 3
+- confidence.medium: 1
+- dispatch_policy.high: auto
+- dispatch_policy.medium.when_high_exists: ignore
+- dispatch_policy.medium.when_no_high_exists: auto
+- dispatch_strategy: conditional
+
+Evaluations:
+backend: score 4, high → selected
+  + API, endpoint, SaaS, platform
+  - (none)
+product: score 2, medium → secondary
+  + requirements, SaaS
+  - (none)
+market: score -1, low → filtered
+  + (none)
+  - iOS
+
+Dispatch:
+  Selected:  backend
+  Secondary: product, frontend
+  Ignored:   (none)
+  Filtered:  market, mobile, data, ...
+
+=== END ROUTING DEBUG ===
+```
+
+When `ask` mode fires, an `Ask:` block is appended showing context, user response, and prompted teams.
 
 ---
 
@@ -443,7 +527,7 @@ Copy and run this — you'll get real artifacts.
 Edit `.claude/workflows/<team>.md` to change how a team operates.
 
 ### Customize intelligence
-Edit `.claude/routing.json` — v2 schema supports `positive_keywords` (+1), `negative_keywords` (−2), and `example_requests` per rule.
+Edit `.claude/routing.json` — configure scoring rules (`positive_keywords` / `negative_keywords`) and confidence thresholds, plus `dispatch_policy` to control what happens per band (auto / ask / ignore).
 
 ### Customize tools
 Extend MCP integrations via `.claude/settings.json`.
@@ -515,22 +599,22 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR 🚀
 
 ## Tests
 
-Three test suites live in `tests/`:
+Four test suites in `tests/`, all green on every commit:
 
 | Script | What it tests |
 |--------|--------------|
-| `tests/install.test.sh` | Full install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
-| `tests/lint.test.sh` | Source tree consistency: agent/workflow/skill/routing contract validation |
-| `tests/routing/test_routing_cases.py` | 5 deterministic routing cases: confidence bands, dispatch, fallback, negative keyword suppression |
-| `tests/routing/test_dispatch_policy.py` | 13 cases for v0.3 dispatch_policy: normalize (4), auto/ignore (4), ask mode (5) |
+| `tests/install.test.sh` | Install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
+| `tests/lint.test.sh` | Source tree contract: agent/workflow/skill/routing validation |
+| `tests/routing/test_routing_cases.py` | 5 routing regression cases: confidence bands, dispatch, fallback, negative keyword suppression |
+| `tests/routing/test_dispatch_policy.py` | 13 dispatch policy cases: normalize (4), auto/ignore (4), ask mode (5) |
 
-Run before opening a PR or after changing routing/workflows:
+Run all tests before opening a PR:
 
 ```bash
 bash tests/install.test.sh && bash tests/lint.test.sh
 ```
 
-To run routing tests standalone:
+Or run routing tests standalone:
 
 ```bash
 python3 tests/routing/test_routing_cases.py
