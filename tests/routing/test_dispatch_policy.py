@@ -68,18 +68,21 @@ NORMALIZE_TESTS = [
 # Evaluator stub
 # ---------------------------------------------------------------------------
 
-def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=None):
+def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=None, dry_run=False):
     """
     Applies dispatch_policy to candidates. Returns:
-      (selected_teams, secondary_teams, ignored_teams, ask_resolution)
-    ask_resolution is None when ask mode was not triggered.
-    secondary_teams are never dispatched — informational only.
+      (selected_teams, secondary_teams, ignored_teams, ask_resolution_or_ask_required)
+
+    - ask_resolution is returned when ask is resolved via user input (normal mode).
+    - ask_required dict is returned when ask is deferred (dry-run mode).
+    - The two are mutually exclusive — only one is ever present.
+    - secondary_teams are never dispatched — informational only.
     """
     normalized = normalize_dispatch_policy(policy)
     selected = []
     secondary = []
     ignored = []
-    ask_resolution = None
+    ask_resolution_or_ask_required = None
 
     # Apply high policy
     high_action = normalized["high"]
@@ -94,7 +97,17 @@ def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=
     medium_action = normalized["medium"][medium_context]
 
     if medium_action == "ask" and medium_candidates:
-        ask_resolution = _handle_ask(medium_candidates, medium_context, selected, secondary, ignored, prompt_fn)
+        if dry_run:
+            # Deferred: set ask_required instead of prompting
+            ask_resolution_or_ask_required = {
+                "ask_required": True,
+                "context": f"medium_{medium_context}",
+                "teams": [t["team"] for t in medium_candidates],
+            }
+        else:
+            ask_resolution_or_ask_required = _handle_ask(
+                medium_candidates, medium_context, selected, secondary, ignored, prompt_fn
+            )
     else:
         for team in medium_candidates:
             if medium_action == "auto":
@@ -105,7 +118,7 @@ def apply_dispatch_policy(high_candidates, medium_candidates, policy, prompt_fn=
             elif medium_action == "ignore":
                 ignored.append(team)
 
-    return selected, secondary, ignored, ask_resolution
+    return selected, secondary, ignored, ask_resolution_or_ask_required
 
 
 def _handle_ask(medium_candidates, medium_context, selected, secondary, ignored, prompt_fn):
@@ -321,6 +334,91 @@ AUTO_IGNORE_TESTS = [
 
 
 # ---------------------------------------------------------------------------
+# Dry-run tests
+# ---------------------------------------------------------------------------
+
+def _test_dry_run_normal_high_auto():
+    """dry_run=True + normal high auto → selected_teams generated normally, no prompt"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "auto"}}
+    prompt_called = False
+    def track_prompt(q):
+        nonlocal prompt_called
+        prompt_called = True
+        return "y"
+
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy, prompt_fn=track_prompt, dry_run=True
+    )
+    assert [t["team"] for t in selected] == ["backend"]
+    assert [t["team"] for t in ignored] == ["product"]
+    assert ask_res is None
+    assert prompt_called is False, "prompt_fn should not be called in dry-run mode"
+
+
+def _test_dry_run_ask_deferred():
+    """dry_run=True + ask policy → returns ask_required dict (not ask_resolution)"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [], [_team("product", 2)], policy, dry_run=True
+    )
+    assert selected == []
+    assert secondary == []
+    assert ignored == []
+    assert ask_res is not None
+    assert ask_res.get("ask_required") is True
+    assert ask_res["context"] == "medium_when_no_high_exists"
+    assert ask_res["teams"] == ["product"]
+    assert "triggered" not in ask_res, "ask_required should not have triggered key"
+
+
+def _test_dry_run_ask_no_prompt():
+    """dry_run=True + ask policy → prompt_fn must not be called"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    prompt_called = False
+    def track_prompt(q):
+        nonlocal prompt_called
+        prompt_called = True
+        return "y"
+
+    apply_dispatch_policy([], [_team("product", 2)], policy, prompt_fn=track_prompt, dry_run=True)
+    assert prompt_called is False, "prompt_fn must not be called when dry_run=True"
+
+
+def _test_dry_run_ask_required_no_ask_resolution():
+    """dry_run=True: ask_required present means ask_resolution absent"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [], [_team("product", 2)], policy, dry_run=True
+    )
+    assert ask_res is not None
+    assert "ask_required" in ask_res
+    assert "triggered" not in ask_res
+    assert "user_response" not in ask_res
+
+
+def _test_normal_ask_has_resolution_not_ask_required():
+    """Normal mode (dry_run=False): ask_resolution present, ask_required absent"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    mock_responses = iter(["y"])
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses), dry_run=False
+    )
+    assert ask_res is not None
+    assert "ask_required" not in ask_res
+    assert ask_res["triggered"] is True
+    assert ask_res["user_response"] == "yes"
+
+
+DRYRUN_TESTS = [
+    ("dry_run_normal_high_auto", _test_dry_run_normal_high_auto),
+    ("dry_run_ask_deferred", _test_dry_run_ask_deferred),
+    ("dry_run_ask_no_prompt", _test_dry_run_ask_no_prompt),
+    ("dry_run_ask_required_no_ask_resolution", _test_dry_run_ask_required_no_ask_resolution),
+    ("normal_ask_has_resolution_not_ask_required", _test_normal_ask_has_resolution_not_ask_required),
+]
+
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
@@ -329,6 +427,7 @@ def main():
         ("normalize", NORMALIZE_TESTS),
         ("auto_ignore", AUTO_IGNORE_TESTS),
         ("ask", ASK_TESTS),
+        ("dry_run", DRYRUN_TESTS),
     ]
 
     total_passed = total_failed = 0
