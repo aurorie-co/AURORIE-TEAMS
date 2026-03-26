@@ -5,6 +5,13 @@
     "confidence_thresholds": {
       "high": 3,
       "medium": 1
+    },
+    "dispatch_policy": {
+      "high": "auto",
+      "medium": {
+        "when_high_exists": "ignore",
+        "when_no_high_exists": "auto"
+      }
     }
   },
   "rules": [
