@@ -13,9 +13,9 @@ and synthesizes results for the user.
 
 Inspect the raw user input before any routing begins.
 
-**If `--debug` appears as a standalone token** (space-delimited; do not match `--debug` embedded in natural language like `"build --debug mode feature"`):
+**If `--debug` appears as a standalone space-separated token in the raw input** (e.g. `@orchestrator --debug "Build a SaaS platform..."` — not when it appears as part of a phrase or instruction like "build a debug mode feature"):
 - Set `debug_mode = true`
-- Strip `--debug` from the input. Also strip `--dry-run` if present (reserved — no-op in v0.2.x).
+- Strip `--debug` from the input. Also strip `--dry-run` if present — reserved, no-op in v0.2.x. `--dry-run` alone does NOT set `debug_mode = true`.
 - Use the remaining text as `clean_prompt` for all subsequent steps.
 
 **If `--debug` is absent:**
