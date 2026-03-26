@@ -475,12 +475,12 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - ✓ 正负分值 v2 路由
 - ✓ Lint + install 测试套件
 
-**v0.2 — 可观测路由**
+**v0.2 — 可观测路由（当前版本）**
 - ✓ 置信度路由（high / medium / filtered）
 - ✓ 路由测试套件——5 个回归 case，集成 CI
 - ✓ `--debug` flag——在终端输出完整的逐团队路由详情
 
-**v0.3 — 可控执行（当前版本）**
+**v0.3 — 可控执行**
 - ✓ `dispatch_policy` 配置——routing.json 中按置信度控制派发行为
 - ✓ `normalize_dispatch_policy`——纯函数，用 v0.2 等价默认值填充缺失键
 - ✓ `apply_dispatch_policy`——Step 5.5 执行：auto / ignore / ask 三种模式

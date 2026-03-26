@@ -475,12 +475,12 @@ We're building the AI company OS.
 - ✓ v2 routing with positive/negative scoring
 - ✓ Lint + install test suites
 
-**v0.2 — Observable routing (current)**
+**v0.2 — Observable routing**
 - ✓ Confidence-based routing (high / medium / filtered)
 - ✓ Routing test suite — 5 regression cases, CI-integrated
 - ✓ `--debug` flag — full per-team routing trace in terminal
 
-**v0.3 — Controllable execution**
+**v0.3 — Controllable execution (current)**
 - [x] `dispatch_policy` config — per-confidence-band behavior in routing.json
 - [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
 - [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
