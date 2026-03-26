@@ -1,0 +1,53 @@
+[
+  {
+    "name": "backend_high_only",
+    "prompt": "Add a REST endpoint for user authentication with JWT",
+    "expected": {
+      "selected": [{ "team": "backend", "confidence": "high" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "high_with_secondary",
+    "prompt": "Build a SaaS platform with user requirements and API endpoints",
+    "expected": {
+      "selected": [{ "team": "backend", "confidence": "high" }],
+      "secondary": [{ "team": "product" }, { "team": "frontend" }],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "medium_only",
+    "prompt": "Help me think about a feature for my product",
+    "expected": {
+      "selected": [{ "team": "product", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "fallback_needs_clarification",
+    "prompt": "Help me with this thing",
+    "expected": {
+      "selected": [],
+      "secondary": [],
+      "fallback": true,
+      "expected_status": "needs_clarification",
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "negative_keyword_suppression",
+    "prompt": "Write a blog post about our iOS app and its features",
+    "expected": {
+      "selected": [],
+      "secondary": [],
+      "fallback": true,
+      "expected_filtered": ["market"]
+    }
+  }
+]
