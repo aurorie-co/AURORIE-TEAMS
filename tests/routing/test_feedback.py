@@ -424,6 +424,60 @@ def _test_apply_template_bias_insufficient_data():
 
 
 # ---------------------------------------------------------------------------
+# Orchestrator hook tests
+# ---------------------------------------------------------------------------
+
+def _completed_task(task_id):
+    return {
+        "task_id": task_id,
+        "status": "completed",
+        "routing_decision": {},
+        "execution_graph": {
+            "status": "completed",
+            "nodes": [
+                {"node_id": "backend-1", "team": "backend",
+                 "depends_on": [], "status": "done"},
+            ],
+            "edges": [],
+            "waves": [["backend-1"]],
+        },
+    }
+
+
+def _test_maybe_append_one_per_run():
+    """
+    Orchestrator hook: called twice in same run -> only first call writes.
+    """
+    import tempfile
+    from lib.feedback import maybe_append_feedback_event
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        history_path = Path(tmp_dir) / "history.jsonl"
+        task = _completed_task("task_xyz")
+
+        _RUN_WRITTEN = {}  # simulate in-memory guard
+
+        maybe_append_feedback_event(history_path, task, "task_xyz_run_1", _RUN_WRITTEN)
+        maybe_append_feedback_event(history_path, task, "task_xyz_run_1", _RUN_WRITTEN)
+
+        events = load_events(history_path)
+        assert len(events) == 1  # second call was deduplicated
+
+
+def _test_maybe_append_only_on_terminal_state():
+    """
+    Non-terminal task -> no event written.
+    """
+    import tempfile
+    from lib.feedback import maybe_append_feedback_event
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        history_path = Path(tmp_dir) / "history.jsonl"
+        task = {"task_id": "t1", "status": "in_progress"}
+        written = {}
+        maybe_append_feedback_event(history_path, task, "t1_run_1", written)
+        assert len(load_events(history_path)) == 0
+
+
+# ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
 
@@ -452,6 +506,8 @@ TESTS = [
     ("apply_team_bias_includes_stats", _test_apply_team_bias_includes_stats),
     ("apply_template_bias_multiple_candidates", _test_apply_template_bias_multiple_candidates),
     ("apply_template_bias_insufficient_data", _test_apply_template_bias_insufficient_data),
+    ("maybe_append_one_per_run", _test_maybe_append_one_per_run),
+    ("maybe_append_only_on_terminal_state", _test_maybe_append_only_on_terminal_state),
 ]
 
 

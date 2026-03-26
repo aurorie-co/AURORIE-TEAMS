@@ -189,7 +189,92 @@ def compute_template_bias(template_stats: dict) -> dict:
 
 
 # ─────────────────────────────
-# Section 5 — Apply to Routing
+# Section 5 — Orchestrator Hook
+# ─────────────────────────────
+
+TERMINAL_STATES = {"completed", "partial_failed", "blocked"}
+
+
+def is_terminal_state(task: dict) -> bool:
+    """Returns True if task is in a terminal state."""
+    graph = task.get("execution_graph", {})
+    status = graph.get("status") or task.get("status", "")
+    return status in TERMINAL_STATES
+
+
+def get_teams_from_task(task: dict) -> list[str]:
+    """Extracts teams from task's execution graph."""
+    graph = task.get("execution_graph", {})
+    teams = []
+    for node in graph.get("nodes", []):
+        if node.get("team") and node["team"] not in teams:
+            teams.append(node["team"])
+    return teams
+
+
+def get_graph_template(task: dict) -> str:
+    """Returns graph_template if set, else 'unknown'."""
+    graph = task.get("execution_graph", {})
+    return graph.get("metadata", {}).get("graph_template", "unknown")
+
+
+def get_failed_nodes(task: dict) -> list[str]:
+    """Returns list of failed node IDs from execution graph."""
+    graph = task.get("execution_graph", {})
+    return [
+        node["node_id"] for node in graph.get("nodes", [])
+        if node.get("status") == "failed"
+    ]
+
+
+def maybe_append_feedback_event(path: Path, task: dict,
+                                run_id: str, run_written: dict) -> None:
+    """
+    Hook for orchestrator: appends feedback event only on terminal state,
+    and only once per run (deduplicated by run_written dict).
+
+    Args:
+        path: path to execution_history.jsonl
+        task: full task dict
+        run_id: the run_id for this event
+        run_written: in-memory dict used as guard {run_id: True}
+    """
+    if run_id in run_written:
+        return  # already written for this run
+    if not is_terminal_state(task):
+        return
+
+    run_written[run_id] = True
+
+    graph = task.get("execution_graph", {})
+    final_status = graph.get("status") or task.get("status", "unknown")
+    teams = get_teams_from_task(task)
+    graph_template = get_graph_template(task)
+    failed_nodes = get_failed_nodes(task)
+    resumed = "resume" in task.get("task_id", "") or task.get("resumed", False)
+    milestone_id = task.get("milestone", {}).get("milestone_id") if task.get("milestone") else None
+
+    # Determine run_kind from run_id suffix
+    run_n = int(run_id.rsplit("_", 1)[-1])
+    run_kind = "initial" if run_n == 1 else "resume"
+
+    event = build_feedback_event(
+        task_id=task["task_id"],
+        run_n=run_n,
+        run_kind=run_kind,
+        teams=teams,
+        graph_template=graph_template,
+        final_status=final_status,
+        failed_nodes=failed_nodes,
+        resumed=resumed,
+        milestone_id=milestone_id,
+    )
+
+    append_event(path, event)
+
+
+# ─────────────────────────────
+# Section 6 — Apply to Routing
 # ─────────────────────────────
 
 def apply_team_bias(candidates: list[dict], team_bias: dict,
