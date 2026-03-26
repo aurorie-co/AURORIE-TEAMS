@@ -129,7 +129,10 @@ def _handle_ask(medium_candidates, medium_context, selected, secondary, ignored,
         if response not in ("y", "yes", "n", "no", ""):
             response = "default_no"
 
-    if response in ("y", "yes", ""):
+    YES_RESPONSES = ("y", "yes", "")
+    NO_RESPONSES = ("n", "no", "")
+
+    if response in YES_RESPONSES:
         user_response = "yes"
         for team in medium_candidates:
             if medium_context == "when_no_high_exists":
@@ -137,11 +140,11 @@ def _handle_ask(medium_candidates, medium_context, selected, secondary, ignored,
             else:
                 secondary.append(team)
     elif response == "default_no":
-        user_response = "default_no"
-        for team in medium_candidates:
-            ignored.append(team)
+        user_response = response
     else:
         user_response = "no"
+
+    if user_response in ("no", "default_no"):
         for team in medium_candidates:
             ignored.append(team)
 
@@ -210,6 +213,105 @@ def _test_medium_only_auto():
     assert ask_res is None
 
 
+# ---------------------------------------------------------------------------
+# Ask mode tests
+# ---------------------------------------------------------------------------
+
+def _test_medium_only_ask_yes():
+    """medium.when_no_high_exists: ask → user says "y" → selected: all medium"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    mock_responses = iter(["y"])
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [], [_team("product", 2), _team("frontend", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    )
+    assert [t["team"] for t in selected] == ["product", "frontend"]
+    assert secondary == []
+    assert ignored == []
+    assert ask_res is not None
+    assert ask_res["triggered"] is True
+    assert ask_res["context"] == "medium_when_no_high_exists"
+    assert ask_res["teams"] == ["product", "frontend"]
+    assert ask_res["user_response"] == "yes"
+    assert ask_res["prompt_count"] == 1
+
+
+def _test_medium_only_ask_no():
+    """medium.when_no_high_exists: ask → user says "n" → ignored: all medium"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    mock_responses = iter(["n"])
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    )
+    assert selected == []
+    assert secondary == []
+    assert [t["team"] for t in ignored] == ["product"]
+    assert ask_res is not None
+    assert ask_res["triggered"] is True
+    assert ask_res["context"] == "medium_when_no_high_exists"
+    assert ask_res["user_response"] == "no"
+
+
+def _test_medium_only_ask_invalid_default_no():
+    """medium.when_no_high_exists: ask → two invalid inputs → default_no"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
+    mock_responses = iter(["maybe", "what?"])
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    )
+    assert selected == []
+    assert secondary == []
+    assert [t["team"] for t in ignored] == ["product"]
+    assert ask_res is not None
+    assert ask_res["triggered"] is True
+    assert ask_res["context"] == "medium_when_no_high_exists"
+    assert ask_res["user_response"] == "default_no"
+    assert ask_res["prompt_count"] == 2
+
+
+def _test_high_with_medium_ask_yes():
+    """high: auto + medium.when_high_exists: ask → user says "y" → selected: high; secondary: medium"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ask", "when_no_high_exists": "auto"}}
+    mock_responses = iter(["y"])
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    )
+    assert [t["team"] for t in selected] == ["backend"]
+    assert [t["team"] for t in secondary] == ["product"]
+    assert ignored == []
+    assert ask_res is not None
+    assert ask_res["triggered"] is True
+    assert ask_res["context"] == "medium_when_high_exists"
+    assert ask_res["teams"] == ["product"]
+    assert ask_res["user_response"] == "yes"
+    assert ask_res["prompt_count"] == 1
+
+
+def _test_high_with_medium_ask_no():
+    """high: auto + medium.when_high_exists: ask → user says "n" → selected: high; ignored: medium"""
+    policy = {"high": "auto", "medium": {"when_high_exists": "ask", "when_no_high_exists": "auto"}}
+    mock_responses = iter(["n"])
+    selected, secondary, ignored, ask_res = apply_dispatch_policy(
+        [_team("backend", 4)], [_team("product", 2)], policy, prompt_fn=lambda q: next(mock_responses)
+    )
+    assert [t["team"] for t in selected] == ["backend"]
+    assert secondary == []
+    assert [t["team"] for t in ignored] == ["product"]
+    assert ask_res is not None
+    assert ask_res["triggered"] is True
+    assert ask_res["context"] == "medium_when_high_exists"
+    assert ask_res["user_response"] == "no"
+    assert ask_res["prompt_count"] == 1
+
+
+ASK_TESTS = [
+    ("medium_only_ask_yes", _test_medium_only_ask_yes),
+    ("medium_only_ask_no", _test_medium_only_ask_no),
+    ("medium_only_ask_invalid_default_no", _test_medium_only_ask_invalid_default_no),
+    ("high_with_medium_ask_yes", _test_high_with_medium_ask_yes),
+    ("high_with_medium_ask_no", _test_high_with_medium_ask_no),
+]
+
+
 AUTO_IGNORE_TESTS = [
     ("high_auto_medium_ignored", _test_high_auto_medium_ignored),
     ("high_auto_medium_auto", _test_high_auto_medium_auto),
@@ -218,5 +320,34 @@ AUTO_IGNORE_TESTS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Runner
+# ---------------------------------------------------------------------------
+
+def main():
+    all_tests = [
+        ("normalize", NORMALIZE_TESTS),
+        ("auto_ignore", AUTO_IGNORE_TESTS),
+        ("ask", ASK_TESTS),
+    ]
+
+    total_passed = total_failed = 0
+
+    for group_name, tests in all_tests:
+        print(f"\n{group_name.upper()} tests:")
+        for name, fn in tests:
+            try:
+                fn()
+                print(f"  \u2713 {name}")
+                total_passed += 1
+            except AssertionError as e:
+                print(f"  \u2717 {name}: {e}")
+                total_failed += 1
+
+    print(f"\nResults: {total_passed} passed, {total_failed} failed")
+    return 0 if total_failed == 0 else 1
+
+
 if __name__ == "__main__":
-    pass  # runner added in later tasks
+    import sys
+    sys.exit(main())

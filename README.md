@@ -475,8 +475,12 @@ We're building the AI company OS.
 - ✓ `--debug` flag — full per-team routing trace in terminal
 
 **v0.3 — Controllable execution**
-- [ ] Interactive routing — confirm medium teams before dispatch
-- [ ] `dispatch_policy` config — per-confidence-band behavior in routing.json
+- [x] `dispatch_policy` config — per-confidence-band behavior in routing.json
+- [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
+- [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
+- [x] Ask mode — interactive confirmation for medium-confidence teams (at most once per routing)
+- [x] Dispatch policy test suite — 13 cases: normalize (4), auto/ignore (4), ask mode (5)
+- [ ] Interactive routing — confirm medium teams before dispatch (Step 5.5 integration)
 - [ ] Task graph — DAG execution across teams
 
 **Long-term — AI-native companies**
@@ -512,6 +516,7 @@ Three test suites live in `tests/`:
 | `tests/install.test.sh` | Full install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree consistency: agent/workflow/skill/routing contract validation |
 | `tests/routing/test_routing_cases.py` | 5 deterministic routing cases: confidence bands, dispatch, fallback, negative keyword suppression |
+| `tests/routing/test_dispatch_policy.py` | 13 cases for v0.3 dispatch_policy: normalize (4), auto/ignore (4), ask mode (5) |
 
 Run before opening a PR or after changing routing/workflows:
 
@@ -519,12 +524,11 @@ Run before opening a PR or after changing routing/workflows:
 bash tests/install.test.sh && bash tests/lint.test.sh
 ```
 
-The routing test suite runs automatically as part of `tests/lint.test.sh`.
-
 To run routing tests standalone:
 
 ```bash
 python3 tests/routing/test_routing_cases.py
+python3 tests/routing/test_dispatch_policy.py
 ```
 
 ---

@@ -117,4 +117,9 @@ echo "=== Routing: run deterministic routing test suite ==="
 python3 "$(dirname "$0")/routing/test_routing_cases.py"
 ROUTING_EXIT=$?
 
-[[ $FAIL -eq 0 && $ROUTING_EXIT -eq 0 ]] && exit 0 || exit 1
+echo ""
+echo "=== Dispatch: run dispatch policy test suite ==="
+python3 "$(dirname "$0")/routing/test_dispatch_policy.py"
+DISPATCH_EXIT=$?
+
+[[ $FAIL -eq 0 && $ROUTING_EXIT -eq 0 && $DISPATCH_EXIT -eq 0 ]] && exit 0 || exit 1
