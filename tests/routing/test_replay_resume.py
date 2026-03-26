@@ -301,7 +301,7 @@ def validate_resume(task):
         return False, "task already completed"
     if status == "pending" and not graph.get("nodes"):
         return False, "no execution graph to resume"
-    if task.get("status") == "user_declined_dispatch":
+    if status == "user_declined_dispatch":
         return False, "task was declined by user"
 
     return True, ""
@@ -554,6 +554,299 @@ def _test_blocked_node_stays_blocked_when_artifact_missing():
     assert result["nodes"][0]["status"] == "blocked"
 
 
+
+# ---------------------------------------------------------------------------
+# NEW: Replay gaps (found by QA review)
+# ---------------------------------------------------------------------------
+
+def _test_replay_no_milestone_attached():
+    """
+    R-ex: Replay when task has no milestone field — Milestone section absent.
+    Spec: Replay Interface — milestone section omitted when field absent.
+    """
+    task = {
+        "task_id": "t-005",
+        "prompt": "Build auth system",
+        "status": "completed",
+        "routing_decision": {
+            "selected_teams": [{"team": "backend"}],
+            "secondary_teams": [],
+            "ignored_teams": [],
+        },
+        "execution_graph": {
+            "status": "completed",
+            "nodes": [
+                {"node_id": "backend-1", "team": "backend", "depends_on": [],
+                 "status": "done",
+                 "started_at": "2026-03-26T09:00:00Z",
+                 "completed_at": "2026-03-26T09:30:00Z"},
+            ],
+            "edges": [],
+            "waves": [["backend-1"]],
+            "started_at": "2026-03-26T09:00:00Z",
+            "completed_at": "2026-03-26T09:30:00Z",
+        },
+        # no "milestone" key
+    }
+    output = format_replay_output(task)
+    assert "Milestone:" not in output
+    assert "ms_" not in output
+    assert "t-005" in output
+    assert "backend" in output
+
+
+def _test_replay_wave_order_backward_compat():
+    """
+    R-ex: Old task JSON uses wave_order (flat list) instead of waves.
+    Spec: wave_order treated as equivalent to reconstructed waves where each
+          element is a single-item list in that order.
+    """
+    task = {
+        "task_id": "t-006",
+        "prompt": "Build a platform",
+        "status": "completed",
+        "routing_decision": {
+            "selected_teams": [{"team": "product"}, {"team": "backend"}],
+            "secondary_teams": [],
+            "ignored_teams": [],
+        },
+        "execution_graph": {
+            "status": "completed",
+            "nodes": [
+                {"node_id": "product-1", "team": "product", "depends_on": [],
+                 "status": "done",
+                 "started_at": "2026-03-26T08:00:00Z",
+                 "completed_at": "2026-03-26T08:20:00Z"},
+                {"node_id": "backend-1", "team": "backend", "depends_on": ["product-1"],
+                 "status": "done",
+                 "started_at": "2026-03-26T08:20:00Z",
+                 "completed_at": "2026-03-26T09:00:00Z"},
+            ],
+            "edges": [["product-1", "backend-1"]],
+            # uses legacy wave_order field instead of waves
+            "wave_order": ["product-1", "backend-1"],
+            "started_at": "2026-03-26T08:00:00Z",
+            "completed_at": "2026-03-26T09:00:00Z",
+        },
+    }
+    output = format_replay_output(task)
+    assert "t-006" in output
+    assert "product" in output
+    assert "backend" in output
+    assert "Wave 1" in output
+    assert "Wave 2" in output
+
+
+def _test_replay_empty_routing_decision():
+    """
+    R-ex: Task with empty selected_teams/secondary/ignored — shows (none).
+    Spec: Replay Interface output format — all four Routing lines always present.
+    """
+    task = {
+        "task_id": "t-007",
+        "prompt": "Write documentation",
+        "status": "needs_clarification",
+        "routing_decision": {
+            "selected_teams": [],
+            "secondary_teams": [],
+            "ignored_teams": [],
+        },
+    }
+    output = format_replay_output(task)
+    assert "t-007" in output
+    assert "(none)" in output
+    assert "Execution Graph" not in output
+
+
+# ---------------------------------------------------------------------------
+# NEW: Resume validate_resume gaps
+# ---------------------------------------------------------------------------
+
+def _test_validate_resume_graph_declined_task_status_different():
+    """
+    RV-ex: graph.status = user_declined_dispatch but task.status is NOT
+    user_declined_dispatch (e.g., task.status = in_progress).
+    The spec says: "execution_graph.status = user_declined_dispatch -> no-op".
+    But the implementation checks task.status instead of graph.status for this
+    condition — this test exposes the mismatch.
+    Spec: Resume Interface pre-condition 5 (user_declined_dispatch).
+    """
+    task = {
+        "task_id": "t-017",
+        "status": "in_progress",                     # task says in_progress
+        "routing_decision": {},
+        "execution_graph": {
+            "status": "user_declined_dispatch",      # graph says declined
+            "nodes": [
+                {"node_id": "product-1", "depends_on": [], "status": "done"},
+            ],
+        },
+    }
+    resumable, reason = validate_resume(task)
+    # Per spec: graph.status = user_declined_dispatch -> no-op
+    # Per implementation: task.status != user_declined_dispatch -> resumable (BUG)
+    # This test documents the expected spec behaviour:
+    assert not resumable
+    assert "declined" in reason.lower() or "user" in reason.lower()
+
+
+# ---------------------------------------------------------------------------
+# NEW: Resume partial_failed edge cases
+# ---------------------------------------------------------------------------
+
+def _test_partial_failed_no_failed_nodes():
+    """
+    RV-ex: partial_failed graph but no nodes have status=failed.
+    reset_partial_failed_graph should be a no-op (no status changes).
+    Important: prevents accidentally unblocking all nodes.
+    """
+    graph = {
+        "status": "partial_failed",
+        "nodes": [
+            {"node_id": "product-1", "status": "done"},
+            {"node_id": "backend-1", "status": "done"},
+        ],
+    }
+    reset = reset_partial_failed_graph(graph)
+    statuses = {n["node_id"]: n["status"] for n in reset["nodes"]}
+    assert statuses["product-1"] == "done"
+    assert statuses["backend-1"] == "done"
+
+
+def _test_partial_failed_preserves_node_fields():
+    """
+    RV-ex: reset_partial_failed_graph preserves all node fields beyond status.
+    Spec: "Returns new graph dict (pure — copies)."
+    """
+    graph = {
+        "status": "partial_failed",
+        "nodes": [
+            {
+                "node_id": "backend-1",
+                "team": "backend",
+                "depends_on": ["product-1"],
+                "status": "failed",
+                "artifacts_in": ["artifacts/product/test/prd.md"],
+                "artifacts_out": ["artifacts/backend/test/api.md"],
+                "started_at": "2026-03-26T10:00:00Z",
+                "completed_at": "2026-03-26T10:05:00Z",
+            },
+        ],
+    }
+    reset = reset_partial_failed_graph(graph)
+    node = reset["nodes"][0]
+    assert node["status"] == "pending"
+    assert node["team"] == "backend"
+    assert node["depends_on"] == ["product-1"]
+    assert node["artifacts_in"] == ["artifacts/product/test/prd.md"]
+    assert node["artifacts_out"] == ["artifacts/backend/test/api.md"]
+    assert node["started_at"] == "2026-03-26T10:00:00Z"
+
+
+# ---------------------------------------------------------------------------
+# NEW: Resume blocked edge case — mixed partial unblock
+# ---------------------------------------------------------------------------
+
+def _test_blocked_mixed_partial_unblock():
+    """
+    RV-ex: blocked graph with multiple blocked nodes — some have all
+    artifacts_in satisfied, others do not.
+    Spec RV5: "only unblock nodes whose artifacts_in are now satisfied."
+    """
+    graph = {
+        "status": "blocked",
+        "nodes": [
+            {"node_id": "backend-1", "depends_on": [], "status": "blocked",
+             "artifacts_in": ["artifacts/product/test/prd.md"]},
+            {"node_id": "frontend-1", "depends_on": [], "status": "blocked",
+             "artifacts_in": ["artifacts/product/test/prd.md",
+                              "artifacts/backend/test/api.md"]},
+        ],
+    }
+    artifact_map = {"artifacts/product/test/prd.md": True,
+                    "artifacts/backend/test/api.md": False}
+    result = unblock_graph(graph, artifact_map)
+    statuses = {n["node_id"]: n["status"] for n in result["nodes"]}
+    assert statuses["backend-1"] == "pending"
+    assert statuses["frontend-1"] == "blocked"
+
+
+# ---------------------------------------------------------------------------
+# NEW: aggregate_milestone_status — explicitly required by spec (RV10)
+# Calls lib/milestone.py (already implemented there, only needs tests here)
+# ---------------------------------------------------------------------------
+
+def _aggregate_milestone_status_from_lib(task_statuses):
+    """
+    Proxy to lib.milestone.aggregate_milestone_status.
+    This is the actual spec-required function called after resume completes.
+    Spec: Resume Interface — "trigger milestone re-aggregation if milestone attached"
+    """
+    import sys
+    sys.path.insert(0, "lib")
+    from milestone import aggregate_milestone_status
+    return aggregate_milestone_status(task_statuses)
+
+
+def _test_aggregate_milestone_partial_failed_wins():
+    """
+    RV10: partial_failed in any task -> milestone = partial_failed.
+    Spec: Milestone Interface — "if any task status == 'partial_failed' -> partial_failed"
+    """
+    statuses = ["completed", "in_progress", "partial_failed", "pending"]
+    result = _aggregate_milestone_status_from_lib(statuses)
+    assert result == "partial_failed"
+
+
+def _test_aggregate_milestone_in_progress_wins():
+    """
+    RV10: in_progress (no partial_failed) -> milestone = in_progress.
+    Spec: Milestone Interface — "elif any task status == 'in_progress' -> in_progress"
+    """
+    statuses = ["completed", "in_progress", "completed", "pending"]
+    result = _aggregate_milestone_status_from_lib(statuses)
+    assert result == "in_progress"
+
+
+def _test_aggregate_milestone_completed_all_done():
+    """
+    RV10: all tasks completed -> milestone = completed.
+    Spec: Milestone Interface — "elif all tasks status == 'completed' -> completed"
+    """
+    statuses = ["completed", "completed"]
+    result = _aggregate_milestone_status_from_lib(statuses)
+    assert result == "completed"
+
+
+def _test_aggregate_milestone_pending_all_pending():
+    """
+    RV10: all tasks pending -> milestone = pending.
+    Spec: Milestone Interface — "elif all tasks status == 'pending' -> pending"
+    """
+    statuses = ["pending", "pending", "pending"]
+    result = _aggregate_milestone_status_from_lib(statuses)
+    assert result == "pending"
+
+
+def _test_aggregate_milestone_mixed_states():
+    """
+    RV10: mixed states (none partial_failed/in_progress) -> in_progress.
+    Spec: Milestone Interface — "else -> in_progress (mixed)"
+    """
+    statuses = ["completed", "pending"]
+    result = _aggregate_milestone_status_from_lib(statuses)
+    assert result == "in_progress"
+
+
+def _test_aggregate_milestone_empty_task_list():
+    """
+    RV10: empty task list -> milestone = pending.
+    Spec: Milestone Interface — edge case for zero tasks.
+    """
+    result = _aggregate_milestone_status_from_lib([])
+    assert result == "pending"
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -580,6 +873,30 @@ TESTS = [
     # Blocked unblock
     ("blocked_node_unblocks_when_artifacts_present", _test_blocked_node_unblocks_when_artifacts_present),
     ("blocked_node_stays_blocked_when_artifact_missing", _test_blocked_node_stays_blocked_when_artifact_missing),
+
+    # NEW: Replay gaps
+    ("replay_no_milestone_attached", _test_replay_no_milestone_attached),
+    ("replay_wave_order_backward_compat", _test_replay_wave_order_backward_compat),
+    ("replay_empty_routing_decision", _test_replay_empty_routing_decision),
+    # NEW: Resume validate_resume gap
+    ("validate_resume_graph_declined_task_status_different",
+     _test_validate_resume_graph_declined_task_status_different),
+    # NEW: Resume partial_failed edge cases
+    ("partial_failed_no_failed_nodes", _test_partial_failed_no_failed_nodes),
+    ("partial_failed_preserves_node_fields", _test_partial_failed_preserves_node_fields),
+    # NEW: Resume blocked mixed partial unblock
+    ("blocked_mixed_partial_unblock", _test_blocked_mixed_partial_unblock),
+    # NEW: aggregate_milestone_status (RV10)
+    ("aggregate_milestone_partial_failed_wins",
+     _test_aggregate_milestone_partial_failed_wins),
+    ("aggregate_milestone_in_progress_wins",
+     _test_aggregate_milestone_in_progress_wins),
+    ("aggregate_milestone_completed_all_done",
+     _test_aggregate_milestone_completed_all_done),
+    ("aggregate_milestone_pending_all_pending",
+     _test_aggregate_milestone_pending_all_pending),
+    ("aggregate_milestone_mixed_states", _test_aggregate_milestone_mixed_states),
+    ("aggregate_milestone_empty_task_list", _test_aggregate_milestone_empty_task_list),
 ]
 
 
