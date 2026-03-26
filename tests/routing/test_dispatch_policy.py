@@ -205,15 +205,15 @@ def resolve_task(task, decision):
     routing_decision["secondary_teams"] = secondary
     routing_decision["ignored_teams"] = ignored
 
-    # Determine status: if selected is empty after resolve, park as needs_clarification
-    if not selected and decision["selected"] == "none":
-        new_status = "needs_clarification"
-    else:
-        new_status = "pending"
+    # Mark declined_after_ask so Step 6 can distinguish user-declined from needs_clarification
+    if decision["selected"] == "none":
+        routing_decision["declined_after_ask"] = True
 
+    # Status is determined by orchestrator Step 6 after resolve, not here.
+    # Mark task as "pending" (ready for Step 6 to re-evaluate).
     result = dict(task)
     result["routing_decision"] = routing_decision
-    result["status"] = new_status
+    result["status"] = "pending"
     return result
 
 
@@ -314,7 +314,7 @@ def _test_medium_only_ask_yes():
 
 
 def _test_medium_only_ask_no():
-    """CLI resolve "n" → all medium teams ignored"""
+    """CLI resolve "n" → all medium teams ignored, pending cleared, declined_after_ask set"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
     selected, secondary, ignored, pending = apply_dispatch_policy(
         [], [_team("product", 2)], policy
@@ -324,8 +324,9 @@ def _test_medium_only_ask_no():
     resolved = resolve_task(task, response)
     assert resolved["routing_decision"]["selected_teams"] == []
     assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["product"]
-    assert resolved["status"] == "needs_clarification"
     assert "pending_decision" not in resolved["routing_decision"]
+    assert resolved["routing_decision"].get("declined_after_ask") is True
+    # resolve returns pending; Step 6 will re-evaluate and may set user_declined_dispatch
 
 
 def _test_medium_only_ask_invalid_default_no():
@@ -522,7 +523,7 @@ def _test_resolve_confirm_all():
 
 
 def _test_resolve_decline():
-    """resolve decline → all pending teams added to ignored_teams, status = needs_clarification"""
+    """resolve decline → pending cleared, declined_after_ask flag set, status = pending (Step 6 decides final)"""
     policy = {"high": "auto", "medium": {"when_high_exists": "ignore", "when_no_high_exists": "ask"}}
     selected, secondary, ignored, pending = apply_dispatch_policy(
         [], [_team("product", 2)], policy
@@ -537,7 +538,8 @@ def _test_resolve_decline():
     assert resolved["routing_decision"]["selected_teams"] == []
     assert [t["team"] for t in resolved["routing_decision"]["ignored_teams"]] == ["product"]
     assert "pending_decision" not in resolved["routing_decision"]
-    assert resolved["status"] == "needs_clarification"
+    assert resolved["routing_decision"].get("declined_after_ask") is True
+    # resolve returns pending; Step 6 re-evaluates and may set needs_clarification if selected is empty
 
 
 def _test_resolve_idempotent_twice():
@@ -630,6 +632,48 @@ def _test_backward_compat_v03_ask_required():
     assert resolved["status"] == "pending"
 
 
+def _test_step6_re_evaluation_declined_empty_selected():
+    """Step 6 behavior: declined_after_ask + empty selected_teams → needs_clarification"""
+    # Simulate Step 6 re-evaluation after resolve declined (no high teams)
+    task = {
+        "task_id": "test-003",
+        "status": "pending",  # returned by resolve_task
+        "routing_decision": {
+            "selected_teams": [],
+            "secondary_teams": [],
+            "ignored_teams": [_team("product", 2)],
+            "declined_after_ask": True,
+        },
+    }
+    # Step 6: selected_teams is empty AND declined_after_ask is True
+    # → user_declined_dispatch (not needs_clarification)
+    if not task["routing_decision"]["selected_teams"] and task["routing_decision"].get("declined_after_ask"):
+        task["status"] = "user_declined_dispatch"
+    else:
+        task["status"] = "needs_clarification"
+    assert task["status"] == "user_declined_dispatch"
+
+
+def _test_step6_re_evaluation_declined_with_high_selected():
+    """Step 6 behavior: declined_after_ask + non-empty selected_teams → pending (can dispatch)"""
+    # Even with declined_after_ask, if selected_teams is not empty, dispatch can continue
+    task = {
+        "task_id": "test-004",
+        "status": "pending",
+        "routing_decision": {
+            "selected_teams": [_team("backend", 4)],
+            "secondary_teams": [],
+            "ignored_teams": [_team("product", 2)],
+            "declined_after_ask": True,
+        },
+    }
+    if not task["routing_decision"]["selected_teams"] and task["routing_decision"].get("declined_after_ask"):
+        task["status"] = "user_declined_dispatch"
+    else:
+        task["status"] = "pending"
+    assert task["status"] == "pending"
+
+
 PHASE1_TESTS = [
     ("ask_parks_with_pending_decision", _test_ask_parks_with_pending_decision),
     ("ask_no_fallback_triggered", _test_ask_no_fallback_triggered),
@@ -639,6 +683,8 @@ PHASE1_TESTS = [
     ("resolve_noop_on_non_awaiting", _test_resolve_noop_on_non_awaiting),
     ("resolve_with_high_exists_confirm", _test_resolve_with_high_exists_confirm),
     ("backward_compat_v03_ask_required", _test_backward_compat_v03_ask_required),
+    ("step6_declined_empty_selected", _test_step6_re_evaluation_declined_empty_selected),
+    ("step6_declined_with_high_selected", _test_step6_re_evaluation_declined_with_high_selected),
 ]
 
 

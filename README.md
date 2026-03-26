@@ -601,7 +601,7 @@ We're building the AI company OS.
 - [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
 - [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
 - [x] Ask mode MVP — interactive confirmation for medium-confidence teams (at most once per routing)
-- [x] Dispatch policy test suite — 26 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (8)
+- [x] Dispatch policy test suite — 28 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (10)
 - [x] `--dry-run` flag — compute routing without dispatching
 - [x] `--debug --dry-run` combined mode
 
@@ -645,7 +645,7 @@ Four test suites in `tests/`, all green on every commit:
 | `tests/install.test.sh` | Install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree contract: agent/workflow/skill/routing validation |
 | `tests/routing/test_routing_cases.py` | 5 routing regression cases: confidence bands, dispatch, fallback, negative keyword suppression |
-| `tests/routing/test_dispatch_policy.py` | 26 dispatch policy cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (8) |
+| `tests/routing/test_dispatch_policy.py` | 28 dispatch policy cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (10) |
 
 Run all tests before opening a PR:
 
