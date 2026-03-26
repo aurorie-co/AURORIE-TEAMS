@@ -1,5 +1,12 @@
 {
   "version": "2",
+  "routing_policy": {
+    "candidate_threshold": 1,
+    "confidence_thresholds": {
+      "high": 3,
+      "medium": 1
+    }
+  },
   "rules": [
     {
       "team": "backend",
@@ -27,7 +34,7 @@
       "team": "mobile",
       "description": "Native iOS and Android app development tasks",
       "positive_keywords": ["mobile", "iOS", "Android", "Swift", "Kotlin", "SwiftUI", "Jetpack", "Compose", "Xcode", "Gradle", "TestFlight", "Play Store", "native"],
-      "negative_keywords": ["web app", "React", "Vue", "CSS", "backend API", "database migration", "Terraform"],
+      "negative_keywords": ["web app", "React", "Vue", "CSS", "backend API", "database migration", "Terraform", "blog", "blog post", "article", "write a", "content"],
       "example_requests": [
         "Add dark mode support to the iOS SwiftUI app",
         "Fix the Android Compose navigation back-stack bug",
@@ -48,7 +55,7 @@
     {
       "team": "product",
       "description": "Product definition, requirements, and UX tasks",
-      "positive_keywords": ["product", "feature", "PRD", "requirements", "roadmap", "UX", "user story", "wireframe", "specification", "user flow", "persona", "SaaS", "marketplace", "launch", "startup", "design a", "build a product"],
+      "positive_keywords": ["product", "PRD", "requirements", "roadmap", "UX", "user story", "wireframe", "specification", "user flow", "persona", "SaaS", "marketplace", "launch", "startup", "design a", "build a product"],
       "negative_keywords": ["implement", "code", "deploy", "database migration", "CSS", "Terraform", "SEO audit"],
       "example_requests": [
         "Write a PRD for a dark mode feature across all platforms",
@@ -81,7 +88,7 @@
     {
       "team": "support",
       "description": "Customer support and issue response tasks",
-      "positive_keywords": ["support", "customer", "ticket", "complaint", "help", "response", "escalate", "refund", "user reported", "customer said"],
+      "positive_keywords": ["support", "customer", "ticket", "complaint", "response", "escalate", "refund", "user reported", "customer said"],
       "negative_keywords": ["code", "implement", "deploy", "database", "Terraform", "SEO", "PRD", "roadmap", "iOS", "Android", "mobile app"],
       "example_requests": [
         "Draft a response to a Pro customer whose data export returned an empty file",
