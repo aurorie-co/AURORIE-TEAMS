@@ -674,6 +674,103 @@ def _test_step6_re_evaluation_declined_with_high_selected():
     assert task["status"] == "pending"
 
 
+def _orchestrator_resolve_flow(task_id, action):
+    """
+    Simulates orchestrator resolve flow:
+    1. resolve_task(task, {selected: action})
+    2. Step 6 re-evaluation
+    Returns final task dict.
+    """
+    # Load task from workspace (simulated)
+    task = {
+        "task_id": task_id,
+        "status": "awaiting_dispatch_decision",
+        "routing_decision": {
+            "selected_teams": [],
+            "secondary_teams": [],
+            "ignored_teams": [],
+            "pending_decision": {
+                "type": "dispatch_confirmation",
+                "band": "medium",
+                "context": "medium_when_no_high_exists",
+                "teams": [_team("product", 2), _team("frontend", 2)],
+                "options": ["all", "none"],
+                "default": "none",
+            },
+        },
+    }
+    # Simulate read + resolve
+    resolved = resolve_task(task, {"selected": action})
+    # Step 6 re-evaluation
+    rd = resolved["routing_decision"]
+    if not rd["selected_teams"] and rd.get("declined_after_ask"):
+        resolved["status"] = "user_declined_dispatch"
+    elif not rd["selected_teams"]:
+        resolved["status"] = "needs_clarification"
+    else:
+        resolved["status"] = "pending"
+    return resolved
+
+
+def _test_resolve_all_continues_to_dispatch():
+    """--resolve all → pending, no user_declined_dispatch, selected_teams populated"""
+    result = _orchestrator_resolve_flow("test-task", "all")
+    assert [t["team"] for t in result["routing_decision"]["selected_teams"]] == ["product", "frontend"]
+    assert result["status"] == "pending"
+    assert "pending_decision" not in result["routing_decision"]
+    assert result["routing_decision"].get("declined_after_ask") is not True
+
+
+def _test_resolve_none_sets_declined():
+    """--resolve none → declined_after_ask set, status = user_declined_dispatch"""
+    result = _orchestrator_resolve_flow("test-task", "none")
+    assert result["routing_decision"]["selected_teams"] == []
+    assert result["routing_decision"].get("declined_after_ask") is True
+    assert result["status"] == "user_declined_dispatch"
+
+
+def _test_resolve_noop_when_not_awaiting():
+    """resolve on task without pending_decision → no-op"""
+    task = {
+        "task_id": "test-005",
+        "status": "pending",
+        "routing_decision": {
+            "selected_teams": [_team("backend", 4)],
+            "secondary_teams": [],
+            "ignored_teams": [],
+        },
+    }
+    result = resolve_task(task, {"selected": "all"})
+    # No-op: status unchanged
+    assert result["status"] == "pending"
+    assert [t["team"] for t in result["routing_decision"]["selected_teams"]] == ["backend"]
+
+
+def _test_resolve_idempotent():
+    """resolving same task twice → second call is no-op"""
+    task = {
+        "task_id": "test-006",
+        "status": "awaiting_dispatch_decision",
+        "routing_decision": {
+            "selected_teams": [],
+            "secondary_teams": [],
+            "ignored_teams": [],
+            "pending_decision": {
+                "type": "dispatch_confirmation",
+                "band": "medium",
+                "context": "medium_when_no_high_exists",
+                "teams": [_team("product", 2)],
+                "options": ["all", "none"],
+                "default": "none",
+            },
+        },
+    }
+    r1 = resolve_task(task, {"selected": "all"})
+    r2 = resolve_task(r1, {"selected": "all"})
+    assert r1["routing_decision"]["selected_teams"] == r2["routing_decision"]["selected_teams"]
+    assert len(r2["routing_decision"]["selected_teams"]) == 1
+
+
 PHASE1_TESTS = [
     ("ask_parks_with_pending_decision", _test_ask_parks_with_pending_decision),
     ("ask_no_fallback_triggered", _test_ask_no_fallback_triggered),
@@ -685,6 +782,11 @@ PHASE1_TESTS = [
     ("backward_compat_v03_ask_required", _test_backward_compat_v03_ask_required),
     ("step6_declined_empty_selected", _test_step6_re_evaluation_declined_empty_selected),
     ("step6_declined_with_high_selected", _test_step6_re_evaluation_declined_with_high_selected),
+    # Orchestrator smoke tests
+    ("resolve_all_continues_to_dispatch", _test_resolve_all_continues_to_dispatch),
+    ("resolve_none_sets_declined", _test_resolve_none_sets_declined),
+    ("resolve_noop_when_not_awaiting", _test_resolve_noop_when_not_awaiting),
+    ("resolve_idempotent", _test_resolve_idempotent),
 ]
 
 

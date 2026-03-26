@@ -23,11 +23,10 @@ Inspect the raw user input before any routing begins.
 - `--dry-run` does NOT set `debug_mode = true` by itself.
 - `--debug` and `--dry-run` can both be present simultaneously.
 
-**If `--resolve <task-id>` appears** (e.g. `@orchestrator --resolve abc123 --confirm`):
+**If `--resolve <task-id> <action>` appears** (e.g. `@orchestrator --resolve abc123 all`):
 - `resolve_mode = true`
 - `resolve_task_id = "<task-id>"`
-- `resolve_action = "<confirm|decline|selective>"`
-- `resolve_teams = [<team-ids>]` (only for `--selective`)
+- `resolve_action = "<all|none>"`
 - Strip all resolve tokens from the input.
 - `--resolve` does NOT set `debug_mode = true` by itself.
 - `--resolve` can be combined with `--debug` (shows resolve trace).
@@ -196,11 +195,17 @@ Dispatch these teams? [Y/n]
 When `selected_teams` contains multiple teams, dispatch them in parallel (Step B).
 When `selected_teams` contains one team, use single dispatch (Step A).
 
-### Step 6 — Fallback
+### Step 6 — Fallback / Post-Resolve Re-evaluation
 
-Triggered when `selected_teams` is empty after Step 5.5 and no ask was triggered.
+**Original Fallback (normal routing):** Triggered when `selected_teams` is empty after Step 5.5 AND no ask was triggered.
 
 - **`needs_clarification`**: `selected_teams` is empty AND no ask was triggered (all candidates filtered or ignored by policy).
+
+**Post-Resolve Re-evaluation (after resolve interface):** Triggered when `resolve_task` has been called and Step 6 is invoked from the resolve flow.
+
+- **`user_declined_dispatch`**: `selected_teams` is empty AND `declined_after_ask = true`. User said "none" to all medium teams. System understood the task but user chose not to dispatch.
+- **`pending`**: `selected_teams` is non-empty after re-evaluation. High-confidence teams can still be dispatched.
+- **`needs_clarification`**: `selected_teams` is empty AND no `declined_after_ask` flag. Original fallback case.
 
 In both cases:
 - Do NOT dispatch any team
@@ -394,9 +399,8 @@ Medium-confidence teams awaiting your decision:
 - <team> (medium, score <N>)
 - <team> (medium, score <N>)
 
-Options: all / none
-Confirm: @orchestrator --resolve <task-id> --confirm
-Decline: @orchestrator --resolve <task-id> --decline
+Confirm: @orchestrator --resolve <task-id> all
+Decline: @orchestrator --resolve <task-id> none
 ```
 
 Rules:
@@ -408,7 +412,7 @@ Rules:
 
   ```
   Awaiting your decision on medium-confidence teams.
-  Confirm or decline at: @orchestrator --resolve <task-id>
+  Confirm or decline at: @orchestrator --resolve <task-id> all|none
   ```
 
 - **In dry-run mode (`dry_run_mode = true`):** after the normal summary, append:
@@ -456,25 +460,35 @@ Rules:
 
 ### Resolve Interface
 
-Triggered when `resolve_mode = true` (Step 0 parsed `--resolve`).
+Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action>`).
 
-**Precondition:** Task JSON exists at `.claude/workspace/tasks/<resolve_task_id>.json` and has `status: "awaiting_dispatch_decision"` with a `pending_decision`.
+**CLI:** `@orchestrator --resolve <task-id> all` or `@orchestrator --resolve <task-id> none`
+
+**Precondition:** Task JSON exists at `.claude/workspace/tasks/<resolve_task_id>.json` with `status: "awaiting_dispatch_decision"` and `routing_decision.pending_decision`.
 
 **Steps:**
 
-1. Read task JSON. Validate `pending_decision` is present.
-2. If `resolve_action = "confirm"`: set `selected_teams += pending_decision.teams` (all confirmed).
-3. If `resolve_action = "decline"`: set `ignored_teams += pending_decision.teams`; `selected_teams` unchanged.
-4. If `resolve_action = "selective"`: for each team in `resolve_teams` that is in `pending_decision.teams` → add to `selected_teams`; remaining `pending_decision.teams` not in `resolve_teams` → add to `ignored_teams`.
+1. Read task JSON.
+2. Validate `pending_decision` is present. If absent: output `Task <task-id> is not awaiting a decision.` and exit.
+3. If `resolve_action = "all"`: `selected_teams += pending_decision.teams`.
+4. If `resolve_action = "none"`: `ignored_teams += pending_decision.teams`; set `declined_after_ask = true`.
 5. Clear `pending_decision` from `routing_decision`.
-6. Set task status to `"pending"`.
-7. Write updated task JSON.
-8. If `debug_mode = true`: print resolve trace (selected, ignored, cleared).
-9. Proceed to Step A or Step B based on `selected_teams` count.
+6. Write updated task JSON.
 
-**Idempotency:** If task status is not `"awaiting_dispatch_decision"` or `pending_decision` is absent, resolve is a no-op. If resolve is called twice with the same action, second call is also a no-op (already resolved).
+**Step 6 Re-evaluation (after resolve):**
+- If `selected_teams` is non-empty: set `status = "pending"`, proceed to Step A/B.
+- If `selected_teams` is empty AND `declined_after_ask = true`: set `status = "user_declined_dispatch"`, output summary, do NOT dispatch.
+- If `selected_teams` is empty AND no `declined_after_ask`: set `status = "needs_clarification"`, output clarifying question.
 
-**Constraint:** `resolve_teams` may only contain team IDs that are in `pending_decision.teams`. Unknown team IDs are silently ignored.
+**CLI summary output:**
+- Resolve confirmed: `Dispatch decision resolved: <N> team(s) approved. Dispatching now.`
+- Resolve declined (with high remaining): `Dispatch decision resolved: no medium teams approved. <N> high-confidence team(s) still dispatching.`
+- Resolve declined (empty): `Dispatch decision resolved: no teams approved. Task marked as user_declined_dispatch.`
+- No pending decision: `Task <task-id> is not awaiting a decision.`
+
+**Idempotency:** If task status is not `"awaiting_dispatch_decision"` or `pending_decision` is absent, resolve is a no-op. Resolving twice with the same action is also a no-op.
+
+**`declined_after_ask` is a transient system-internal flag** — not a long-term field. It exists only to carry context from `resolve_task` into Step 6 re-evaluation.
 
 ## Sequential Cross-Team Workflows
 Defined as multi-step sequences in the project's CLAUDE.md — not as a single
