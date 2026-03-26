@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Dispatch policy test suite — mirrors Step 5.5 of orchestrator.md.
-Tests normalize_dispatch_policy and apply_dispatch_policy.
+Tests normalize_dispatch_policy (this file) and apply_dispatch_policy (added in later tasks).
 """
 
 DEFAULTS = {
