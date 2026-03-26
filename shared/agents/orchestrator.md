@@ -161,6 +161,58 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
 
 Always use the actual `routing_policy` values from the current `routing.json` when writing `policy_snapshot` — not hardcoded values.
 
+### Step 7.5 — Render debug trace (debug mode only)
+
+**Skip entirely if `debug_mode = false`.**
+
+**Precondition:** Step 7 has written `routing_decision` to the task JSON.
+
+Read the following fields from `routing_decision`. Do not re-evaluate or re-score anything — all values come from `routing_decision` as already written in Step 7.
+
+Fields needed:
+- `dispatch_strategy` — top-level field on `routing_decision`
+- `policy_snapshot.candidate_threshold`
+- `policy_snapshot.confidence_thresholds.high`
+- `policy_snapshot.confidence_thresholds.medium`
+- `selected_teams[]` — each entry: `team`, `score`, `confidence`, `matched_positive[]`, `matched_negative[]`
+- `secondary_teams[]` — same fields
+- `filtered_teams[]` — same fields
+
+Print exactly this block:
+
+```
+=== ROUTING DEBUG ===
+
+Policy:
+- candidate_threshold: <policy_snapshot.candidate_threshold>
+- confidence.high: <policy_snapshot.confidence_thresholds.high>
+- confidence.medium: <policy_snapshot.confidence_thresholds.medium>
+- dispatch_strategy: <routing_decision.dispatch_strategy>
+
+Evaluations:
+<for each team: first selected_teams entries, then secondary_teams, then filtered_teams>
+<team>: score <score>, <confidence> → <state>
+  + <matched_positive joined by ", ", or "(none)" if empty>
+  - <matched_negative joined by ", ", or "(none)" if empty>
+
+Dispatch:
+  Selected:  <selected_teams[*].team joined by ", ", or "(none)" if empty>
+  Secondary: <secondary_teams[*].team joined by ", ", or "(none)" if empty>
+  Filtered:  <filtered_teams[*].team joined by ", ", or "(none)" if empty>
+
+=== END ROUTING DEBUG ===
+```
+
+Rendering rules:
+- `score`: read from `routing_decision` only — never recomputed. If the field is absent, display `N/A`.
+- `confidence = low`: assigned when score < `confidence_thresholds.medium` (implicit — not a configurable key in `routing_policy`).
+- `state`: `selected` for entries in `selected_teams`, `secondary` for `secondary_teams`, `filtered` for `filtered_teams`.
+- Within each group (selected → secondary → filtered), maintain the order from `routing_decision` (score desc, positive_count desc, negative_count asc — matching Step 3.5 sort order).
+- All three Dispatch lines (Selected / Secondary / Filtered) are always printed, even when empty (show `(none)`).
+- Fallback case: `Selected: (none)`, `Secondary: (none)`, all teams appear under `Filtered`.
+
+Proceed immediately to Step 8 after printing.
+
 ### Step 8 — Output user summary
 
 **When high teams exist:**
