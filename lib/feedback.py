@@ -137,3 +137,52 @@ def aggregate_template_stats(events):
             "success_rate": data["successes"] / data["runs"] if data["runs"] > 0 else 0.0,
         }
     return result
+
+
+# ─────────────────────────────
+# Section 4 — Bias Computation
+# ─────────────────────────────
+
+MIN_SAMPLES = 5
+
+
+def feedback_multiplier(success_rate: float, runs: int) -> float:
+    """
+    Returns a bias multiplier in [0.6, 1.0].
+
+    Rules:
+    - runs < MIN_SAMPLES (5): insufficient data -> 1.0 (no bias)
+    - success_rate >= 0.8:   -> 1.0
+    - 0.6 <= rate < 0.8:    -> 0.9
+    - 0.4 <= rate < 0.6:    -> 0.75
+    - rate < 0.4:           -> 0.6
+    """
+    if runs < MIN_SAMPLES:
+        return 1.0
+    if success_rate >= 0.8:
+        return 1.0
+    if success_rate >= 0.6:
+        return 0.9
+    if success_rate >= 0.4:
+        return 0.75
+    return 0.6
+
+
+def compute_team_bias(team_stats: dict) -> dict:
+    """
+    Computes bias multiplier per team from aggregated stats.
+    """
+    return {
+        team: feedback_multiplier(data["success_rate"], data["runs"])
+        for team, data in team_stats.items()
+    }
+
+
+def compute_template_bias(template_stats: dict) -> dict:
+    """
+    Computes bias multiplier per template from aggregated stats.
+    """
+    return {
+        tpl: feedback_multiplier(data["success_rate"], data["runs"])
+        for tpl, data in template_stats.items()
+    }

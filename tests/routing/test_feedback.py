@@ -259,6 +259,88 @@ def _test_aggregate_template_stats():
 
 
 # ---------------------------------------------------------------------------
+# Bias Computation tests
+# ---------------------------------------------------------------------------
+
+def _test_feedback_multiplier_insufficient_runs():
+    """
+    F9: runs < 5 -> returns 1.0 (no bias applied).
+    """
+    from lib.feedback import feedback_multiplier
+    assert feedback_multiplier(0.3, 3) == 1.0
+    assert feedback_multiplier(0.9, 4) == 1.0
+
+
+def _test_feedback_multiplier_high_rate():
+    """
+    F10: success_rate >= 0.8 -> returns 1.0.
+    """
+    from lib.feedback import feedback_multiplier
+    assert feedback_multiplier(0.8, 10) == 1.0
+    assert feedback_multiplier(0.95, 20) == 1.0
+
+
+def _test_feedback_multiplier_medium_rate():
+    """
+    F11: 0.6 <= rate < 0.8 -> returns 0.9.
+    """
+    from lib.feedback import feedback_multiplier
+    assert feedback_multiplier(0.6, 10) == 0.9
+    assert feedback_multiplier(0.7, 15) == 0.9
+    assert feedback_multiplier(0.79, 8) == 0.9
+
+
+def _test_feedback_multiplier_low_rate():
+    """
+    F12: 0.4 <= rate < 0.6 -> returns 0.75.
+    """
+    from lib.feedback import feedback_multiplier
+    assert feedback_multiplier(0.4, 10) == 0.75
+    assert feedback_multiplier(0.5, 7) == 0.75
+
+
+def _test_feedback_multiplier_very_low_rate():
+    """
+    F13: rate < 0.4 -> returns 0.6.
+    """
+    from lib.feedback import feedback_multiplier
+    assert feedback_multiplier(0.3, 10) == 0.6
+    assert feedback_multiplier(0.0, 8) == 0.6
+
+
+def _test_compute_team_bias():
+    """
+    F9-F13: compute_team_bias applies multiplier per team.
+    """
+    from lib.feedback import compute_team_bias
+    stats = {
+        "backend":  {"runs": 12, "success_rate": 0.65},  # 0.6 <= 0.65 < 0.8 -> 0.9
+        "frontend": {"runs": 20, "success_rate": 0.85},  # >= 0.8 -> 1.0
+        "product":  {"runs": 3,  "success_rate": 0.33},  # runs < 5 -> 1.0
+    }
+    bias = compute_team_bias(stats)
+    assert bias["backend"] == 0.9
+    assert bias["frontend"] == 1.0
+    assert bias["product"] == 1.0
+
+
+def _test_compute_template_bias():
+    """
+    G2: compute_template_bias applies multiplier per template.
+    """
+    from lib.feedback import compute_template_bias
+    stats = {
+        "linear":     {"runs": 8,  "success_rate": 0.75},
+        "data-first": {"runs": 15, "success_rate": 0.53},
+        "flat":       {"runs": 3,  "success_rate": 0.33},  # insufficient
+    }
+    bias = compute_template_bias(stats)
+    assert bias["linear"] == 0.9          # 0.6 <= 0.75 < 0.8
+    assert bias["data-first"] == 0.75     # 0.4 <= 0.53 < 0.6
+    assert bias["flat"] == 1.0            # runs < 5
+
+
+# ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
 
@@ -274,6 +356,13 @@ TESTS = [
     ("aggregate_team_stats_multiple_teams", _test_aggregate_team_stats_multiple_teams),
     ("aggregate_team_stats_resume_excluded", _test_aggregate_team_stats_resume_excluded),
     ("aggregate_template_stats", _test_aggregate_template_stats),
+    ("feedback_multiplier_insufficient_runs", _test_feedback_multiplier_insufficient_runs),
+    ("feedback_multiplier_high_rate", _test_feedback_multiplier_high_rate),
+    ("feedback_multiplier_medium_rate", _test_feedback_multiplier_medium_rate),
+    ("feedback_multiplier_low_rate", _test_feedback_multiplier_low_rate),
+    ("feedback_multiplier_very_low_rate", _test_feedback_multiplier_very_low_rate),
+    ("compute_team_bias", _test_compute_team_bias),
+    ("compute_template_bias", _test_compute_template_bias),
 ]
 
 
