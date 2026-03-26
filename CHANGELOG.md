@@ -2,7 +2,7 @@
 
 ## [Unreleased] — v0.5.0
 
-### In Progress
+### Added
 
 #### Milestone Coordination
 - Introduce milestone as a persistent, cross-task coordination layer
@@ -15,7 +15,7 @@
 - CLI: `--milestone "<title>" "<prompt>"` creates milestone and attaches task
 - CLI: `--milestone-status <milestone-id>` queries and displays aggregated status
 - Pure functions: `create_milestone`, `attach_task_to_milestone`, `aggregate_milestone_status`, `get_milestone_ref`
-- 12 unit tests: create, attach, append-only, aggregation rules, ref extraction
+- 63/63 tests passing (14 unit + 2 E2E wiring + 47 prior dispatch/routing)
 
 ### Planned
 

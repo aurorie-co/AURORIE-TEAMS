@@ -298,6 +298,51 @@ The graph is stored in the task JSON (`routing_decision.execution_graph`) — no
 
 ---
 
+## 🎯 Milestone — Cross-Task Coordination
+
+v0.5 introduces milestone as a persistent coordination layer that tracks progress *across tasks, graphs, and time*.
+
+**CLI:**
+
+```
+@orchestrator --milestone "Launch SaaS" "Build a crypto trading platform"
+@orchestrator --milestone-status ms_abc123
+```
+
+**What it does:**
+
+- `--milestone "Title" "prompt"` — groups the task under a named goal. The task runs normally (routing + dispatch unchanged), but is tagged with a milestone ref. Milestone file created at `.claude/workspace/milestones/<id>.json`.
+- `--milestone-status <id>` — queries milestone, aggregates all attached task statuses, and prints a summary:
+
+```
+Milestone: Launch SaaS (ms_abc123)
+Status: in_progress
+Tasks: 3 total
+  - completed: 1
+  - in_progress: 1
+  - pending: 1
+```
+
+**Status aggregation** (highest wins):
+`partial_failed` > `in_progress` > `completed` > `pending`
+
+**Key properties:**
+
+| Property | Value |
+|----------|-------|
+| Schema | `.claude/workspace/milestones/<id>.json` |
+| Task ref | `{milestone_id, title}` embedded in task JSON |
+| Append-only | Tasks can be added, never removed |
+| Routing influence | None — milestone is a coordination label, not a routing signal |
+| Status triggers | Task creation, `--milestone-status` query |
+
+**Use cases:**
+- Track a product launch across multiple feature tasks
+- Monitor a platform build across `product → backend → frontend` waves
+- Coordinate a research sprint across parallel branches
+
+---
+
 ## 🔍 Debug Mode
 
 `--debug` exposes the full routing trace — every score, every decision, every field:
@@ -641,11 +686,12 @@ We're building the AI company OS.
 
 v0.5 introduces a persistent coordination layer across tasks.
 
-- [~] **Milestone system** (spec + unit tests done; orchestrator integration pending)
-  - Group tasks under a shared goal
-  - Aggregate status across tasks (pending / in_progress / completed / partial_failed)
+- [x] **Milestone system** (complete)
+  - Persistent coordination layer across tasks and graphs
+  - Aggregate status: partial_failed > in_progress > completed > pending
   - Append-only: tasks can be added, never removed
   - CLI: `--milestone "title" "prompt"` and `--milestone-status <id>`
+  - Pure functions: `lib/milestone.py` — 63/63 tests passing
 
 - [ ] **Selective routing**
   - Extend decision resolution from all|none → all|none|selective
@@ -690,7 +736,7 @@ Four test suites in `tests/`, all green on every commit:
 | `tests/install.test.sh` | Install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree contract: agent/workflow/skill/routing validation |
 | `tests/routing/test_routing_cases.py` | 5 routing regression cases: confidence bands, dispatch, fallback, negative keyword suppression |
-| `tests/routing/test_dispatch_policy.py` | 28 dispatch policy cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (10) |
+| `tests/routing/test_dispatch_policy.py` | 63 cases: dispatch (47) + milestone (14 unit + 2 E2E) |
 
 Run all tests before opening a PR:
 

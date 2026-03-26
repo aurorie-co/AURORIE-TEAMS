@@ -257,6 +257,46 @@ Wave 3: frontend（backend 完成后解锁）
 
 ---
 
+## 🎯 Milestone — 跨任务协调层
+
+v0.5 引入 milestone 作为跨任务的持久协调层，追踪跨 task、跨 graph、跨时间的目标进度。
+
+**CLI：**
+
+```
+@orchestrator --milestone "Launch SaaS" "Build a crypto trading platform"
+@orchestrator --milestone-status ms_abc123
+```
+
+**功能：**
+
+- `--milestone "Title" "prompt"` — 将任务归入一个目标组。任务正常执行（routing + dispatch 不变），但附带 milestone 标签。Milestone 文件保存在 `.claude/workspace/milestones/<id>.json`。
+- `--milestone-status <id>` — 查询 milestone，聚合所有已附着的任务状态，输出摘要：
+
+```
+Milestone: Launch SaaS (ms_abc123)
+Status: in_progress
+Tasks: 3 total
+  - completed: 1
+  - in_progress: 1
+  - pending: 1
+```
+
+**状态聚合规则**（优先级）：
+`partial_failed` > `in_progress` > `completed` > `pending`
+
+**关键属性：**
+
+| 属性 | 值 |
+|------|-----|
+| Schema | `.claude/workspace/milestones/<id>.json` |
+| Task 引用 | `{milestone_id, title}` 嵌入 task JSON |
+| 追加写入 | 任务只能添加，不能移除 |
+| 对路由的影响 | 无 — milestone 是协调标签，不是路由信号 |
+| 状态触发时机 | Task 创建时、`--milestone-status` 查询时 |
+
+---
+
 ## 🏗 系统架构
 
 完整系统如下：
@@ -522,11 +562,12 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 
 v0.5 引入跨任务的持久协调层。
 
-- [~] **Milestone 系统**（spec + 单元测试完成；orchestrator 集成待完成）
-  - 按共享目标分组任务
-  - 聚合任务状态（pending / in_progress / completed / partial_failed）
+- [x] **Milestone 系统**（已完成）
+  - 跨任务和 graph 的持久协调层
+  - 状态聚合：partial_failed > in_progress > completed > pending
   - 追加写入：任务只能添加，不能移除
   - CLI：`--milestone "title" "prompt"` 和 `--milestone-status <id>`
+  - 纯函数：`lib/milestone.py` — 63/63 测试通过
 
 - [ ] **选择性路由**
   - 决策范围从 all|none 扩展至 all|none|selective
@@ -571,7 +612,7 @@ v0.5 引入跨任务的持久协调层。
 | `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
 | `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
 | `tests/routing/test_routing_cases.py` | 5 个确定性路由 case：置信度区间、派发、fallback、负关键词过滤 |
-| `tests/routing/test_dispatch_policy.py` | 18 个 v0.3 dispatch_policy case：normalize (4)、auto/ignore (4)、ask (5)、dry-run (5) |
+| `tests/routing/test_dispatch_policy.py` | 63 个 case：dispatch (47) + milestone (14 unit + 2 E2E) |
 
 开 PR 或修改 routing/workflows 后，运行全部测试：
 
