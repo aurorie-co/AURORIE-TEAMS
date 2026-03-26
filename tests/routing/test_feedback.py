@@ -423,6 +423,77 @@ def _test_apply_template_bias_insufficient_data():
     assert adjusted["experimental"]["feedback_bias"] == 1.0
 
 
+def _test_end_to_end_feedback_pipeline():
+    """
+    F17 / G1-G3: Full pipeline — events -> stats -> bias -> adjusted scores.
+
+    Scenario:
+    - 5 initial runs: 3 completed, 2 partial_failed (backend)
+    - 3 initial runs: 2 completed, 1 partial_failed (frontend)
+    - Backend success_rate = 0.6 -> bias = 0.9
+    - Frontend success_rate = 0.67 -> bias = 0.9
+
+    Pipeline: load_events -> aggregate -> compute bias -> apply to candidates
+    """
+    import tempfile
+    from lib.feedback import aggregate_team_stats, compute_team_bias, apply_team_bias
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        history_path = Path(tmp_dir) / "exec_history.jsonl"
+
+        # Seed events
+        for i, (status, teams) in enumerate([
+            ("completed", ["backend"]),
+            ("completed", ["backend"]),
+            ("completed", ["backend"]),
+            ("partial_failed", ["backend"]),
+            ("partial_failed", ["backend"]),
+            ("completed", ["frontend"]),   # frontend run 1
+            ("completed", ["frontend"]),   # frontend run 2
+            ("partial_failed", ["frontend"]),  # frontend run 3
+            ("partial_failed", ["frontend"]),  # frontend run 4
+            ("completed", ["frontend"]),   # frontend run 5
+        ]):
+            event = build_feedback_event(
+                task_id=f"task_{i}",
+                run_n=1,
+                run_kind="initial",
+                teams=teams,
+                graph_template="linear",
+                final_status=status,
+                failed_nodes=[] if status == "completed" else [f"{teams[0]}-{i}"],
+                resumed=False,
+            )
+            append_event(history_path, event)
+
+        # Pipeline
+        events = load_events(history_path)
+        team_stats = aggregate_team_stats(events)
+        team_bias = compute_team_bias(team_stats)
+
+        candidates = [
+            {"team": "backend",  "raw_score": 3, "confidence": "high"},
+            {"team": "frontend", "raw_score": 3, "confidence": "high"},
+        ]
+
+        adjusted = apply_team_bias(candidates, team_bias, team_stats)
+
+        backend = next(c for c in adjusted if c["team"] == "backend")
+        frontend = next(c for c in adjusted if c["team"] == "frontend")
+
+        # Backend: runs=5, success=3, rate=0.6 -> bias=0.9 -> adjusted=2.7
+        assert backend["runs"] == 5
+        assert backend["success_rate"] == 0.6
+        assert backend["feedback_bias"] == 0.9
+        assert backend["adjusted_score"] == 2.7
+
+        # Frontend: runs=5, success=3, rate=0.6 -> bias=0.9 -> adjusted=2.7
+        assert frontend["runs"] == 5
+        assert frontend["success_rate"] == 0.6
+        assert frontend["feedback_bias"] == 0.9
+        assert frontend["adjusted_score"] == 2.7
+
+
 # ---------------------------------------------------------------------------
 # Orchestrator hook tests
 # ---------------------------------------------------------------------------
@@ -508,6 +579,7 @@ TESTS = [
     ("apply_template_bias_insufficient_data", _test_apply_template_bias_insufficient_data),
     ("maybe_append_one_per_run", _test_maybe_append_one_per_run),
     ("maybe_append_only_on_terminal_state", _test_maybe_append_only_on_terminal_state),
+    ("end_to_end_feedback_pipeline", _test_end_to_end_feedback_pipeline),
 ]
 
 
