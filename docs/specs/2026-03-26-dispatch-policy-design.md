@@ -22,6 +22,7 @@ Step 7    Write routing_decision (reflects post-policy final state)
 - Step 5 outputs classification (pre-policy state).
 - Step 5.5 outputs enforcement result (post-policy state).
 - Steps A/B (execution) consume only the post-5.5 output. They have no knowledge of why a team was skipped, what policy was applied, or whether ask was triggered.
+- `secondary_teams` are never dispatched in Steps A/B. They are informational only.
 
 `selected_teams` in `routing_decision` reflects the post-policy final dispatch set — not the raw confidence output.
 
@@ -75,6 +76,8 @@ If `dispatch_policy` is missing or incomplete, it must be normalized before Step
 These defaults reproduce exactly the v0.2 dispatch behavior. No behavior change occurs until the user explicitly sets a different action.
 
 **Policy fallback contract:** Missing or incomplete `dispatch_policy` must be normalized to the v0.2-equivalent policy before Step 5.5 runs. The orchestrator applies this normalization in Step 1, after reading `routing_policy`.
+
+**Normalization is a pure function:** same input config always produces the same normalized output. No side effects, no state.
 
 ## Step 5.5 — Policy Enforcement
 
@@ -150,9 +153,12 @@ Dispatch these teams? [Y/n]
 "ask_resolution": {
   "triggered": true,
   "context": "medium_when_no_high_exists",
+  "teams": ["product", "frontend"],
   "user_response": "yes" | "no" | "default_no"
 }
 ```
+
+`teams` records exactly which teams were presented in the ask prompt — required for replay and audit.
 
 `ask_resolution` is present only when ask is triggered. Absence of the field implies no user interaction occurred.
 
@@ -189,12 +195,11 @@ Triggered when `selected_teams` is empty after Step 5.5. Task status:
   "secondary_teams": [],
   "ignored_teams": [],
   "filtered_teams": [],
-  "ask_resolution": { "triggered": true, "context": "...", "user_response": "..." }
+  "ask_resolution": { "triggered": true, "context": "...", "teams": ["..."], "user_response": "..." }
 }
 ```
 
 `ask_resolution` is omitted when ask was not triggered.
-```
 
 `selected_teams` reflects the post-policy final dispatch set.
 
