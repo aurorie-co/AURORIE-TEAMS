@@ -76,10 +76,19 @@ When `selected_teams` contains one team, use single dispatch (Step A).
 
 ### Step 6 — Fallback
 
-Triggered when no candidates survive Step 3:
+Triggered when Step 5 dispatch logic finds no selected teams (no high or medium candidates):
 - Do NOT dispatch any team
 - Do NOT generate any artifact
-- Generate one task-id, write task JSON with `status = "needs_clarification"` and `routing_decision.selected_teams = []`
+- Generate one task-id, write task JSON with `status = "needs_clarification"` and the following `routing_decision`:
+  ```json
+  "routing_decision": {
+    "routing_schema_version": "v0.2",
+    "dispatch_strategy": "fallback",
+    "selected_teams": [],
+    "secondary_teams": [],
+    "filtered_teams": ["<all teams that were scored and filtered>"]
+  }
+  ```
 - Output exactly one clarifying question — no preamble, no explanation, just the question (e.g. "Is this a backend API task or a UI feature?")
 - Re-evaluate routing when the user replies
 
@@ -103,7 +112,7 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
       "low": "filtered"
     }
   },
-  "dispatch_strategy": "conditional",
+  "dispatch_strategy": "<dispatch_strategy>",
   "top_signals": ["<top matched keywords from selected_teams, max 5>"],
   "selected_teams": [
     {
