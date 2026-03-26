@@ -20,8 +20,12 @@
 ### Planned
 
 #### Selective Interactive Routing
-- Extend resolve interface: all | none | selective
-- Allow partial approval of medium-confidence teams
+- Extend resolve interface: `all | none | selective`
+- CLI: `@orchestrator --resolve <task-id> selective <team1,team2>`
+- `pending_decision.options` extends to `["all", "none", "selective"]`
+- User picks which medium teams to approve — partial dispatch
+- `ask_resolution.selected_teams[]` carries the selective choice
+- Status aggregation unchanged
 
 #### DAG Dry-Run
 - Add execution graph preview mode

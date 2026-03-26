@@ -42,10 +42,11 @@ Inspect the raw user input before any routing begins.
 - `--dry-run` does NOT set `debug_mode = true` by itself.
 - `--debug` and `--dry-run` can both be present simultaneously.
 
-**If `--resolve <task-id> <action>` appears** (e.g. `@orchestrator --resolve abc123 all`):
+**If `--resolve <task-id> <action>` appears:**
 - `resolve_mode = true`
 - `resolve_task_id = "<task-id>"`
-- `resolve_action = "<all|none>"`
+- `resolve_action = "<all|none|selective>"`
+- If `action = "selective"`: `resolve_selected_teams = ["<team-id>", ...]` (comma-separated after `selective`)
 - Strip all resolve tokens from the input.
 - `--resolve` does NOT set `debug_mode = true` by itself.
 - `--resolve` can be combined with `--debug` (shows resolve trace).
@@ -194,21 +195,25 @@ MEDIUM candidates:
   "teams": [
     { "team": "<team-id>", "score": <N>, "confidence": "medium" }
   ],
-  "options": ["all", "none"],
+  "options": ["all", "none", "selective"],
   "default": "none"
 }
 ```
 
-**CLI render (normal mode — all-or-none v0.4-a):**
+**CLI render (v0.5 — all-or-none-or-selective):**
 ```
 Medium-confidence teams identified:
 - <team> (score <N>)
 - <team> (score <N>)
 Dispatch these teams? [Y/n]
+  y / yes / <empty> → approve all
+  n / no             → decline all
+  s / selective      → choose specific teams
 ```
 - `y` / `yes` / `<empty>` → resolve with `selected: "all"`
 - `n` / `no` → resolve with `selected: "none"`
-- invalid → re-prompt once: `"Please reply y or n."`
+- `s` / `selective` → prompt for team selection: `Select teams (comma-separated): backend,product`
+- invalid → re-prompt once: `"Please reply y, n, or s."`
 - invalid (second time) → resolve with `selected: "none"` (default)
 
 **Outputs of Step 5.5:**
@@ -465,7 +470,9 @@ Rules:
 
   ```
   Awaiting your decision on medium-confidence teams.
-  Confirm or decline at: @orchestrator --resolve <task-id> all|none
+  Confirm:   @orchestrator --resolve <task-id> all
+  Decline:   @orchestrator --resolve <task-id> none
+  Selective: @orchestrator --resolve <task-id> selective backend,product
   ```
 
 - **In dry-run mode (`dry_run_mode = true`):** after the normal summary, append:
@@ -537,7 +544,7 @@ Rules:
 
 Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action>`).
 
-**CLI:** `@orchestrator --resolve <task-id> all` or `@orchestrator --resolve <task-id> none`
+**CLI:** `@orchestrator --resolve <task-id> all` or `@orchestrator --resolve <task-id> none` or `@orchestrator --resolve <task-id> selective <team1,team2,...>`
 
 **Precondition:** Task JSON exists at `.claude/workspace/tasks/<resolve_task_id>.json` with `status: "awaiting_dispatch_decision"` and `routing_decision.pending_decision`.
 
@@ -545,10 +552,11 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 
 1. Read task JSON.
 2. Validate `pending_decision` is present. If absent: output `Task <task-id> is not awaiting a decision.` and exit.
-3. If `resolve_action = "all"`: `selected_teams += pending_decision.teams`.
-4. If `resolve_action = "none"`: `ignored_teams += pending_decision.teams`; set `declined_after_ask = true`.
-5. Clear `pending_decision` from `routing_decision`.
-6. Write updated task JSON.
+3. If `resolve_action = "all"`: add all `pending_decision.teams` to `selected_teams`.
+4. If `resolve_action = "none"`: add all `pending_decision.teams` to `ignored_teams`; set `declined_after_ask = true`.
+5. If `resolve_action = "selective"`: for each `team-id` in `resolve_selected_teams[]`, if that team is in `pending_decision.teams`, add it to `selected_teams`; any not selected are added to `ignored_teams`.
+6. Clear `pending_decision` from `routing_decision`.
+7. Write updated task JSON.
 
 **Step 6 Re-evaluation (after resolve):**
 - If `selected_teams` is non-empty: set `status = "pending"`, build `execution_graph` using `build_execution_graph(task_id, selected_teams)`, add to task JSON, proceed to Step A/B.
@@ -559,6 +567,7 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 - Resolve confirmed: `Dispatch decision resolved: <N> team(s) approved. Dispatching now.`
 - Resolve declined (with high remaining): `Dispatch decision resolved: no medium teams approved. <N> high-confidence team(s) still dispatching.`
 - Resolve declined (empty): `Dispatch decision resolved: no teams approved. Task marked as user_declined_dispatch.`
+- Resolve selective: `Dispatch decision resolved: <N> team(s) approved (<team1>, <team2>). Dispatching now.`
 - No pending decision: `Task <task-id> is not awaiting a decision.`
 
 **Idempotency:** If task status is not `"awaiting_dispatch_decision"` or `pending_decision` is absent, resolve is a no-op. Resolving twice with the same action is also a no-op.
