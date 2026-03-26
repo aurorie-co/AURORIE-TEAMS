@@ -9,18 +9,25 @@ and synthesizes results for the user.
 
 ## Routing
 
-### Step 0 — Parse debug flag
+### Step 0 — Parse flags
 
 Inspect the raw user input before any routing begins.
 
-**If `--debug` appears as a standalone space-separated token in the raw input** (e.g. `@orchestrator --debug "Build a SaaS platform..."` — not when it appears as part of a phrase or instruction like "build a debug mode feature"):
+**If `--debug` appears as a standalone space-separated token** (e.g. `@orchestrator --debug "Build a SaaS platform..."` — not when it appears as part of a phrase like "build a debug mode feature"):
 - Set `debug_mode = true`
-- Strip `--debug` from the input. Also strip `--dry-run` if present — reserved, no-op in v0.2.x. `--dry-run` alone does NOT set `debug_mode = true`.
-- Use the remaining text as `clean_prompt` for all subsequent steps.
+- Strip `--debug` from the input.
 
-**If `--debug` is absent:**
+**If `--dry-run` appears as a standalone space-separated token** (e.g. `@orchestrator --dry-run "Build a SaaS platform..."`):
+- Set `dry_run_mode = true`
+- Strip `--dry-run` from the input.
+- `--dry-run` does NOT set `debug_mode = true` by itself.
+- `--debug` and `--dry-run` can both be present simultaneously.
+
+**Otherwise:**
 - `debug_mode = false`
-- Continue normally. Steps 1–7 and Step 8 are completely unaffected.
+- `dry_run_mode = false`
+
+Use the remaining text as `clean_prompt` for all subsequent steps.
 
 **Step 0 does nothing else.** Do not read routing.json, score teams, or produce output here.
 
@@ -126,8 +133,9 @@ MEDIUM candidates:
 **Ask mode** (triggered when action = "ask"):
 - Ask mode is triggered **at most once** per routing invocation. If multiple medium candidates require "ask", they are grouped into a single prompt.
 - Ask mode applies only to the medium band. High teams and ignored teams are not affected.
+- **In dry-run mode (`dry_run_mode = true`):** do NOT prompt. Set `ask_required: true` on the routing_decision instead. The ask is deferred — it will be presented when the same prompt is run without `--dry-run`.
 
-Output:
+Output (normal mode only):
 ```
 Medium-confidence teams identified:
 - <team> (score N)
@@ -135,7 +143,7 @@ Medium-confidence teams identified:
 Dispatch these teams? [Y/n]
 ```
 
-Input contract:
+Input contract (normal mode only):
 - `y` / `yes` / `<empty>` → dispatch all prompted teams (same as `auto` for this context); `user_response = "yes"`
 - `n` / `no` → add all to `ignored_teams`; `user_response = "no"`
 - invalid → re-prompt once: `"Please reply y or n."`
@@ -145,7 +153,8 @@ Input contract:
 - `selected_teams[]` — teams that will be dispatched
 - `secondary_teams[]` — medium teams surfaced for context but not dispatched (when_high_exists + auto action only). Never dispatched in Steps A/B — informational only.
 - `ignored_teams[]` — teams suppressed by policy (ignore action) or user decision (ask → no/default_no)
-- `ask_resolution` — present only when ask was triggered; omit otherwise
+- `ask_required` — `true` if dry_run mode deferred an ask; absent otherwise
+- `ask_resolution` — present only when ask was resolved via user input (normal mode); absent in dry-run or when not triggered
 
 **ask_resolution schema:**
 ```json
@@ -185,9 +194,11 @@ In both cases:
     "selected_teams": [],
     "secondary_teams": [],
     "ignored_teams": [],
+    "ask_required": true,
     "filtered_teams": [{ "team": "<team-id>", "score": 0, "confidence": "low", "matched_positive": [], "matched_negative": [] }]
   }
   ```
+  Note: `ask_required` is present and `true` if dry-run mode deferred an ask. Absent otherwise.
 - Output exactly one clarifying question — no preamble, no explanation, just the question (e.g. "Is this a backend API task or a UI feature?")
 - Re-evaluate routing when the user replies
 
@@ -241,6 +252,7 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
       "matched_negative": []
     }
   ],
+  "ask_required": true,
   "filtered_teams": [
     {
       "team": "<team-id>",
@@ -259,8 +271,10 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
 }
 ```
 
-Note: `ask_resolution` is omitted from the task JSON when ask was not triggered.
-`ignored_teams` is present and may be empty when no teams were suppressed.
+Notes:
+- `ask_required` is present and `true` when dry-run mode deferred an ask (no prompt shown). Absent otherwise.
+- `ask_resolution` is present when ask was resolved via user input (normal mode). Absent in dry-run mode or when not triggered.
+- `ignored_teams` is present and may be empty when no teams were suppressed.
 
 Always use the actual `routing_policy` values from the current `routing.json` when writing `policy_snapshot` — not hardcoded values.
 
@@ -284,7 +298,8 @@ Fields needed:
 - `secondary_teams[]` — same fields
 - `ignored_teams[]` — same fields
 - `filtered_teams[]` — same fields
-- `ask_resolution` — present only when ask was triggered
+- `ask_required` — present only when dry-run mode deferred an ask
+- `ask_resolution` — present only when ask was resolved via user input (normal mode)
 
 Print exactly this block:
 
@@ -299,7 +314,9 @@ Policy:
 - dispatch_policy.medium.when_high_exists: <policy_snapshot.dispatch_policy.medium.when_high_exists>
 - dispatch_policy.medium.when_no_high_exists: <policy_snapshot.dispatch_policy.medium.when_no_high_exists>
 - dispatch_strategy: <routing_decision.dispatch_strategy>
-
+<if dry_run_mode is true:
+- dry_run: true
+}
 Evaluations:
 <for each team: first selected_teams entries, then secondary_teams, then ignored_teams, then filtered_teams>
 <team>: score <score>, <confidence> → <state>
@@ -311,6 +328,9 @@ Dispatch:
   Secondary: <secondary_teams[*].team joined by ", ", or "(none)" if empty>
   Ignored:  <ignored_teams[*].team joined by ", ", or "(none)" if empty>
   Filtered:  <filtered_teams[*].team joined by ", ", or "(none)" if empty>
+<if ask_required is present:
+Ask Required: confirmation deferred (run without --dry-run to resolve)
+}
 <if ask_resolution is present:
 Ask:
   Context: <ask_resolution.context>
@@ -326,7 +346,8 @@ Rendering rules:
 - `state`: `selected` for entries in `selected_teams`, `secondary` for `secondary_teams`, `ignored` for `ignored_teams`, `filtered` for `filtered_teams`.
 - Within each group (selected → secondary → ignored → filtered), maintain the order from `routing_decision` (score desc, positive_count desc, negative_count asc — matching Step 3.5 sort order).
 - All four Dispatch lines (Selected / Secondary / Ignored / Filtered) are always printed, even when empty (show `(none)`).
-- Ask block is printed only when `ask_resolution` is present in `routing_decision`.
+- Ask Required block is printed only when `ask_required` is present (dry-run deferred ask).
+- Ask block is printed only when `ask_resolution` is present (normal mode resolved ask).
 - Fallback case: `Selected: (none)`, `Secondary: (none)`, all teams appear under `Filtered`.
 
 Proceed immediately to Step 8 after printing.
@@ -361,10 +382,26 @@ Rules:
 - Filtered teams are NOT listed in the summary
 - "Also relevant" section is omitted entirely when `secondary_teams` is empty
 - Summary is printed before dispatch begins
+- **In dry-run mode (`dry_run_mode = true`):** after the normal summary, append:
+
+  ```
+  Dry run — no teams were dispatched.
+  ```
+
+  If `ask_required` is present in `routing_decision`, append additionally:
+
+  ```
+  Ask deferred — confirmation needed before dispatch.
+  Run without --dry-run to resolve.
+  ```
+
+  Steps A/B are skipped entirely in dry-run mode.
 
 ### Step A — Single Dispatch
 
 **Constraint:** Dispatch `selected_teams` only. `secondary_teams` are informational and must never be dispatched here.
+
+**Skip entirely if `dry_run_mode = true`.**
 
 1. Generate task-id: `uuidgen | tr '[:upper:]' '[:lower:]'`
    Fallback: `python3 -c "import uuid; print(uuid.uuid4())"`
@@ -386,6 +423,8 @@ Rules:
 ### Step B — Parallel Dispatch
 
 **Constraint:** Dispatch `selected_teams` only. `secondary_teams` are informational and must never be dispatched here.
+
+**Skip entirely if `dry_run_mode = true`.**
 
 1. Generate one task-id per selected team.
 2. Write one task file per team (each with its own `routing_decision`).
