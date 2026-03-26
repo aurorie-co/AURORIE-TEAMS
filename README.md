@@ -269,6 +269,35 @@ Customize in `.claude/routing.json`. The default policy reproduces v0.2 behavior
 
 ---
 
+## 🕸 Execution Graph
+
+Selected teams are not always dispatched flat — v0.4 builds an execution graph so teams execute in dependency order, and independent nodes run in parallel.
+
+**Graph templates (strict priority — first match wins):**
+
+| Priority | Condition | Template |
+|----------|-----------|----------|
+| 1 | `data` in selected teams | data-first chain |
+| 2 | `research` selected, no `product` | research branch fan-out |
+| 3 | `backend` or `frontend` selected | linear pipeline |
+| 4 | fallback | flat parallel |
+
+**Linear pipeline example** — `product → backend → frontend`:
+
+```
+Wave 1: product (ready immediately)
+Wave 2: backend (unlocked after product done)
+Wave 3: frontend (unlocked after backend done)
+```
+
+**Research branch** — `research → [backend, frontend]` in parallel after research completes.
+
+**Graph runtime states:** `pending` → `in_progress` → `completed` | `partial_failed`
+
+The graph is stored in the task JSON (`routing_decision.execution_graph`) — not just a plan, but a live runtime object tracked throughout execution.
+
+---
+
 ## 🔍 Debug Mode
 
 `--debug` exposes the full routing trace — every score, every decision, every field:
@@ -601,16 +630,16 @@ We're building the AI company OS.
 - [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
 - [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
 - [x] Ask mode MVP — interactive confirmation for medium-confidence teams (at most once per routing)
-- [x] Dispatch policy test suite — 28 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (10)
+- [x] Dispatch policy test suite — 47 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5), phase1 (14), graph (15)
 - [x] `--dry-run` flag — compute routing without dispatching
 - [x] `--debug --dry-run` combined mode
 
-**v0.4 — Interactive Routing Contract + DAG Execution (in progress)**
+**v0.4 — Interactive Routing Contract + DAG Execution (complete)**
 - [x] `pending_decision` schema — replaces `ask_required: true` with full structured payload
 - [x] `awaiting_dispatch_decision` task status
-- [x] Resolve interface — `--resolve <task-id> --confirm|--decline`
-- [ ] Phase 1: Selective routing (all / none / selective team subset)
-- [ ] Phase 2: DAG execution — static graph templates, dependency-ordered dispatch
+- [x] Resolve interface — `--resolve <task-id> all|none` (Phase 1 complete)
+- [x] Phase 2: DAG execution — static graph templates, dependency-ordered wave dispatch, graph runtime state (pending → in_progress → completed | partial_failed)
+- [ ] Phase 1 follow-up: Selective routing (all / none / selective team subset)
 
 **Long-term — AI-native companies**
 - [ ] Observability dashboard

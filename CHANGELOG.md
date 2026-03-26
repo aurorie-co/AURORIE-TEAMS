@@ -5,10 +5,12 @@
 ### Added
 - `pending_decision` schema — replaces `ask_required: true` boolean with full structured payload: `type`, `band`, `context`, `teams[]`, `options[]`, `default`
 - `awaiting_dispatch_decision` task status — parks task when ask is triggered; distinct from `needs_clarification` (system uncertain) and `user_declined_dispatch` (declined after ask)
-- Resolve interface — `--resolve <task-id> --confirm|--decline|--selective team1,team2`: applies user decision to recompute selected/ignored, clears pending_decision, resumes execution
+- Resolve interface — `--resolve <task-id> all|none`: applies user decision to recompute selected/ignored, clears pending_decision, resumes via Step C
 - `--resolve` CLI flag parsed in Step 0; idempotent resolution
 - Debug trace updated — shows `pending_decision` block (band, context, teams, options, default)
 - v0.4 routing summary — when parked, shows medium teams with confirm/decline CLI instructions
+- `execution_graph` schema in routing_decision — nodes with depends_on, artifact handoff paths, status per node
+- Step C — DAG dispatch loop: wave-based execution, parallel dispatch of ready nodes, partial failure handling
 - Full spec: `docs/specs/2026-03-26-v0.4-interactive-routing-and-dag-design.md`
 
 ### Changed
@@ -23,8 +25,12 @@
 - awaiting_dispatch_decision status
 - resolve interface (all-or-none, v0.4-a)
 
-### Phase 2 not yet implemented
-- execution_graph schema (static templates, DAG execution)
+### Phase 2 complete (DAG execution)
+- select_graph_template: strict priority (data-first > research-branch > linear-pipeline > flat-parallel)
+- build_execution_graph: builds nodes + edges per template, artifact_in/out paths
+- get_ready_nodes: depends_on all done → ready to dispatch
+- advance_node: pure status transitions, graph status updates (pending → in_progress → completed/partial_failed)
+- Step C: DAG dispatch loop — wave-based parallel dispatch, blocked node handling
 
 ---
 
