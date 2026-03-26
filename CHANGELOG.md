@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 — 2026-03-26
+
+### Added
+- `dispatch_policy` in `routing.json` — per-confidence-band dispatch control (auto / ask / ignore)
+- `normalize_dispatch_policy` — pure function, fills missing policy keys with v0.2-equivalent defaults
+- `apply_dispatch_policy` — Step 5.5 enforcement: auto, ignore, and interactive ask mode
+- Ask mode — Y/n confirmation prompt for medium-confidence teams, at most once per routing
+- `secondary_teams[]` and `ignored_teams[]` in `routing_decision` — distinguish surfaced vs. suppressed teams
+- `ask_resolution` in `routing_decision` — replay/audit record of user decisions
+- Step 7.5 debug trace updated — shows dispatch_policy, ignored_teams, and ask_resolution
+- 13-case dispatch policy test suite — normalize (4), auto/ignore (4), ask mode (5)
+- `dispatch_policy` field in `--debug` output
+
+### Changed
+- Step 5 renamed "Classify candidates" — outputs `high_candidates[]` and `medium_candidates[]` (not dispatch set)
+- Step 6 fallback now distinguishes `user_declined_dispatch` vs `needs_clarification`
+- `routing_schema_version` bumped to `"v0.3"` in `routing_decision`
+- Steps A/B constraint clarified — `secondary_teams` are informational only, never dispatched
+- orchestrator.md (shared + .claude) fully updated to v0.3 step architecture
+
+### Fixed
+- Ask mode guard: prevents ask trigger when `medium_candidates` is empty
+
+---
+
 ## 1.1.0 — 2026-03-25
 
 ### Added
