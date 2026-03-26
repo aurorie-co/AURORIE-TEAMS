@@ -683,7 +683,7 @@ We're building the AI company OS.
 **v0.4 — Interactive Routing Contract + DAG Execution (complete)**
 - [x] `pending_decision` schema — replaces `ask_required: true` with full structured payload
 - [x] `awaiting_dispatch_decision` task status
-**v0.5 — Goal-Oriented Coordination Runtime**
+**v0.5 — Goal-Oriented Coordination Runtime** *(current)*
 
 v0.5 introduces a persistent coordination layer across tasks.
 
@@ -692,19 +692,35 @@ v0.5 introduces a persistent coordination layer across tasks.
   - Aggregate status: partial_failed > in_progress > completed > pending
   - Append-only: tasks can be added, never removed
   - CLI: `--milestone "title" "prompt"` and `--milestone-status <id>`
-  - Pure functions: `lib/milestone.py` — 83/83 tests passing (v0.5 total)
+  - Pure functions: `lib/milestone.py` — 83/83 tests passing
 
 - [x] **Selective routing** (complete)
   - Decision resolution: all | none | selective
   - `@orchestrator --resolve <task-id> selective backend,product`
   - Users choose which medium-confidence teams to approve
-  - Empty selective list → declined (same as "none"); invalid team names → silently ignored in v0.5
-
-- [ ] **DAG dry-run**
-  - Preview execution_graph and wave order before dispatch
-  - Make dependencies explicit prior to execution
+  - Empty selective list → declined (same as "none"); invalid team names → silently ignored
 
 **v0.5 moves from task orchestration to goal-oriented coordination.**
+
+---
+
+**v0.6 — Persistent Execution Runtime** *(next)*
+
+v0.6 adds the time dimension: making execution replayable and resumable.
+
+- [ ] **Replay** — inspect past decisions and execution timeline
+  - `@orchestrator --replay <task-id>`
+  - Read-only: shows routing decision, execution graph, wave timeline, final status
+  - No state mutation; pure inspection
+- [ ] **Resume** — continue DAG execution from partial state
+  - `@orchestrator --resume <task-id>`
+  - Load execution_graph; find pending / blocked / failed nodes; enter Step C dispatch loop
+  - Makes DAG execution interruptible and recoverable
+- [ ] **Execution trace foundation**
+  - Structured `history[]` in execution_graph for audit / optimization loops
+  - Enables future: failure recovery, automated retry, behavioral learning
+
+**v0.6 makes execution persistent over time — the system remembers what it did and can continue.**
 
 **Long-term — AI-native companies**
 - [ ] Observability dashboard

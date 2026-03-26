@@ -559,7 +559,7 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - ✓ `--dry-run` flag——计算路由但不派发团队
 - ✓ `--debug --dry-run` 组合模式
 
-**v0.5 — 目标导向协调运行时**
+**v0.5 — 目标导向协调运行时**（当前版本）
 
 v0.5 引入跨任务的持久协调层。
 
@@ -568,19 +568,35 @@ v0.5 引入跨任务的持久协调层。
   - 状态聚合：partial_failed > in_progress > completed > pending
   - 追加写入：任务只能添加，不能移除
   - CLI：`--milestone "title" "prompt"` 和 `--milestone-status <id>`
-  - 纯函数：`lib/milestone.py` — 83/83 测试通过（v0.5 总计）
+  - 纯函数：`lib/milestone.py` — 83/83 测试通过
 
 - [x] **选择性路由**（已完成）
   - 决策范围：all | none | selective
   - `@orchestrator --resolve <task-id> selective backend,product`
   - 用户选择部分 medium 置信度团队确认
-  - 空 selective → 等同于 decline；无效 team 名在 v0.5 中静默忽略
-
-- [ ] **DAG dry-run**
-  - 在 dispatch 前预览 execution_graph 和 wave 顺序
-  - 在执行前明确依赖关系
+  - 空 selective → 等同于 decline；无效 team 名静默忽略
 
 **v0.5：从任务编排走向目标导向协调。**
+
+---
+
+**v0.6 — 持久化执行运行时**（下一步）
+
+v0.6 加入时间维度：使执行可回放、可续传。
+
+- [ ] **Replay（回放）** — 查看历史决策和执行时间线
+  - `@orchestrator --replay <task-id>`
+  - 只读：展示 routing decision、execution graph、wave timeline、最终状态
+  - 不修改任何状态
+- [ ] **Resume（续传）** — 从中间状态继续 DAG 执行
+  - `@orchestrator --resume <task-id>`
+  - 加载 execution_graph；找到 pending / blocked / failed 节点；进入 Step C dispatch loop
+  - 使 DAG 执行可中断、可恢复
+- [ ] **执行轨迹基础**
+  - 在 execution_graph 中加入结构化 `history[]`，用于审计和优化循环
+  - 为未来：故障恢复、自动重试、行为学习铺路
+
+**v0.6：让执行在时间维度上持久化——系统记住它做过什么，并能够继续。**
 
 **长期 — AI 原生公司**
 - [ ] 可观测性控制台
