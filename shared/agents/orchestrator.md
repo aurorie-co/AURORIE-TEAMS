@@ -554,7 +554,7 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 2. Validate `pending_decision` is present. If absent: output `Task <task-id> is not awaiting a decision.` and exit.
 3. If `resolve_action = "all"`: add all `pending_decision.teams` to `selected_teams`.
 4. If `resolve_action = "none"`: add all `pending_decision.teams` to `ignored_teams`; set `declined_after_ask = true`.
-5. If `resolve_action = "selective"`: for each `team-id` in `resolve_selected_teams[]`, if that team is in `pending_decision.teams`, add it to `selected_teams`; any not selected are added to `ignored_teams`. If `resolve_selected_teams` is empty (user selected nothing), treat as "none": add all pending to `ignored_teams` and set `declined_after_ask = true`.
+5. If `resolve_action = "selective"`: for each `team-id` in `resolve_selected_teams[]`, if that team is in `pending_decision.teams`, add it to `selected_teams`; any not selected are added to `ignored_teams`. If `resolve_selected_teams` is empty (user selected nothing), treat as "none": add all pending to `ignored_teams` and set `declined_after_ask = true`. **Note:** team-ids not present in `pending_decision.teams` are silently ignored in v0.5 (future: CLI mode → warning; API mode → validation error).
 6. Clear `pending_decision` from `routing_decision`.
 7. Write updated task JSON.
 

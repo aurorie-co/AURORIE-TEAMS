@@ -691,11 +691,13 @@ v0.5 introduces a persistent coordination layer across tasks.
   - Aggregate status: partial_failed > in_progress > completed > pending
   - Append-only: tasks can be added, never removed
   - CLI: `--milestone "title" "prompt"` and `--milestone-status <id>`
-  - Pure functions: `lib/milestone.py` — 63/63 tests passing
+  - Pure functions: `lib/milestone.py` — 83/83 tests passing (v0.5 total)
 
-- [ ] **Selective routing**
-  - Extend decision resolution from all|none → all|none|selective
-  - Allow users to choose a subset of medium-confidence teams
+- [x] **Selective routing** (complete)
+  - Decision resolution: all | none | selective
+  - `@orchestrator --resolve <task-id> selective backend,product`
+  - Users choose which medium-confidence teams to approve
+  - Empty selective list → declined (same as "none"); invalid team names → silently ignored in v0.5
 
 - [ ] **DAG dry-run**
   - Preview execution_graph and wave order before dispatch
@@ -736,7 +738,7 @@ Four test suites in `tests/`, all green on every commit:
 | `tests/install.test.sh` | Install lifecycle: file placement, routing preservation, MCP merge, orphan detection |
 | `tests/lint.test.sh` | Source tree contract: agent/workflow/skill/routing validation |
 | `tests/routing/test_routing_cases.py` | 5 routing regression cases: confidence bands, dispatch, fallback, negative keyword suppression |
-| `tests/routing/test_dispatch_policy.py` | 63 cases: dispatch (47) + milestone (14 unit + 2 E2E) |
+| `tests/routing/test_dispatch_policy.py` | 78 cases: dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
 
 Run all tests before opening a PR:
 

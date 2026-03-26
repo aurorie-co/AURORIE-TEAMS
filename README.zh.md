@@ -567,11 +567,13 @@ v0.5 引入跨任务的持久协调层。
   - 状态聚合：partial_failed > in_progress > completed > pending
   - 追加写入：任务只能添加，不能移除
   - CLI：`--milestone "title" "prompt"` 和 `--milestone-status <id>`
-  - 纯函数：`lib/milestone.py` — 63/63 测试通过
+  - 纯函数：`lib/milestone.py` — 83/83 测试通过（v0.5 总计）
 
-- [ ] **选择性路由**
-  - 决策范围从 all|none 扩展至 all|none|selective
-  - 允许用户选择部分 medium 置信度团队
+- [x] **选择性路由**（已完成）
+  - 决策范围：all | none | selective
+  - `@orchestrator --resolve <task-id> selective backend,product`
+  - 用户选择部分 medium 置信度团队确认
+  - 空 selective → 等同于 decline；无效 team 名在 v0.5 中静默忽略
 
 - [ ] **DAG dry-run**
   - 在 dispatch 前预览 execution_graph 和 wave 顺序
@@ -612,7 +614,7 @@ v0.5 引入跨任务的持久协调层。
 | `tests/install.test.sh` | 完整安装生命周期：文件放置、路由保留、MCP 合并、孤立文件检测 |
 | `tests/lint.test.sh` | 源码树一致性：Agent / 工作流 / 技能 / 路由契约验证 |
 | `tests/routing/test_routing_cases.py` | 5 个确定性路由 case：置信度区间、派发、fallback、负关键词过滤 |
-| `tests/routing/test_dispatch_policy.py` | 63 个 case：dispatch (47) + milestone (14 unit + 2 E2E) |
+| `tests/routing/test_dispatch_policy.py` | 78 个 case：dispatch (47) + phase1+selective (20) + graph (15) + milestone (16) |
 
 开 PR 或修改 routing/workflows 后，运行全部测试：
 
