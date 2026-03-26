@@ -484,9 +484,17 @@ cd /path/to/your-project && /tmp/aurorie-teams/install.sh
 - ✓ `dispatch_policy` 配置——routing.json 中按置信度控制派发行为
 - ✓ `normalize_dispatch_policy`——纯函数，用 v0.2 等价默认值填充缺失键
 - ✓ `apply_dispatch_policy`——Step 5.5 执行：auto / ignore / ask 三种模式
-- ✓ Ask mode——medium 置信度团队派发前交互确认（每轮最多一次）
+- ✓ Ask mode MVP——medium 置信度团队派发前交互确认（每轮最多一次）
 - ✓ Dispatch policy 测试套件——18 个 case：normalize (4)、auto/ignore (4)、ask (5)、dry-run (5)
-- [ ] 任务图——跨团队 DAG 执行
+- ✓ `--dry-run` flag——计算路由但不派发团队
+- ✓ `--debug --dry-run` 组合模式
+
+**v0.4 — Interactive Routing Contract + DAG Execution（进行中）**
+- ✓ `pending_decision` schema——替换 `ask_required: true`，完整结构化 payload
+- ✓ `awaiting_dispatch_decision` 任务状态
+- ✓ Resolve 接口——`--resolve <task-id> --confirm|--decline`
+- [ ] Phase 1：选择性路由（all / none / selective 团队子集）
+- [ ] Phase 2：DAG 执行——静态图模板，依赖顺序派发
 
 **长期 — AI 原生公司**
 - [ ] 可观测性控制台

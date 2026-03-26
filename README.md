@@ -596,14 +596,21 @@ We're building the AI company OS.
 - ✓ Routing test suite — 5 regression cases, CI-integrated
 - ✓ `--debug` flag — full per-team routing trace in terminal
 
-**v0.3 — Controllable execution (current)**
+**v0.3 — Controllable execution**
 - [x] `dispatch_policy` config — per-confidence-band behavior in routing.json
 - [x] `normalize_dispatch_policy` — pure function, fills missing keys with v0.2-equivalent defaults
 - [x] `apply_dispatch_policy` — Step 5.5 enforcement: auto / ignore / ask modes
-- [x] Ask mode — interactive confirmation for medium-confidence teams (at most once per routing)
+- [x] Ask mode MVP — interactive confirmation for medium-confidence teams (at most once per routing)
 - [x] Dispatch policy test suite — 18 cases: normalize (4), auto/ignore (4), ask (5), dry-run (5)
-- [x] Interactive routing — confirm medium teams before dispatch (Step 5.5 integration)
-- [ ] Task graph — DAG execution across teams
+- [x] `--dry-run` flag — compute routing without dispatching
+- [x] `--debug --dry-run` combined mode
+
+**v0.4 — Interactive Routing Contract + DAG Execution (in progress)**
+- [x] `pending_decision` schema — replaces `ask_required: true` with full structured payload
+- [x] `awaiting_dispatch_decision` task status
+- [x] Resolve interface — `--resolve <task-id> --confirm|--decline`
+- [ ] Phase 1: Selective routing (all / none / selective team subset)
+- [ ] Phase 2: DAG execution — static graph templates, dependency-ordered dispatch
 
 **Long-term — AI-native companies**
 - [ ] Observability dashboard

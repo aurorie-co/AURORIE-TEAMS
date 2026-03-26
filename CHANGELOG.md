@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.0 — 2026-03-26
+
+### Added
+- `pending_decision` schema — replaces `ask_required: true` boolean with full structured payload: `type`, `band`, `context`, `teams[]`, `options[]`, `default`
+- `awaiting_dispatch_decision` task status — parks task when ask is triggered; distinct from `needs_clarification` (system uncertain) and `user_declined_dispatch` (declined after ask)
+- Resolve interface — `--resolve <task-id> --confirm|--decline|--selective team1,team2`: applies user decision to recompute selected/ignored, clears pending_decision, resumes execution
+- `--resolve` CLI flag parsed in Step 0; idempotent resolution
+- Debug trace updated — shows `pending_decision` block (band, context, teams, options, default)
+- v0.4 routing summary — when parked, shows medium teams with confirm/decline CLI instructions
+- Full spec: `docs/specs/2026-03-26-v0.4-interactive-routing-and-dag-design.md`
+
+### Changed
+- `routing_schema_version` bumped to `"v0.4"` in routing_decision
+- `ask_required` removed — replaced by `pending_decision`
+- `ask_resolution` removed — replaced by resolve interface
+- Step 5.5 ask now parks task (sets `pending_decision` + `awaiting_dispatch_decision`) and stops; no longer proceeds to Steps A/B
+- v0.3 backward compatibility: tasks with `ask_required: true` (no `pending_decision`) are read-equivalent to `pending_decision` with `options: ["all", "none"]`, `default: "none"`
+
+### Phase 1 complete (interactive routing contract)
+- pending_decision schema
+- awaiting_dispatch_decision status
+- resolve interface (all-or-none, v0.4-a)
+
+### Phase 2 not yet implemented
+- execution_graph schema (static templates, DAG execution)
+
+---
+
 ## 0.3.1 — 2026-03-26
 
 ### Added

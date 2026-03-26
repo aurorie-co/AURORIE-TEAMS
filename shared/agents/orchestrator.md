@@ -23,13 +23,25 @@ Inspect the raw user input before any routing begins.
 - `--dry-run` does NOT set `debug_mode = true` by itself.
 - `--debug` and `--dry-run` can both be present simultaneously.
 
+**If `--resolve <task-id>` appears** (e.g. `@orchestrator --resolve abc123 --confirm`):
+- `resolve_mode = true`
+- `resolve_task_id = "<task-id>"`
+- `resolve_action = "<confirm|decline|selective>"`
+- `resolve_teams = [<team-ids>]` (only for `--selective`)
+- Strip all resolve tokens from the input.
+- `--resolve` does NOT set `debug_mode = true` by itself.
+- `--resolve` can be combined with `--debug` (shows resolve trace).
+
 **Otherwise:**
 - `debug_mode = false`
 - `dry_run_mode = false`
+- `resolve_mode = false`
 
 Use the remaining text as `clean_prompt` for all subsequent steps.
 
 **Step 0 does nothing else.** Do not read routing.json, score teams, or produce output here.
+
+**Resolve mode** (`resolve_mode = true`): Skip Steps 1–8 entirely. Read the task JSON for `resolve_task_id`, apply the decision, update the task, and resume from Step A/B. See Resolve Interface (below).
 
 ### Step 1 — Read policy
 
@@ -131,74 +143,69 @@ MEDIUM candidates:
 ```
 
 **Ask mode** (triggered when action = "ask"):
-- Ask mode is triggered **at most once** per routing invocation. If multiple medium candidates require "ask", they are grouped into a single prompt.
+- Ask mode is triggered **at most once** per routing invocation. If multiple medium candidates require "ask", they are grouped into a single `pending_decision`.
 - Ask mode applies only to the medium band. High teams and ignored teams are not affected.
-- **In dry-run mode (`dry_run_mode = true`):** do NOT prompt. Set `ask_required: true` on the routing_decision instead. The ask is deferred — it will be presented when the same prompt is run without `--dry-run`.
+- Ask mode sets `pending_decision` on the routing_decision and parks the task in `awaiting_dispatch_decision` status — execution halts here. The orchestrator does NOT proceed to Steps A/B.
+- **In dry-run mode (`dry_run_mode = true`):** `pending_decision` is still written. Dry-run mode only skips Steps A/B — it does not defer the ask. The `pending_decision` is written regardless.
 
-Output (normal mode only):
-```
-Medium-confidence teams identified:
-- <team> (score N)
-- <team> (score N)
-Dispatch these teams? [Y/n]
-```
-
-Input contract (normal mode only):
-- `y` / `yes` / `<empty>` → dispatch all prompted teams (same as `auto` for this context); `user_response = "yes"`
-- `n` / `no` → add all to `ignored_teams`; `user_response = "no"`
-- invalid → re-prompt once: `"Please reply y or n."`
-- invalid (second time) → treat as `no`; `user_response = "default_no"`
-
-**Outputs of Step 5.5:**
-- `selected_teams[]` — teams that will be dispatched
-- `secondary_teams[]` — medium teams surfaced for context but not dispatched (when_high_exists + auto action only). Never dispatched in Steps A/B — informational only.
-- `ignored_teams[]` — teams suppressed by policy (ignore action) or user decision (ask → no/default_no)
-- `ask_required` — `true` if dry_run mode deferred an ask; absent otherwise
-- `ask_resolution` — present only when ask was resolved via user input (normal mode); absent in dry-run or when not triggered
-
-**ask_resolution schema:**
+**pending_decision schema:**
 ```json
-{
-  "triggered": true,
-  "context": "medium_when_no_high_exists",
-  "teams": ["product", "frontend"],
-  "user_response": "yes"
+"pending_decision": {
+  "type": "dispatch_confirmation",
+  "band": "medium",
+  "context": "<medium_when_high_exists|medium_when_no_high_exists>",
+  "teams": [
+    { "team": "<team-id>", "score": <N>, "confidence": "medium" }
+  ],
+  "options": ["all", "none"],
+  "default": "none"
 }
 ```
+
+**CLI render (normal mode — all-or-none v0.4-a):**
+```
+Medium-confidence teams identified:
+- <team> (score <N>)
+- <team> (score <N>)
+Dispatch these teams? [Y/n]
+```
+- `y` / `yes` / `<empty>` → resolve with `selected: "all"`
+- `n` / `no` → resolve with `selected: "none"`
+- invalid → re-prompt once: `"Please reply y or n."`
+- invalid (second time) → resolve with `selected: "none"` (default)
+
+**Outputs of Step 5.5:**
+- `selected_teams[]` — teams that will be dispatched (unchanged by ask; only finalized on resolve)
+- `secondary_teams[]` — medium teams surfaced for context but not dispatched (when_high_exists + auto action only). Never dispatched in Steps A/B — informational only.
+- `ignored_teams[]` — teams suppressed by policy (ignore action)
+- `pending_decision` — set when ask is triggered; absent otherwise
 
 **Semantic boundary:**
 - `secondary_teams` and `ignored_teams` are mutually exclusive.
 - `secondary_teams` = surfaced for context, not dispatched.
-- `ignored_teams` = explicitly suppressed by policy or user decision.
+- `ignored_teams` = explicitly suppressed by policy.
 
-**Trigger Step 6 (Fallback) if `selected_teams` is empty after this step.**
+**After setting pending_decision:**
+- Set task status to `"awaiting_dispatch_decision"`
+- Write task JSON (Step 7)
+- Print user summary (Step 8) — do NOT proceed to Steps A/B
+- Orchestrator STOP — resume via resolve interface
+
+**Trigger Step 6 (Fallback) if `selected_teams` is empty and no ask was triggered.**
 
 When `selected_teams` contains multiple teams, dispatch them in parallel (Step B).
 When `selected_teams` contains one team, use single dispatch (Step A).
 
 ### Step 6 — Fallback
 
-Triggered when no teams remain selected after Step 5.5 policy enforcement. Two cases:
+Triggered when `selected_teams` is empty after Step 5.5 and no ask was triggered.
 
-- **`user_declined_dispatch`**: ask mode was triggered AND `user_response` is `"no"` or `"default_no"`.
-- **`needs_clarification`**: `selected_teams` is empty AND no ask was triggered (e.g., all candidates filtered or ignored by policy).
+- **`needs_clarification`**: `selected_teams` is empty AND no ask was triggered (all candidates filtered or ignored by policy).
 
 In both cases:
 - Do NOT dispatch any team
 - Do NOT generate any artifact
-- Generate one task-id, write task JSON with the appropriate `status` and the following `routing_decision`:
-  ```json
-  "routing_decision": {
-    "routing_schema_version": "v0.3",
-    "dispatch_strategy": "fallback",
-    "selected_teams": [],
-    "secondary_teams": [],
-    "ignored_teams": [],
-    "ask_required": true,
-    "filtered_teams": [{ "team": "<team-id>", "score": 0, "confidence": "low", "matched_positive": [], "matched_negative": [] }]
-  }
-  ```
-  Note: `ask_required` is present and `true` if dry-run mode deferred an ask. Absent otherwise.
+- Generate one task-id, write task JSON with `status: "needs_clarification"` and `routing_decision` (schema in Step 7).
 - Output exactly one clarifying question — no preamble, no explanation, just the question (e.g. "Is this a backend API task or a UI feature?")
 - Re-evaluate routing when the user replies
 
@@ -208,7 +215,7 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
 
 ```json
 "routing_decision": {
-  "routing_schema_version": "v0.3",
+  "routing_schema_version": "v0.4",
   "policy_snapshot": {
     "candidate_threshold": "<routing_policy.candidate_threshold>",
     "confidence_thresholds": {
@@ -252,7 +259,6 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
       "matched_negative": []
     }
   ],
-  "ask_required": true,
   "filtered_teams": [
     {
       "team": "<team-id>",
@@ -262,19 +268,23 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
       "matched_negative": []
     }
   ],
-  "ask_resolution": {
-    "triggered": true,
+  "pending_decision": {
+    "type": "dispatch_confirmation",
+    "band": "medium",
     "context": "<medium_when_high_exists|medium_when_no_high_exists>",
-    "teams": ["<team-id>"],
-    "user_response": "<yes|no|default_no>"
+    "teams": [
+      { "team": "<team-id>", "score": 0, "confidence": "medium" }
+    ],
+    "options": ["all", "none"],
+    "default": "none"
   }
 }
 ```
 
 Notes:
-- `ask_required` is present and `true` when dry-run mode deferred an ask (no prompt shown). Absent otherwise.
-- `ask_resolution` is present when ask was resolved via user input (normal mode). Absent in dry-run mode or when not triggered.
+- `pending_decision` is present only when ask is triggered and task is parked in `awaiting_dispatch_decision` status. Absent otherwise.
 - `ignored_teams` is present and may be empty when no teams were suppressed.
+- v0.3 backward compatibility: tasks with `ask_required: true` (no `pending_decision`) are equivalent to `pending_decision` with `options: ["all", "none"]` and `default: "none"`. Read both fields; treat `ask_required: true` as equivalent `pending_decision`.
 
 Always use the actual `routing_policy` values from the current `routing.json` when writing `policy_snapshot` — not hardcoded values.
 
@@ -298,8 +308,7 @@ Fields needed:
 - `secondary_teams[]` — same fields
 - `ignored_teams[]` — same fields
 - `filtered_teams[]` — same fields
-- `ask_required` — present only when dry-run mode deferred an ask
-- `ask_resolution` — present only when ask was resolved via user input (normal mode)
+- `pending_decision` — present only when ask was triggered (task parked)
 
 Print exactly this block:
 
@@ -328,14 +337,13 @@ Dispatch:
   Secondary: <secondary_teams[*].team joined by ", ", or "(none)" if empty>
   Ignored:  <ignored_teams[*].team joined by ", ", or "(none)" if empty>
   Filtered:  <filtered_teams[*].team joined by ", ", or "(none)" if empty>
-<if ask_required is present:
-Ask Required: confirmation deferred (run without --dry-run to resolve)
-}
-<if ask_resolution is present:
-Ask:
-  Context: <ask_resolution.context>
-  User said: <ask_resolution.user_response>
-  Teams prompted: <ask_resolution.teams[*].team joined by ", ">
+<if pending_decision is present:
+Awaiting Decision:
+  Band: <pending_decision.band>
+  Context: <pending_decision.context>
+  Teams: <pending_decision.teams[*].team joined by ", ">
+  Options: <pending_decision.options joined by ", ">
+  Default: <pending_decision.default>
 }
 === END ROUTING DEBUG ===
 ```
@@ -377,22 +385,36 @@ No high-confidence teams found.
 Reason: matched "<signal1>", "<signal2>".
 ```
 
+**When `pending_decision` is set (`awaiting_dispatch_decision`):**
+```
+Routed to:
+- <team> (high, score <N>)
+
+Medium-confidence teams awaiting your decision:
+- <team> (medium, score <N>)
+- <team> (medium, score <N>)
+
+Options: all / none
+Confirm: @orchestrator --resolve <task-id> --confirm
+Decline: @orchestrator --resolve <task-id> --decline
+```
+
 Rules:
 - Reason line uses `top_signals` only — do not write free-form explanation text
 - Filtered teams are NOT listed in the summary
 - "Also relevant" section is omitted entirely when `secondary_teams` is empty
 - Summary is printed before dispatch begins
+- **When `awaiting_dispatch_decision`:** print the summary, then append:
+
+  ```
+  Awaiting your decision on medium-confidence teams.
+  Confirm or decline at: @orchestrator --resolve <task-id>
+  ```
+
 - **In dry-run mode (`dry_run_mode = true`):** after the normal summary, append:
 
   ```
   Dry run — no teams were dispatched.
-  ```
-
-  If `ask_required` is present in `routing_decision`, append additionally:
-
-  ```
-  Ask deferred — confirmation needed before dispatch.
-  Run without --dry-run to resolve.
   ```
 
   Steps A/B are skipped entirely in dry-run mode.
@@ -431,6 +453,28 @@ Rules:
 3. Invoke all team leads simultaneously via parallel Agent tool calls using the Step A prompt template.
 4. Await all responses.
 5. Synthesize summaries. Return combined summary to user.
+
+### Resolve Interface
+
+Triggered when `resolve_mode = true` (Step 0 parsed `--resolve`).
+
+**Precondition:** Task JSON exists at `.claude/workspace/tasks/<resolve_task_id>.json` and has `status: "awaiting_dispatch_decision"` with a `pending_decision`.
+
+**Steps:**
+
+1. Read task JSON. Validate `pending_decision` is present.
+2. If `resolve_action = "confirm"`: set `selected_teams += pending_decision.teams` (all confirmed).
+3. If `resolve_action = "decline"`: set `ignored_teams += pending_decision.teams`; `selected_teams` unchanged.
+4. If `resolve_action = "selective"`: for each team in `resolve_teams` that is in `pending_decision.teams` → add to `selected_teams`; remaining `pending_decision.teams` not in `resolve_teams` → add to `ignored_teams`.
+5. Clear `pending_decision` from `routing_decision`.
+6. Set task status to `"pending"`.
+7. Write updated task JSON.
+8. If `debug_mode = true`: print resolve trace (selected, ignored, cleared).
+9. Proceed to Step A or Step B based on `selected_teams` count.
+
+**Idempotency:** If task status is not `"awaiting_dispatch_decision"` or `pending_decision` is absent, resolve is a no-op. If resolve is called twice with the same action, second call is also a no-op (already resolved).
+
+**Constraint:** `resolve_teams` may only contain team IDs that are in `pending_decision.teams`. Unknown team IDs are silently ignored.
 
 ## Sequential Cross-Team Workflows
 Defined as multi-step sequences in the project's CLAUDE.md — not as a single
