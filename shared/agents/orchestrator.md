@@ -678,7 +678,20 @@ Rules:
    c. Invoke all ready nodes in parallel via Step B.
    d. Wait for all to complete.
    e. For each completed node: update its status in `execution_graph` via `advance_node()`.
-   f. If any node failed: `execution_graph.status = "partial_failed"`, STOP.
+   f. If any node failed:
+      - If `auto_retry_enabled = true`:
+        ```python
+        sys.path.insert(0, "<project-root>")
+        from lib.retry import maybe_retry_nodes
+        execution_graph, retried_node_ids = maybe_retry_nodes(execution_graph, auto_retry_enabled)
+        ```
+      - If any nodes were retried (`retried_node_ids` is non-empty): print:
+        ```
+        Auto-retry: <node_id> (retry_count: <n> → <n+1>) reset to pending for next wave
+        ```
+        Then do NOT set partial_failed; continue to next loop iteration.
+      - If no nodes were retried AND some failed: set `execution_graph.status = "partial_failed"`, STOP.
+      - If `auto_retry_enabled = false`: set `execution_graph.status = "partial_failed"`, STOP.
 5. Repeat from step 1.
 
 **After the dispatch loop exits** (graph reaches terminal state `completed` | `partial_failed` | `blocked`):
