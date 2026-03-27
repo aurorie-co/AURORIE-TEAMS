@@ -4,7 +4,11 @@
 
 ### Overview
 
-**Adaptive Execution Runtime** — the system now uses historical execution outcomes to bias future routing decisions, making it the first version with genuine adaptive behavior.
+**Adaptive Execution Runtime**
+
+The system doesn't just execute — it improves how it executes.
+
+This is the first version where AURORIE TEAMS has genuine “自适应能力”：it uses historical execution outcomes to bias future routing decisions.
 
 v0.7 is not an ML system: it uses rule-based, deterministic aggregation with explainable bias multipliers and a minimum-sample guard (runs < 5 = no bias). Feedback is additive, not authoritative — historical data influences but never overrides routing rules.
 
@@ -18,8 +22,7 @@ v0.7 is not an ML system: it uses rule-based, deterministic aggregation with exp
   - Bias computation (`feedback_multiplier`, `compute_team_bias`, `compute_template_bias`)
   - Orchestrator hook (`maybe_append_feedback_event`)
   - Routing integration (`apply_team_bias`, `apply_template_bias`)
-- **`.claude/workspace/execution_history.jsonl`** — append-only event log recording every terminal-state transition
-- **Feedback event schema**: `task_id`, `run_id`, `run_kind` ("initial" | "resume"), `teams[]`, `graph_template`, `final_status`, `failed_nodes[]`, `resumed`, `milestone_id`, `timestamp`
+- **`.claude/workspace/execution_history.jsonl`** — append-only event log: `task completes → append event → next routing reads history → bias score`
 
 #### Team Bias (Phase 1)
 - `aggregate_team_stats(events)` — team-level success_rate and runs from initial-run events only
@@ -29,28 +32,47 @@ v0.7 is not an ML system: it uses rule-based, deterministic aggregation with exp
   - `0.6 <= rate < 0.8` → 0.9
   - `0.4 <= rate < 0.6` → 0.75
   - `rate < 0.4` → 0.6
-- `apply_team_bias(candidates, team_bias, team_stats)` — extends each candidate with `adjusted_score = raw_score * bias_multiplier`, `feedback_bias`, `runs`, `success_rate`
+- `apply_team_bias(candidates, team_bias, team_stats)` — extends each candidate with `adjusted_score = raw_score * bias_multiplier`, `feedback_bias`, `runs`, `success_rate`. Applied before confidence band mapping (raw_score → adjusted_score → confidence).
 - **Resume runs excluded** from all statistics to prevent inflated success rates from recovery paths
 
 #### Graph Template Learning (Phase 2)
 - `aggregate_template_stats(events)` — template-level success_rate and runs
 - `compute_template_bias(template_stats)` — same bucket logic applied to template selection
-- `apply_template_bias(candidates, template_bias)` — bias per template candidate
+- `apply_template_bias(candidates, template_bias)` — bias per template candidate. Only applied when multiple templates are viable (bias, not override).
 - `execution_graph.metadata.graph_template` — template stored at graph-build time for feedback readback
 
 #### Orchestrator Integration
-- **`--feedback`** flag — enables feedback bias in debug output
-- **`--feedback-history`** flag — reads and aggregates `.claude/workspace/execution_history.jsonl`, prints team stats, exits
-- **Step 3.6** — apply team bias after candidate scoring, before confidence bands
-- **Step 7.6** — feedback bias debug block in trace output: `raw_score`, `runs`, `success_rate`, `feedback_bias`, `adjusted_score`
-- **Terminal state hook** — `maybe_append_feedback_event()` called at end of Step C dispatch loop; deduplicated by `run_written` in-memory guard
-- **Resume path** — `run_n` incremented and `run_kind` set to "resume" on each resume
+
+**CLI**
+- `--feedback` — enables feedback bias in debug output
+- `--feedback-history` — reads and aggregates `.claude/workspace/execution_history.jsonl`, prints team stats, exits
+
+**Runtime**
+- Step 3.6 — apply team bias after candidate scoring, before confidence bands
+- Terminal state hook — `maybe_append_feedback_event()` called at end of Step C dispatch loop; deduplicated by `run_written` in-memory guard
+- Resume path — `run_n` incremented and `run_kind` set to "resume" on each resume
+
+**Debug trace (Step 7.6)**
+- Displays per-team: `raw_score`, `runs`, `success_rate`, `feedback_bias`, `adjusted_score`
 
 ### Test Coverage
 - `tests/routing/test_feedback.py`: **27/27** — event schema, JSONL store, aggregation, bias computation, routing apply, orchestrator hook, E2E pipeline
 - `tests/routing/test_feedback_integration.py`: **8/8** — orchestrator integration points (team bias, template metadata, terminal hook, resume tracking)
 - `tests/routing/test_dispatch_policy.py`: **80/80** — dispatch + execution graph
 - **Total: 115/115 tests green**
+
+### Architecture: 5-Layer Closed Loop
+
+```
+v0.3 — decide     routing decision
+v0.4 — execute    DAG execution
+v0.5 — coordinate team coordination
+v0.6 — persist   replay + resume
+v0.7 — learn     feedback loop
+                  ↑↑↑↑↑↑
+        The runtime now forms a closed loop:
+        decisions are informed by past execution.
+```
 
 ### Orchestrator Files
 - `shared/agents/orchestrator.md` — updated with all v0.7 integration points
@@ -59,7 +81,7 @@ v0.7 is not an ML system: it uses rule-based, deterministic aggregation with exp
 ### Adaptive Runtime Principles
 1. **Feedback is additive, not authoritative** — historical data biases, never overrides
 2. **Learning is explainable** — every bias adjustment traceable in debug output
-3. **Learning is conservative** — insufficient data (runs < 5) produces no bias
+3. **Learning is conservative** — insufficient data (runs < MIN_SAMPLES (5)) produces no bias
 4. **Human-in-the-loop is preserved** — no automatic execution changes in v0.7
 
 ### Out of Scope
