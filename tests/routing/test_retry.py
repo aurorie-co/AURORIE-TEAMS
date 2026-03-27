@@ -26,19 +26,38 @@ def _test_build_execution_graph_retryable_all_templates():
             assert node["retry_count"] == 0
 
 def _test_check_retry_eligible_all_true():
-    raise NotImplementedError("implemented in Task 2")
+    from lib.retry import check_retry_eligible
+    node = {"status": "failed", "retryable": True, "retry_count": 0}
+    eligible, reason = check_retry_eligible(node, auto_retry_enabled=True)
+    assert eligible is True
 
 def _test_check_retry_eligible_not_retryable():
-    raise NotImplementedError("implemented in Task 2")
+    from lib.retry import check_retry_eligible
+    node = {"status": "failed", "retryable": False, "retry_count": 0}
+    eligible, reason = check_retry_eligible(node, auto_retry_enabled=True)
+    assert eligible is False
+    assert "not retryable" in reason
 
 def _test_check_retry_eligible_count_exhausted():
-    raise NotImplementedError("implemented in Task 2")
+    from lib.retry import check_retry_eligible
+    node = {"status": "failed", "retryable": True, "retry_count": 1}
+    eligible, reason = check_retry_eligible(node, auto_retry_enabled=True)
+    assert eligible is False
+    assert "exhausted" in reason.lower()
 
 def _test_check_retry_eligible_not_failed():
-    raise NotImplementedError("implemented in Task 2")
+    from lib.retry import check_retry_eligible
+    node = {"status": "blocked", "retryable": True, "retry_count": 0}
+    eligible, reason = check_retry_eligible(node, auto_retry_enabled=True)
+    assert eligible is False
+    assert "not in failed" in reason.lower()
 
 def _test_check_retry_eligible_auto_retry_disabled():
-    raise NotImplementedError("implemented in Task 2")
+    from lib.retry import check_retry_eligible
+    node = {"status": "failed", "retryable": True, "retry_count": 0}
+    eligible, reason = check_retry_eligible(node, auto_retry_enabled=False)
+    assert eligible is False
+    assert "disabled" in reason.lower()
 
 TESTS = [
     ("build_execution_graph_has_retryable_field", _test_build_execution_graph_has_retryable_field),
