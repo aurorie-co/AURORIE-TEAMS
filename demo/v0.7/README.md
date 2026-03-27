@@ -181,7 +181,20 @@ Selected template: data-first
 ```
 demo/v0.7/
   README.md          ← this file
-  seed_history.py    ← seeds .claude/workspace/execution_history.jsonl
-  history/
-    seed.jsonl        ← the 17-event history file
+  seed_history.py    ← seeds 17 events to execution_history.jsonl
+  demo_script.py     ← timed terminal demo with colored output
 ```
+
+## Recording Instructions
+
+1. Open Terminal, maximize window, set font to 14-16pt
+2. Disable notification center (swipe two fingers from top-right corner)
+3. Start QuickTime: **File → New Screen Recording → record full screen**
+4. Run:
+   ```bash
+   python3 demo/v0.7/demo_script.py
+   ```
+5. Follow the on-screen timed narration
+6. Stop QuickTime when the script finishes
+
+**Duration: ~2:30** (3 parts + closing)
