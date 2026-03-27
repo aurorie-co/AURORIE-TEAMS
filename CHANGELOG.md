@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.8.0 — 2026-03-27
+
+### Overview
+
+**Auto-Retry Policy**
+
+The system recovers from retryable failures automatically — without removing human control.
+
+This is the second adaptive capability in the runtime. Where v0.7 learns from past outcomes to bias routing, v0.8 acts on failures in real-time to reduce manual recovery.
+
+Auto-retry is an **internal execution loop recovery mechanism** — not an external orchestration step. It lives inside Step C, where it checks failed nodes and resets eligible ones before the next wave iteration.
+
+### Architecture
+
+- **Lives in Step C** — integrated into wave dispatch loop, not a post-loop hook or external step
+- **One retry per node** — `retry_count < 1` hard limit; a node that fails after retry is not retried again
+- **Fires between waves** — failed node is reset to `pending` and picked up in the next iteration, not the same wave
+- **`--no-auto-retry` override** — disables auto-retry for this run; existing runtime behavior (manual `--resume`) is unaffected
+
+### Added
+
+#### `lib/retry.py` — Auto-Retry Pure Functions
+- `check_retry_eligible(node, auto_retry_enabled)` — 4 guards: auto_retry_enabled, retryable flag, retry_count < 1, status == failed
+- `reset_for_retry(node)` — returns new node dict with status=pending, retry_count+1
+- `maybe_retry_nodes(graph, auto_retry_enabled)` — scans all nodes, resets eligible ones, returns (updated_graph, retried_node_ids[])
+
+#### Node Schema — `retryable` and `retry_count`
+- Every node in all 4 graph templates (`data-first`, `research-branch`, `linear-pipeline`, `flat-parallel`) now has `retryable: true` and `retry_count: 0`
+- Written by `build_execution_graph()` — not inline JSON; Step 7 normal dispatch path now calls `build_execution_graph()` explicitly
+- `auto_retry_enabled` stored in `execution_graph.metadata` — readable in replay/debug
+
+#### `--no-auto-retry` CLI Flag
+- Passed at invocation time only — does not persist to task JSON
+- When present: `auto_retry_enabled = false` in metadata; no retry eligibility checks fire regardless of node flags
+
+#### Step C Retry Hook
+- After collecting node outcomes from wave dispatch and calling `advance_node()` for each result
+- Guards: `auto_retry_enabled == true` AND `node.retryable == true` AND `node.retry_count < 1` AND `node.status == failed`
+- If retry fires: `execution_graph.status = "in_progress"` so loop continues (critical bug fix — previously left as `partial_failed` which would terminate the loop)
+- If no retry AND some failed: `execution_graph.status = "partial_failed"`, STOP
+- Final status semantics: retry-then-success → `completed`; unrecoverable failed → `partial_failed`
+
+### Test Coverage
+
+**137/137 tests green** — up from 115/115
+
+New test files:
+- `tests/routing/test_retry.py` — 14 tests covering R1-R12 spec test cases
+- `tests/routing/test_retry_integration.py` — 4 integration tests including R4 blocked-node coverage
+- `tests/routing/test_step_c_simulation.py` — 4 deterministic Step C wave simulations covering R6/R8/R9 (runtime behavior that unit tests can't reach)
+
+QA review identified 3 bugs before release:
+1. Step 7 normal dispatch path was missing `build_execution_graph()` call (nodes would lack retryable fields)
+2. `advance_node()` was dropping `metadata` field
+3. R4 ("blocked nodes not retried") was only tested at `check_retry_eligible` level, not `maybe_retry_nodes` end-to-end
+
+### Spec
+
+Full design in `docs/specs/2026-03-27-v0.8-auto-retry.md`.
+
 ## 0.7.0 — 2026-03-27
 
 ### Overview
