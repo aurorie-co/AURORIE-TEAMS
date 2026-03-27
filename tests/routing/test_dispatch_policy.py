@@ -755,6 +755,8 @@ def build_execution_graph(task_id, selected_teams):
             "status": "pending",
             "artifacts_in": [],
             "artifacts_out": [ARTIFACT_OUT.get(team, "").format(task_id=task_id)],
+            "retryable": True,
+            "retry_count": 0,
         }
 
     if template == "data-first":
@@ -762,7 +764,8 @@ def build_execution_graph(task_id, selected_teams):
         chain = ["data", "research", "product", "backend", "frontend"]
         present = [t for t in chain if t in team_ids]
         nodes = [{"node_id": f"{t}-1", "team": t, "depends_on": [], "status": "pending",
-                  "artifacts_in": [], "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)]} for t in present]
+                  "artifacts_in": [], "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)],
+                  "retryable": True, "retry_count": 0} for t in present]
         for i, node in enumerate(nodes):
             if i > 0:
                 prev = nodes[i - 1]
@@ -783,6 +786,8 @@ def build_execution_graph(task_id, selected_teams):
                 "status": "pending",
                 "artifacts_in": [],
                 "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)],
+                "retryable": True,
+                "retry_count": 0,
             }
             if t == "research":
                 research_node = node
@@ -797,7 +802,8 @@ def build_execution_graph(task_id, selected_teams):
         chain = ["product", "backend", "frontend"]
         present = [t for t in chain if t in team_ids]
         nodes = [{"node_id": f"{t}-1", "team": t, "depends_on": [], "status": "pending",
-                  "artifacts_in": [], "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)]} for t in present]
+                  "artifacts_in": [], "artifacts_out": [ARTIFACT_OUT[t].format(task_id=task_id)],
+                  "retryable": True, "retry_count": 0} for t in present]
         for i, node in enumerate(nodes):
             if i > 0:
                 prev = nodes[i - 1]
@@ -814,6 +820,8 @@ def build_execution_graph(task_id, selected_teams):
                 "status": "pending",
                 "artifacts_in": [],
                 "artifacts_out": [ARTIFACT_OUT.get(t, "").format(task_id=task_id)],
+                "retryable": True,
+                "retry_count": 0,
             })
 
     # Populate artifacts_in for each node based on depends_on
