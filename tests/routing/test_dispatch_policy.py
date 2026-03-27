@@ -2032,6 +2032,491 @@ ORCHESTRATOR_DISPATCH_TESTS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Orchestrator Step B/C dispatch validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_STEP_B_TESTS = []
+
+
+def _test_step_b_uses_step_a_template():
+    """Step B must reference Step A prompt template for dispatch."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    assert step_b_start != -1, "Step B not found in orchestrator.md"
+    step_b_section = content[step_b_start:step_c_start]
+
+    # Must use Step A template
+    assert "Step A prompt template" in step_b_section, (
+        "Step B must use the Step A prompt template for dispatch"
+    )
+
+
+def _test_step_b_parallels_dispatch():
+    """Step B must indicate parallel dispatch of multiple team leads."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    step_b_section = content[step_b_start:step_c_start]
+
+    # Must indicate simultaneous/parallel dispatch
+    assert "simultaneously" in step_b_section or "parallel" in step_b_section.lower(), (
+        "Step B must indicate simultaneous/parallel dispatch"
+    )
+
+
+def _test_step_b_respects_selected_teams_only():
+    """Step B must dispatch only selected_teams, never secondary_teams."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    step_b_section = content[step_b_start:step_c_start]
+
+    # Must have constraint about selected_teams only
+    assert "selected_teams" in step_b_section, (
+        "Step B must reference selected_teams"
+    )
+    assert "secondary_teams" in step_b_section or "informational" in step_b_section.lower(), (
+        "Step B must clarify secondary_teams are informational only"
+    )
+
+
+ORCHESTRATOR_STEP_B_TESTS = [
+    ("step_b_uses_step_a_template", _test_step_b_uses_step_a_template),
+    ("step_b_parallels_dispatch", _test_step_b_parallels_dispatch),
+    ("step_b_respects_selected_teams_only", _test_step_b_respects_selected_teams_only),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Step C dispatch validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_STEP_C_TESTS = []
+
+
+def _test_step_c_uses_step_b_for_ready_nodes():
+    """Step C must dispatch ready nodes via Step B."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    assert step_c_start != -1, "Step C not found"
+    # Find end of Step C section
+    orchestrator_end = content.find("\n## ", step_c_start + 10)
+    if orchestrator_end == -1:
+        orchestrator_end = len(content)
+    step_c_section = content[step_c_start:orchestrator_end]
+
+    # Must use Step B for ready node dispatch
+    assert "Step B" in step_c_section, (
+        "Step C must dispatch ready nodes via Step B"
+    )
+
+
+def _test_step_c_handles_auto_retry():
+    """Step C must handle auto-retry when nodes fail."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    orchestrator_end = content.find("\n## ", step_c_start + 10)
+    if orchestrator_end == -1:
+        orchestrator_end = len(content)
+    step_c_section = content[step_c_start:orchestrator_end]
+
+    # Must handle auto-retry
+    assert "auto_retry" in step_c_section.lower() or "retry" in step_c_section, (
+        "Step C must handle auto-retry for failed nodes"
+    )
+
+
+def _test_step_c_checks_terminal_status():
+    """Step C must STOP when graph reaches terminal state."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    orchestrator_end = content.find("\n## ", step_c_start + 10)
+    if orchestrator_end == -1:
+        orchestrator_end = len(content)
+    step_c_section = content[step_c_start:orchestrator_end]
+
+    # Must check terminal status
+    assert "completed" in step_c_section or "partial_failed" in step_c_section or "STOP" in step_c_section, (
+        "Step C must check for terminal states (completed/partial_failed)"
+    )
+
+
+ORCHESTRATOR_STEP_C_TESTS = [
+    ("step_c_uses_step_b_for_ready_nodes", _test_step_c_uses_step_b_for_ready_nodes),
+    ("step_c_handles_auto_retry", _test_step_c_handles_auto_retry),
+    ("step_c_checks_terminal_status", _test_step_c_checks_terminal_status),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Resolve Interface validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_RESOLVE_TESTS = []
+
+
+def _test_resolve_accepts_all_none_selective():
+    """Resolve interface must accept all/none/selective actions."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    resolve_start = content.find("### Resolve Interface")
+    assert resolve_start != -1, "Resolve Interface not found"
+    resolve_section = content[resolve_start:resolve_start + 3000]
+
+    assert '"all"' in resolve_section, "Resolve must accept 'all'"
+    assert '"none"' in resolve_section, "Resolve must accept 'none'"
+    assert '"selective"' in resolve_section, "Resolve must accept 'selective'"
+
+
+def _test_resolve_validates_pending_decision():
+    """Resolve must validate pending_decision is present."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    resolve_start = content.find("### Resolve Interface")
+    resolve_section = content[resolve_start:resolve_start + 3000]
+
+    assert "pending_decision" in resolve_section, (
+        "Resolve must validate pending_decision is present"
+    )
+
+
+ORCHESTRATOR_RESOLVE_TESTS = [
+    ("resolve_accepts_all_none_selective", _test_resolve_accepts_all_none_selective),
+    ("resolve_validates_pending_decision", _test_resolve_validates_pending_decision),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Replay Interface validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_REPLAY_TESTS = []
+
+
+def _test_replay_has_interface():
+    """Orchestrator must have Replay Interface section."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    assert "### Replay Interface" in content, (
+        "Orchestrator must have Replay Interface section"
+    )
+
+
+def _test_replay_is_read_only():
+    """Replay must be read-only with no state mutation."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    replay_start = content.find("### Replay Interface")
+    replay_end = content.find("### Resume Interface", replay_start)
+    if replay_end == -1:
+        replay_end = replay_start + 2000
+    replay_section = content[replay_start:replay_end]
+
+    assert "read-only" in replay_section.lower() or "no state mutation" in replay_section.lower(), (
+        "Replay must be read-only with no state mutation"
+    )
+
+
+ORCHESTRATOR_REPLAY_TESTS = [
+    ("replay_has_interface", _test_replay_has_interface),
+    ("replay_is_read_only", _test_replay_is_read_only),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Resume Interface validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_RESUME_TESTS = []
+
+
+def _test_resume_has_interface():
+    """Orchestrator must have Resume Interface section."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    assert "### Resume Interface" in content, (
+        "Orchestrator must have Resume Interface section"
+    )
+
+
+def _test_resume_handles_partial_failed():
+    """Resume must handle partial_failed state."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    resume_start = content.find("### Resume Interface")
+    resume_section = content[resume_start:resume_start + 3000]
+
+    assert "partial_failed" in resume_section, (
+        "Resume must handle partial_failed state"
+    )
+
+
+def _test_resume_increments_run_n():
+    """Resume must increment run_n for tracking."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    resume_start = content.find("### Resume Interface")
+    resume_section = content[resume_start:resume_start + 3000]
+
+    assert "run_n" in resume_section, (
+        "Resume must increment run_n for tracking"
+    )
+
+
+ORCHESTRATOR_RESUME_TESTS = [
+    ("resume_has_interface", _test_resume_has_interface),
+    ("resume_handles_partial_failed", _test_resume_handles_partial_failed),
+    ("resume_increments_run_n", _test_resume_increments_run_n),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Milestone Interface validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_MILESTONE_TESTS = []
+
+
+def _test_milestone_has_interface():
+    """Orchestrator must have Milestone Interface section."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    assert "## Milestone Interface" in content, (
+        "Orchestrator must have Milestone Interface section"
+    )
+
+
+def _test_milestone_status_mode():
+    """Orchestrator must support --milestone-status flag."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step0_start = content.find("### Step 0")
+    step1_start = content.find("### Step 1")
+    step0_section = content[step0_start:step1_start]
+
+    assert "--milestone-status" in step0_section, (
+        "Orchestrator must support --milestone-status flag in Step 0"
+    )
+
+
+def _test_milestone_mode():
+    """Orchestrator must support --milestone flag."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step0_start = content.find("### Step 0")
+    step1_start = content.find("### Step 1")
+    step0_section = content[step0_start:step1_start]
+
+    assert "--milestone" in step0_section, (
+        "Orchestrator must support --milestone flag in Step 0"
+    )
+
+
+ORCHESTRATOR_MILESTONE_TESTS = [
+    ("milestone_has_interface", _test_milestone_has_interface),
+    ("milestone_status_mode", _test_milestone_status_mode),
+    ("milestone_mode", _test_milestone_mode),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Dry-run Mode validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_DRYRUN_TESTS = []
+
+
+def _test_dry_run_flag_in_step0():
+    """Orchestrator must support --dry-run flag in Step 0."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step0_start = content.find("### Step 0")
+    step1_start = content.find("### Step 1")
+    step0_section = content[step0_start:step1_start]
+
+    assert "--dry-run" in step0_section, (
+        "Orchestrator must support --dry-run flag in Step 0"
+    )
+
+
+def _test_dry_run_skips_dispatch():
+    """Dry-run mode must skip Steps A/B dispatch."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_a_start = content.find("### Step A")
+    step0_start = content.find("### Step 0")
+    step1_start = content.find("### Step 1")
+    step0_section = content[step0_start:step1_start]
+
+    # Find dry_run_mode in step 0
+    assert "dry_run_mode" in step0_section or "--dry-run" in step0_section, (
+        "Orchestrator must track dry_run_mode"
+    )
+
+    # Step A/B must mention skipping when dry_run_mode is true
+    step_a_section = content[step_a_start:step_a_start + 500]
+    assert "dry_run_mode = true" in step_a_section or "dry-run" in step_a_section.lower(), (
+        "Step A must skip when dry_run_mode is true"
+    )
+
+
+ORCHESTRATOR_DRYRUN_TESTS = [
+    ("dry_run_flag_in_step0", _test_dry_run_flag_in_step0),
+    ("dry_run_skips_dispatch", _test_dry_run_skips_dispatch),
+]
+
+
+# ---------------------------------------------------------------------------
+# Orchestrator Feedback Mode validation
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_FEEDBACK_TESTS = []
+
+
+def _test_feedback_flag_in_step0():
+    """Orchestrator must support --feedback and --feedback-history flags."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step0_start = content.find("### Step 0")
+    step1_start = content.find("### Step 1")
+    step0_section = content[step0_start:step1_start]
+
+    assert "--feedback" in step0_section, (
+        "Orchestrator must support --feedback flag in Step 0"
+    )
+    assert "--feedback-history" in step0_section, (
+        "Orchestrator must support --feedback-history flag in Step 0"
+    )
+
+
+def _test_feedback_bias_applied_in_step3_6():
+    """Step 3.6 must apply feedback bias to candidate scores."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step3_6_start = content.find("### Step 3.6 — Apply Feedback Bias")
+    assert step3_6_start != -1, "Step 3.6 not found"
+
+    step3_6_end = content.find("### Step 4", step3_6_start)
+    step3_6_section = content[step3_6_start:step3_6_end]
+
+    assert "feedback" in step3_6_section.lower() or "bias" in step3_6_section.lower(), (
+        "Step 3.6 must apply feedback bias"
+    )
+
+
+def _test_feedback_mode_shows_debug_output():
+    """Step 7.6 must render feedback bias debug when feedback_mode is true."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step7_6_start = content.find("### Step 7.6 — Feedback Bias Debug")
+    assert step7_6_start != -1, "Step 7.6 not found"
+
+    step7_6_section = content[step7_6_start:step7_6_start + 1000]
+
+    assert "feedback_mode = true" in step7_6_section, (
+        "Step 7.6 must check feedback_mode = true"
+    )
+
+
+ORCHESTRATOR_FEEDBACK_TESTS = [
+    ("feedback_flag_in_step0", _test_feedback_flag_in_step0),
+    ("feedback_bias_applied_in_step3_6", _test_feedback_bias_applied_in_step3_6),
+    ("feedback_mode_shows_debug_output", _test_feedback_mode_shows_debug_output),
+]
+
+
 RUNTIME_TESTS = [
     # P0-E2E: Orchestrator integration — ask/resolve → DAG dispatch
     ("e2e_ask_resolve_dag", _test_e2e_ask_resolve_dag),
@@ -2082,6 +2567,14 @@ def main():
         ("milestone", MILESTONE_TESTS),
         ("runtime", RUNTIME_TESTS),
         ("orchestrator_dispatch", ORCHESTRATOR_DISPATCH_TESTS),
+        ("orchestrator_step_b", ORCHESTRATOR_STEP_B_TESTS),
+        ("orchestrator_step_c", ORCHESTRATOR_STEP_C_TESTS),
+        ("orchestrator_resolve", ORCHESTRATOR_RESOLVE_TESTS),
+        ("orchestrator_replay", ORCHESTRATOR_REPLAY_TESTS),
+        ("orchestrator_resume", ORCHESTRATOR_RESUME_TESTS),
+        ("orchestrator_milestone", ORCHESTRATOR_MILESTONE_TESTS),
+        ("orchestrator_dryrun", ORCHESTRATOR_DRYRUN_TESTS),
+        ("orchestrator_feedback", ORCHESTRATOR_FEEDBACK_TESTS),
     ]
 
     total_passed = total_failed = 0
