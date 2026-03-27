@@ -689,7 +689,7 @@ Rules:
         ```
         Auto-retry: <node_id> (retry_count: <n> → <n+1>) reset to pending for next wave
         ```
-        Then do NOT set partial_failed; continue to next loop iteration.
+        Set `execution_graph.status = "in_progress"` so the loop continues, then repeat from step 1.
       - If no nodes were retried AND some failed: set `execution_graph.status = "partial_failed"`, STOP.
       - If `auto_retry_enabled = false`: set `execution_graph.status = "partial_failed"`, STOP.
 5. Repeat from step 1.
