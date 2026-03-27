@@ -875,8 +875,12 @@ def advance_node(graph, node_id, new_status):
 
     new_status: 'running' | 'done' | 'failed' | 'blocked'
     """
-    graph = {"nodes": list(graph["nodes"]), "edges": list(graph["edges"]),
-             "status": graph["status"]}
+    graph = {
+        "metadata": dict(graph.get("metadata", {})),
+        "nodes": list(graph["nodes"]),
+        "edges": list(graph["edges"]),
+        "status": graph["status"],
+    }
     node_map = {n["node_id"]: n for n in graph["nodes"]}
     if node_id in node_map:
         idx = graph["nodes"].index(node_map[node_id])

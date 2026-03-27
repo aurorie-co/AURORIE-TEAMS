@@ -103,6 +103,24 @@ def test_auto_retry_disabled_no_retries():
 
 
 # ---------------------------------------------------------------------------
+# Test 4: maybe_retry_nodes_blocked_node_not_retried
+# ---------------------------------------------------------------------------
+
+def test_maybe_retry_nodes_blocked_node_not_retried():
+    """
+    R4: blocked node is NOT retried, even if retryable=True and retry_count=0.
+    Spec explicitly states: "Does not fire on blocked."
+    """
+    graph = _graph(
+        _node("backend-1", "blocked", retryable=True, retry_count=0),
+    )
+    updated, retried_node_ids = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert updated["nodes"][0]["status"] == "blocked"   # unchanged
+    assert updated["nodes"][0]["retry_count"] == 0        # unchanged
+    assert retried_node_ids == []
+
+
+# ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
 
@@ -110,6 +128,7 @@ TESTS = [
     ("test_maybe_retry_nodes_resets_eligible_failed_nodes", test_maybe_retry_nodes_resets_eligible_failed_nodes),
     ("test_maybe_retry_nodes_exhausted_retry_not_retried", test_maybe_retry_nodes_exhausted_retry_not_retried),
     ("test_auto_retry_disabled_no_retries", test_auto_retry_disabled_no_retries),
+    ("test_maybe_retry_nodes_blocked_node_not_retried", test_maybe_retry_nodes_blocked_node_not_retried),
 ]
 
 

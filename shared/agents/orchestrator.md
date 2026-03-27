@@ -440,11 +440,25 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
 
 Notes:
 - `pending_decision` is present only when ask is triggered and task is parked in `awaiting_dispatch_decision` status. Absent otherwise.
-- `execution_graph` is written in Step 7 only when `pending_decision` is absent (normal dispatch without ask). When ask is triggered, graph is built in the Resolve Interface after decision is resolved.
+- `execution_graph` is built by `build_execution_graph()` in Step 7 for the normal dispatch path (pending_decision absent), and by the Resolve Interface for the ask path. Both paths set `metadata.auto_retry_enabled`. Never use an inline JSON template — always call `build_execution_graph()` so nodes have `retryable` and `retry_count` fields.
 - `ignored_teams` is present and may be empty when no teams were suppressed.
 - v0.3 backward compatibility: tasks with `ask_required: true` (no `pending_decision`) are equivalent to `pending_decision` with `options: ["all", "none"]` and `default: "none"`. Read both fields; treat `ask_required: true` as equivalent `pending_decision`.
 
 Always use the actual `routing_policy` values from the current `routing.json` when writing `policy_snapshot` — not hardcoded values.
+
+**Build execution graph (normal dispatch path, when `pending_decision` is absent):**
+
+```python
+# Normal dispatch path: call build_execution_graph so nodes have retryable/retry_count.
+# This matches the Resolve Interface (Step 6 Re-evaluation) — both paths use the same function.
+from tests.routing.test_dispatch_policy import select_graph_template, build_execution_graph
+selected_template = select_graph_template(selected_teams)
+execution_graph = build_execution_graph(task_id, selected_teams)
+execution_graph["metadata"] = {
+    "graph_template": selected_template,
+    "auto_retry_enabled": auto_retry_enabled,
+}
+```
 
 Add to the task JSON (the dict being written to `.claude/workspace/tasks/<task-id>.json`):
 
