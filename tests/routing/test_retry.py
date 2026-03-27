@@ -142,6 +142,44 @@ def _test_maybe_retry_nodes_disabled():
     assert retried == []
     assert updated["nodes"][0]["status"] == "failed"
 
+def _test_all_done_after_retry_completed():
+    """R11: after retry resets node to pending, re-dispatch succeeds → graph = completed"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": True, "retry_count": 0},
+            {"node_id": "frontend-1", "team": "frontend", "status": "done",
+             "retryable": True, "retry_count": 0},
+        ],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert retried == ["backend-1"]
+    assert updated["nodes"][0]["status"] == "pending"
+    assert updated["nodes"][0]["retry_count"] == 1
+    # Simulate re-dispatch succeeding
+    updated["nodes"][0]["status"] = "done"
+    all_done = all(n["status"] == "done" for n in updated["nodes"])
+    assert all_done is True
+    # Orchestrator sets graph.status = "completed"
+
+
+def _test_unrecoverable_failed_partial():
+    """R12: node failed + not retryable → stays failed → partial_failed"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": False, "retry_count": 0},
+        ],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert retried == []
+    assert updated["nodes"][0]["status"] == "failed"
+    # Orchestrator sets graph.status = "partial_failed"
+
 TESTS = [
     ("build_execution_graph_has_retryable_field", _test_build_execution_graph_has_retryable_field),
     ("build_execution_graph_retryable_all_templates", _test_build_execution_graph_retryable_all_templates),
@@ -155,6 +193,8 @@ TESTS = [
     ("maybe_retry_nodes_no_second_retry", _test_maybe_retry_nodes_no_second_retry),
     ("maybe_retry_nodes_mixed", _test_maybe_retry_nodes_mixed),
     ("maybe_retry_nodes_disabled", _test_maybe_retry_nodes_disabled),
+    ("all_done_after_retry_completed", _test_all_done_after_retry_completed),
+    ("unrecoverable_failed_partial", _test_unrecoverable_failed_partial),
 ]
 
 def main():
