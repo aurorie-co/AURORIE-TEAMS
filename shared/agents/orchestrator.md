@@ -26,6 +26,25 @@ from milestone import (
 
 **Orchestrator is the I/O layer only.** Never inline milestone logic — always call these functions.
 
+### Feedback (`lib/feedback.py`)
+Pure functions for execution feedback, bias, and event logging. Import and use directly.
+
+```python
+import sys
+sys.path.insert(0, "<project-root>")
+from lib.feedback import (
+    load_events,
+    aggregate_team_stats,
+    aggregate_template_stats,
+    compute_team_bias,
+    compute_template_bias,
+    apply_team_bias,
+    apply_template_bias,
+    maybe_append_feedback_event,
+    is_terminal_state,
+)
+```
+
 ## Routing
 
 ### Step 0 — Parse flags
@@ -51,6 +70,18 @@ Inspect the raw user input before any routing begins.
 - `--resolve` does NOT set `debug_mode = true` by itself.
 - `--resolve` can be combined with `--debug` (shows resolve trace).
 
+**If `--replay <task-id>` appears:**
+- `replay_mode = true`
+- `replay_task_id = "<task-id>"`
+- Strip all replay tokens from the input.
+- **Read-only:** no state mutation, no dispatch. See Replay Interface.
+
+**If `--resume <task-id>` appears:**
+- `resume_mode = true`
+- `resume_task_id = "<task-id>"`
+- Strip all resume tokens from the input.
+- See Resume Interface.
+
 **If `--milestone-status <milestone-id>` appears:**
 - `milestone_status_mode = true`
 - `milestone_status_id = "<milestone-id>"`
@@ -64,17 +95,31 @@ Inspect the raw user input before any routing begins.
 - Create milestone file at `.claude/workspace/milestones/<milestone-id>.json` before Step 1.
 - Milestone does NOT influence routing decisions — it is purely a coordination label.
 
-**If `--replay <task-id>` appears:**
-- `replay_mode = true`
-- `replay_task_id = "<task-id>"`
-- Strip all replay tokens from the input.
-- **Read-only:** no state mutation, no dispatch. See Replay Interface.
+**If `--feedback` appears:**
+- `feedback_mode = true`
+- Strip `--feedback` from the input.
 
-**If `--resume <task-id>` appears:**
-- `resume_mode = true`
-- `resume_task_id = "<task-id>"`
-- Strip all resume tokens from the input.
-- See Resume Interface.
+**If `--feedback-history` appears:**
+- `feedback_history_mode = true`
+- Strip `--feedback-history` from the input.
+
+**Feedback History Mode** (`feedback_history_mode = true`):
+- Skip Steps 1–8 entirely.
+- Read `.claude/workspace/execution_history.jsonl` via `load_events()`.
+- If file is missing or empty: output `No feedback history yet.` and exit.
+- Aggregate via `aggregate_team_stats(events)`.
+- Print:
+
+```
+=== FEEDBACK HISTORY ===
+Total events: <N>
+Teams:
+<for each team in stats, sorted by runs desc>
+  <team>:
+    runs: <runs>
+    success_rate: <success_rate>
+```
+- Exit.
 
 **Otherwise:**
 - `debug_mode = false`
@@ -82,6 +127,8 @@ Inspect the raw user input before any routing begins.
 - `resolve_mode = false`
 - `milestone_mode = false`
 - `milestone_status_mode = false`
+- `feedback_mode = false`
+- `feedback_history_mode = false`
 
 Use the remaining text as `clean_prompt` for all subsequent steps.
 
@@ -136,6 +183,34 @@ Sort all candidates by:
 1. `net_score` descending
 2. `matched_positive` count descending
 3. `matched_negative` count ascending
+
+### Step 3.6 — Apply Feedback Bias
+
+**Skip if** `debug_mode = false` AND `feedback_mode = false`.
+
+**Precondition:** `candidate_pool[]` is sorted and available from Step 3.5.
+
+1. Load feedback stats:
+   ```python
+   events = load_events(Path(".claude/workspace/execution_history.jsonl"))
+   team_stats = aggregate_team_stats(events)
+   team_bias = compute_team_bias(team_stats)
+   ```
+2. If `team_stats` is empty: skip (no feedback data yet).
+3. Build candidate dicts with `raw_score`:
+   ```python
+   candidates = [{"team": c["team"], "raw_score": c["score"]} for c in candidate_pool]
+   ```
+4. Apply bias:
+   ```python
+   adjusted = apply_team_bias(candidates, team_bias, team_stats)
+   ```
+5. Store `feedback_adjusted_candidates = adjusted` in orchestrator memory for Step 7.5.
+6. **Replace `candidate_pool`** with adjusted candidates for Step 4 (confidence bands use `adjusted_score`).
+7. **Print** if `feedback_mode = true` or `debug_mode = true` and any bias < 1.0:
+   ```
+   Feedback: <team> success_rate <rate> (<runs> runs) → bias <bias>
+   ```
 
 ### Step 4 — Assign confidence bands
 
@@ -363,6 +438,22 @@ Notes:
 
 Always use the actual `routing_policy` values from the current `routing.json` when writing `policy_snapshot` — not hardcoded values.
 
+Add to the task JSON (the dict being written to `.claude/workspace/tasks/<task-id>.json`):
+
+```python
+# Persist run tracking for feedback
+task["run_n"] = 1
+task["run_kind"] = "initial"
+task["resumed"] = False
+```
+
+Also at the end of Step 7, after the routing_decision is complete, add to `routing_state`:
+
+```python
+# Store feedback-adjusted candidates for Step 7.5 debug output
+routing_state["feedback_adjusted_candidates"] = feedback_adjusted_candidates
+```
+
 ### Step 7.5 — Render debug trace (debug mode only)
 
 **Skip entirely if `debug_mode = false`.**
@@ -432,6 +523,38 @@ Rendering rules:
 - Ask Required block is printed only when `ask_required` is present (dry-run deferred ask).
 - Ask block is printed only when `ask_resolution` is present (normal mode resolved ask).
 - Fallback case: `Selected: (none)`, `Secondary: (none)`, all teams appear under `Filtered`.
+
+Proceed immediately to Step 8 after printing.
+
+### Step 7.6 — Feedback Bias Debug (when `feedback_mode = true`)
+
+**Skip if** `feedback_mode = false`.
+
+After printing Step 7.5 output, if `feedback_adjusted_candidates` is non-empty, print:
+
+```
+=== FEEDBACK BIAS ===
+
+Teams (with historical feedback):
+<for each candidate in feedback_adjusted_candidates (sorted by adjusted_score desc)>
+  <candidate.team>:
+    raw_score: <candidate.raw_score>
+    runs: <candidate.get("runs", "N/A")>
+    success_rate: <candidate.get("success_rate", "N/A")>
+    feedback_bias: <candidate.feedback_bias>
+    adjusted_score: <candidate.adjusted_score>
+
+Templates:
+  Selected: <selected_template>
+  Available: data-first, research-branch, linear-pipeline, flat-parallel
+
+=== END FEEDBACK BIAS ===
+```
+
+Rendering rules:
+- Sort by `adjusted_score` descending within the candidate list
+- Show `N/A` for `runs` or `success_rate` if not available (insufficient data)
+- `selected_template` comes from the routing state (set in Step 3.6 or Step 6)
 
 Proceed immediately to Step 8 after printing.
 
@@ -550,6 +673,21 @@ Rules:
    f. If any node failed: `execution_graph.status = "partial_failed"`, STOP.
 5. Repeat from step 1.
 
+**After the dispatch loop exits** (graph reaches terminal state `completed` | `partial_failed` | `blocked`):
+1. Maintain `RUN_WRITTEN = {}` at the orchestrator level (in-memory, resets each invocation).
+2. Determine `run_id = f"{task_id}_run_{task['run_n']}"`.
+3. Call `maybe_append_feedback_event`:
+   ```python
+   maybe_append_feedback_event(
+       path=Path(".claude/workspace/execution_history.jsonl"),
+       task=task,
+       run_id=run_id,
+       run_written=RUN_WRITTEN,
+       run_kind=task.get("run_kind", "initial"),
+   )
+   ```
+4. **Skip entirely** if `replay_mode = true` (replay is read-only — never writes events).
+
 **Artifact handoff:** Before dispatching a node, confirm all `artifacts_in` paths exist. If any are missing, mark node as `blocked` and do not dispatch it. Update graph status to `in_progress` once the first wave starts.
 
 ### Resolve Interface
@@ -571,7 +709,15 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 7. Write updated task JSON.
 
 **Step 6 Re-evaluation (after resolve):**
-- If `selected_teams` is non-empty: set `status = "pending"`, build `execution_graph` using `build_execution_graph(task_id, selected_teams)`, add to task JSON, proceed to Step A/B.
+- If `selected_teams` is non-empty: set `status = "pending"`, select graph template and build `execution_graph`:
+  ```python
+  sys.path.insert(0, "<project-root>")
+  from tests.routing.test_dispatch_policy import select_graph_template
+  selected_template = select_graph_template(selected_teams)
+  execution_graph = build_execution_graph(task_id, selected_teams)
+  execution_graph["metadata"] = {"graph_template": selected_template}
+  ```
+  Add to task JSON, proceed to Step A/B.
 - If `selected_teams` is empty AND `declined_after_ask = true`: set `status = "user_declined_dispatch"`, output summary, do NOT dispatch.
 - If `selected_teams` is empty AND no `declined_after_ask`: set `status = "needs_clarification"`, output clarifying question.
 
@@ -643,6 +789,14 @@ Triggered when `resume_mode = true` (Step 0 parsed `--resume <task-id>`).
 5. `execution_graph.status = user_declined_dispatch` → no-op, print "task was declined by user"
 
 **Resume from `in_progress`:**
+- Increment run counter for resume:
+  ```python
+  # Increment run counter for resume
+  task["run_n"] = task.get("run_n", 0) + 1
+  task["run_kind"] = "resume"
+  task["resumed"] = True
+  write_task_json(task)  # persist updated run tracking
+  ```
 - Enter Step C dispatch loop immediately.
 - `get_ready_nodes` returns currently ready (pending, depends satisfied) nodes.
 - Dispatch, advance_node per result.

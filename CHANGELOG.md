@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.7.0 — 2026-03-27
+
+### Overview
+
+**Adaptive Execution Runtime** — the system now uses historical execution outcomes to bias future routing decisions, making it the first version with genuine adaptive behavior.
+
+v0.7 is not an ML system: it uses rule-based, deterministic aggregation with explainable bias multipliers and a minimum-sample guard (runs < 5 = no bias). Feedback is additive, not authoritative — historical data influences but never overrides routing rules.
+
+### Added
+
+#### Execution Feedback Loop
+- **`lib/feedback.py`** — single file with 6 layered sections:
+  - Event schema (`build_feedback_event`)
+  - JSONL store (`append_event`, `load_events`)
+  - Aggregation (`aggregate_team_stats`, `aggregate_template_stats`)
+  - Bias computation (`feedback_multiplier`, `compute_team_bias`, `compute_template_bias`)
+  - Orchestrator hook (`maybe_append_feedback_event`)
+  - Routing integration (`apply_team_bias`, `apply_template_bias`)
+- **`.claude/workspace/execution_history.jsonl`** — append-only event log recording every terminal-state transition
+- **Feedback event schema**: `task_id`, `run_id`, `run_kind` ("initial" | "resume"), `teams[]`, `graph_template`, `final_status`, `failed_nodes[]`, `resumed`, `milestone_id`, `timestamp`
+
+#### Team Bias (Phase 1)
+- `aggregate_team_stats(events)` — team-level success_rate and runs from initial-run events only
+- `compute_team_bias(team_stats)` — bucket multiplier per team:
+  - `runs < 5` → 1.0 (insufficient data)
+  - `success_rate >= 0.8` → 1.0
+  - `0.6 <= rate < 0.8` → 0.9
+  - `0.4 <= rate < 0.6` → 0.75
+  - `rate < 0.4` → 0.6
+- `apply_team_bias(candidates, team_bias, team_stats)` — extends each candidate with `adjusted_score = raw_score * bias_multiplier`, `feedback_bias`, `runs`, `success_rate`
+- **Resume runs excluded** from all statistics to prevent inflated success rates from recovery paths
+
+#### Graph Template Learning (Phase 2)
+- `aggregate_template_stats(events)` — template-level success_rate and runs
+- `compute_template_bias(template_stats)` — same bucket logic applied to template selection
+- `apply_template_bias(candidates, template_bias)` — bias per template candidate
+- `execution_graph.metadata.graph_template` — template stored at graph-build time for feedback readback
+
+#### Orchestrator Integration
+- **`--feedback`** flag — enables feedback bias in debug output
+- **`--feedback-history`** flag — reads and aggregates `.claude/workspace/execution_history.jsonl`, prints team stats, exits
+- **Step 3.6** — apply team bias after candidate scoring, before confidence bands
+- **Step 7.6** — feedback bias debug block in trace output: `raw_score`, `runs`, `success_rate`, `feedback_bias`, `adjusted_score`
+- **Terminal state hook** — `maybe_append_feedback_event()` called at end of Step C dispatch loop; deduplicated by `run_written` in-memory guard
+- **Resume path** — `run_n` incremented and `run_kind` set to "resume" on each resume
+
+### Test Coverage
+- `tests/routing/test_feedback.py`: **27/27** — event schema, JSONL store, aggregation, bias computation, routing apply, orchestrator hook, E2E pipeline
+- `tests/routing/test_feedback_integration.py`: **8/8** — orchestrator integration points (team bias, template metadata, terminal hook, resume tracking)
+- `tests/routing/test_dispatch_policy.py`: **80/80** — dispatch + execution graph
+- **Total: 115/115 tests green**
+
+### Orchestrator Files
+- `shared/agents/orchestrator.md` — updated with all v0.7 integration points
+- `.claude/agents/orchestrator.md` — same content (local config, gitignored)
+
+### Adaptive Runtime Principles
+1. **Feedback is additive, not authoritative** — historical data biases, never overrides
+2. **Learning is explainable** — every bias adjustment traceable in debug output
+3. **Learning is conservative** — insufficient data (runs < 5) produces no bias
+4. **Human-in-the-loop is preserved** — no automatic execution changes in v0.7
+
+### Out of Scope
+- Auto-retry policy (deferred to v0.8)
+- Hard filters — no team/template elimination based on feedback
+- Weighted sampling — no probabilistic selection
+- Node-level event tracking — task-level is sufficient for Phase 1
+
+---
+
 ## 0.6.0 — 2026-03-26
 
 ### Added
