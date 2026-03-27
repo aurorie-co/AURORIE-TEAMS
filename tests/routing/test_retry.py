@@ -59,6 +59,89 @@ def _test_check_retry_eligible_auto_retry_disabled():
     assert eligible is False
     assert "disabled" in reason.lower()
 
+def _test_maybe_retry_nodes_resets_eligible():
+    """R6: failed + retryable + count=0 → node reset to pending, count=1"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": True, "retry_count": 0},
+        ],
+        "edges": [],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert retried == ["backend-1"]
+    assert updated["nodes"][0]["status"] == "pending"
+    assert updated["nodes"][0]["retry_count"] == 1
+
+def _test_maybe_retry_nodes_ignores_non_retryable():
+    """R2/R7: failed + retryable=False → not retried"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": False, "retry_count": 0},
+        ],
+        "edges": [],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert retried == []
+    assert updated["nodes"][0]["status"] == "failed"
+
+def _test_maybe_retry_nodes_no_second_retry():
+    """R3: failed + count=1 → not retried again"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": True, "retry_count": 1},
+        ],
+        "edges": [],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert retried == []
+    assert updated["nodes"][0]["status"] == "failed"
+
+def _test_maybe_retry_nodes_mixed():
+    """R7: 3 nodes, only the retryable one gets reset"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": True, "retry_count": 0},
+            {"node_id": "frontend-1", "team": "frontend", "status": "failed",
+             "retryable": False, "retry_count": 0},
+            {"node_id": "product-1", "team": "product", "status": "done",
+             "retryable": True, "retry_count": 0},
+        ],
+        "edges": [],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=True)
+    assert retried == ["backend-1"]
+    assert updated["nodes"][0]["status"] == "pending"
+    assert updated["nodes"][0]["retry_count"] == 1
+    assert updated["nodes"][1]["status"] == "failed"
+    assert updated["nodes"][2]["status"] == "done"
+
+def _test_maybe_retry_nodes_disabled():
+    """R5: auto_retry_enabled=False → nothing retried"""
+    from lib.retry import maybe_retry_nodes
+    graph = {
+        "nodes": [
+            {"node_id": "backend-1", "team": "backend", "status": "failed",
+             "retryable": True, "retry_count": 0},
+        ],
+        "edges": [],
+        "status": "partial_failed",
+    }
+    updated, retried = maybe_retry_nodes(graph, auto_retry_enabled=False)
+    assert retried == []
+    assert updated["nodes"][0]["status"] == "failed"
+
 TESTS = [
     ("build_execution_graph_has_retryable_field", _test_build_execution_graph_has_retryable_field),
     ("build_execution_graph_retryable_all_templates", _test_build_execution_graph_retryable_all_templates),
@@ -67,6 +150,11 @@ TESTS = [
     ("check_retry_eligible_count_exhausted", _test_check_retry_eligible_count_exhausted),
     ("check_retry_eligible_not_failed", _test_check_retry_eligible_not_failed),
     ("check_retry_eligible_auto_retry_disabled", _test_check_retry_eligible_auto_retry_disabled),
+    ("maybe_retry_nodes_resets_eligible", _test_maybe_retry_nodes_resets_eligible),
+    ("maybe_retry_nodes_ignores_non_retryable", _test_maybe_retry_nodes_ignores_non_retryable),
+    ("maybe_retry_nodes_no_second_retry", _test_maybe_retry_nodes_no_second_retry),
+    ("maybe_retry_nodes_mixed", _test_maybe_retry_nodes_mixed),
+    ("maybe_retry_nodes_disabled", _test_maybe_retry_nodes_disabled),
 ]
 
 def main():
