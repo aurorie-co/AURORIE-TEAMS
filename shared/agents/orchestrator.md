@@ -649,17 +649,22 @@ Rules:
 1. Generate task-id: `uuidgen | tr '[:upper:]' '[:lower:]'`
    Fallback: `python3 -c "import uuid; print(uuid.uuid4())"`
 2. Write task file to `.claude/workspace/tasks/<task-id>.json` with fields: `task_id`, `created_at` (ISO8601), `description`, `assigned_team`, `status: "pending"`, `input_context: ""`, `artifact_path`, `routing_decision`, and `milestone` (present only when `milestone_mode = true`).
-3. Invoke team lead via Agent tool:
+3. Invoke team lead via Agent tool with `subagent_type: "general-purpose"`:
    ```
    Task file: .claude/workspace/tasks/<task-id>.json
 
    You are a coordinator. Do NOT write the deliverable yourself.
 
+   IMPORTANT: First read your team lead description at `.claude/agents/aurorie-<team>-lead.md`
+   to understand your role and available sub-agents, then read `.claude/workflows/<team>.md`
+   to determine your execution steps.
+
    1. Read `.claude/workflows/<team>.md` FIRST to determine your execution steps.
-   2. Dispatch each workflow step as a sub-agent using the Agent tool.
-   3. After all sub-agents complete, collect their output artifact paths.
-   4. Apply the file-handoff skill to write `summary.md` under the artifact path.
-   5. Return the contents of `summary.md` as your response (max 400 words).
+   2. Read `.claude/agents/aurorie-<team>-lead.md` for your role and sub-agent routing.
+   3. Dispatch each workflow step as a sub-agent using the Agent tool with subagent_type="general-purpose".
+   4. After all sub-agents complete, collect their output artifact paths.
+   5. Apply the file-handoff skill to write `summary.md` under the artifact path.
+   6. Return the contents of `summary.md` as your response (max 400 words).
    ```
 4. Return Agent tool result to user.
 

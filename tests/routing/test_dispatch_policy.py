@@ -1962,6 +1962,76 @@ def _test_unblock_and_redispatch():
     assert "backend-1" in ready, "unblocked node should be ready"
 
 
+# ---------------------------------------------------------------------------
+# Orchestrator dispatch prompt template tests
+# ---------------------------------------------------------------------------
+
+ORCHESTRATOR_DISPATCH_TESTS = []
+
+
+def _test_step_a_uses_general_purpose_agent_type():
+    """Step A dispatch must use subagent_type='general-purpose' (only available type)."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    # Find Step A dispatch block
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    assert step_a_start != -1, "Step A not found in orchestrator.md"
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must specify subagent_type: "general-purpose"
+    assert 'subagent_type: "general-purpose"' in step_a_section, (
+        "Step A must use subagent_type='general-purpose' for dispatch"
+    )
+
+
+def _test_step_a_reads_team_lead_agent_file():
+    """Step A dispatch must instruct agent to read aurorie-<team>-lead.md."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must instruct reading the team lead agent description
+    assert "aurorie-<team>-lead.md" in step_a_section, (
+        "Step A must instruct reading aurorie-<team>-lead.md for team lead role"
+    )
+
+
+def _test_step_a_reads_workflow_file():
+    """Step A dispatch must instruct agent to read .claude/workflows/<team>.md."""
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    content = orchestrator_path.read_text()
+
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must instruct reading the workflow
+    assert ".claude/workflows/<team>.md" in step_a_section, (
+        "Step A must instruct reading .claude/workflows/<team>.md for execution steps"
+    )
+
+
+ORCHESTRATOR_DISPATCH_TESTS = [
+    ("step_a_uses_general_purpose_agent_type", _test_step_a_uses_general_purpose_agent_type),
+    ("step_a_reads_team_lead_agent_file", _test_step_a_reads_team_lead_agent_file),
+    ("step_a_reads_workflow_file", _test_step_a_reads_workflow_file),
+]
+
+
 RUNTIME_TESTS = [
     # P0-E2E: Orchestrator integration — ask/resolve → DAG dispatch
     ("e2e_ask_resolve_dag", _test_e2e_ask_resolve_dag),
@@ -2011,6 +2081,7 @@ def main():
         ("graph", GRAPH_TESTS),
         ("milestone", MILESTONE_TESTS),
         ("runtime", RUNTIME_TESTS),
+        ("orchestrator_dispatch", ORCHESTRATOR_DISPATCH_TESTS),
     ]
 
     total_passed = total_failed = 0
