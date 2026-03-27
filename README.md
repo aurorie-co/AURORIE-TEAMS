@@ -29,8 +29,8 @@
 ### Quick status
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square&logo=apple&logoColor=white)
-![Version](https://img.shields.io/badge/version-v0.6.0-222?style=flat-square&logo=semantic-release&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-113%2F113%20green-222?style=flat-square&logo=github-actions&logoColor=white)
+![Version](https://img.shields.io/badge/version-v0.7.0-222?style=flat-square&logo=semantic-release&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-115%2F115%20green-222?style=flat-square&logo=github-actions&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
 ---
@@ -68,15 +68,15 @@
 
 ---
 
-## Three things that make it different
+## Four things that make it different
 
-| | | |
-|---|---|---|
-| **Decision-first** | **Graph-aware execution** | **Cross-task memory** |
-| Every routing decision is scored and explainable. You see exactly why each team was selected, secondary, or filtered — before anything runs. | Teams run in wave-based DAG order. Dependencies are explicit. Partial failures are contained. Nothing runs blindly. | Milestones track progress across tasks and time. Replay inspects any past execution. Resume continues from where it left off. |
-| `+API +endpoint +SaaS → score 4 → high → dispatched` | `product → backend → frontend` (linear) | `@orchestrator --replay <task-id>` |
-| `+requirements +SaaS → score 2 → medium → secondary` | `research → [backend, frontend]` (parallel fan-out) | `@orchestrator --resume <task-id>` |
-| `+iOS → score −2 → filtered` | blocked nodes wait, done nodes stay done | `--milestone-status <id>` |
+| | | | |
+|---|---|---|---|
+| **Decision-first** | **Graph-aware execution** | **Cross-task memory** | **Adaptive execution** |
+| Every routing decision is scored and explainable. You see exactly why each team was selected, secondary, or filtered — before anything runs. | Teams run in wave-based DAG order. Dependencies are explicit. Partial failures are contained. Nothing runs blindly. | Milestones track progress across tasks and time. Replay inspects any past execution. Resume continues from where it left off. | The system learns from past execution — success_rate and template outcomes bias future routing decisions. Not ML, not autonomous: rule-based, explainable, conservative. |
+| `+API +endpoint +SaaS → score 4 → high → dispatched` | `product → backend → frontend` (linear) | `@orchestrator --replay <task-id>` | `--feedback-history` → see team stats |
+| `+requirements +SaaS → score 2 → medium → secondary` | `research → [backend, frontend]` (parallel fan-out) | `@orchestrator --resume <task-id>` | `--feedback` → see bias in debug output |
+| `+iOS → score −2 → filtered` | blocked nodes wait, done nodes stay done | `--milestone-status <id>` | runs < 5 → no bias applied |
 
 ---
 
@@ -92,6 +92,8 @@
 | `@orchestrator --resolve <task-id> all\|none\|selective` | Resolve a paused decision (idempotent) |
 | `@orchestrator --replay <task-id>` | Read-only: inspect past routing + execution graph |
 | `@orchestrator --resume <task-id>` | Resume: `in_progress` · `partial_failed` · `blocked` |
+| `@orchestrator --feedback "prompt"` | Run with feedback bias debug output (shows adjusted scores) |
+| `@orchestrator --feedback-history` | Print team/template stats from execution history and exit |
 
 ---
 
@@ -183,20 +185,29 @@ Requirements: macOS or Linux · `jq` · `uuidgen` or `python3` · Node.js
 
 ## Test suite
 
-**113/113 tests green** — every commit.
+**115/115 tests green** — every commit.
 
 ```bash
 bash tests/install.test.sh && bash tests/lint.test.sh
 python3 tests/routing/test_routing_cases.py
 python3 tests/routing/test_dispatch_policy.py
 python3 tests/routing/test_replay_resume.py
+python3 tests/routing/test_feedback.py
+python3 tests/routing/test_feedback_integration.py
 ```
 
 ---
 
 ## Roadmap
 
-### v0.6 — Persistent Execution Runtime _(current]_
+### v0.7 — Adaptive Execution Runtime _(current]_
+- [x] Execution feedback loop — append-only JSONL event log
+- [x] Team bias — success_rate-based score multiplier with MIN_SAMPLES guard
+- [x] Graph template learning — template success_rate tracked and biased
+- [x] `--feedback` and `--feedback-history` CLI flags
+- [x] Terminal-state hook — automatic event write on task completion
+
+### v0.6 — Persistent Execution Runtime
 - [x] Replay — read-only execution inspection
 - [x] Resume — continue DAG from partial state
 - [x] State priority invariant — `pending_decision` always blocks resume
@@ -213,7 +224,7 @@ python3 tests/routing/test_replay_resume.py
 
 ### Long-term
 - [ ] Observability dashboard
-- [ ] Automatic retry
+- [ ] Automatic retry (v0.8)
 - [ ] Cross-task resume
 - [ ] Agent marketplace
 
