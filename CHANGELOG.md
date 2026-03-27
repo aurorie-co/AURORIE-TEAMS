@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.1 — 2026-03-27
+
+### Fixed
+
+- **Team lead dispatch** — orchestrator Step A now uses `general-purpose` agent type instead of attempting to invoke unregistered `aurorie-<team>-lead` agent types. Team leads read their description file (`.claude/agents/aurorie-<team>-lead.md`) and workflow (`.claude/workflows/<team>.md`) to understand their role.
+
+### Added
+
+- **21 new orchestrator dispatch validation tests** covering Step B/C, Resolve, Replay, Resume, Milestone, Dry-run, and Feedback interfaces
+
 ## 0.8.0 — 2026-03-27
 
 ### Overview
