@@ -165,6 +165,44 @@ Requirements: macOS or Linux · `jq` · `uuidgen` or `python3` · Node.js
 
 ---
 
+## Demos
+
+### v0.8 — Auto-Retry Policy
+
+Deterministic Step C wave simulation showing retry behavior at the runtime level.
+
+```bash
+python3 demo/v0.8/demo_script.py
+```
+
+Covers:
+- Wave 1 fails → retry fires → Wave 2 retried node succeeds → `completed`
+- `--no-auto-retry` → unrecoverable `partial_failed`
+- Retry exhausted → `partial_failed`
+
+Duration: ~30 seconds (terminal output, no recording needed)
+
+### v0.7 — Adaptive Execution Runtime
+
+Timed terminal demo showing how execution history changes future routing decisions.
+
+```bash
+# Seed history first
+python3 demo/v0.7/seed_history.py
+
+# Run the demo (record with QuickTime)
+python3 demo/v0.7/demo_script.py
+```
+
+Covers:
+- Same prompt run twice — first run no history (baseline), second run with history (bias applied)
+- `backend` success_rate=0.4 → bias=0.75 → adjusted_score drops from 3.0 → 2.25
+- Template selection biased by historical performance
+
+Duration: ~2:30 (timed narration)
+
+---
+
 ## Customize
 
 | What | Where |
