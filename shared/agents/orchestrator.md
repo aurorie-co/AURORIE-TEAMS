@@ -103,6 +103,13 @@ Inspect the raw user input before any routing begins.
 - `feedback_history_mode = true`
 - Strip `--feedback-history` from the input.
 
+**If `--no-auto-retry` appears:**
+- `auto_retry_enabled = false`
+- Strip `--no-auto-retry` from the input.
+
+Otherwise:
+- `auto_retry_enabled = true` (default)
+
 **Feedback History Mode** (`feedback_history_mode = true`):
 - Skip Steps 1–8 entirely.
 - Read `.claude/workspace/execution_history.jsonl` via `load_events()`.
@@ -129,6 +136,7 @@ Teams:
 - `milestone_status_mode = false`
 - `feedback_mode = false`
 - `feedback_history_mode = false`
+- `auto_retry_enabled = true`
 
 Use the remaining text as `clean_prompt` for all subsequent steps.
 
@@ -715,7 +723,10 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
   from tests.routing.test_dispatch_policy import select_graph_template
   selected_template = select_graph_template(selected_teams)
   execution_graph = build_execution_graph(task_id, selected_teams)
-  execution_graph["metadata"] = {"graph_template": selected_template}
+  execution_graph["metadata"] = {
+    "graph_template": selected_template,
+    "auto_retry_enabled": auto_retry_enabled,
+}
   ```
   Add to task JSON, proceed to Step A/B.
 - If `selected_teams` is empty AND `declined_after_ask = true`: set `status = "user_declined_dispatch"`, output summary, do NOT dispatch.
