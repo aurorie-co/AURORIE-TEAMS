@@ -22,6 +22,11 @@ ROOT = Path(__file__).parent.parent.parent
 def _token_match(keyword: str, request: str) -> bool:
     kw = keyword.lower()
     if " " in kw:
+        # Multi-word keyword: phrase match (substring of full request string)
+        return kw in request.lower()
+    # Single-word keyword: for ASCII, use token prefix match; for CJK, use substring match
+    if re.match(r'[\u4e00-\u9fff]', kw):
+        # Chinese/CJK character: match if keyword appears in request
         return kw in request.lower()
     tokens = re.findall(r"\w+", request.lower())
     return any(tok.startswith(kw) for tok in tokens)

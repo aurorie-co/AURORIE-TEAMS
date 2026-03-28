@@ -49,5 +49,75 @@
       "fallback": true,
       "expected_filtered": ["market"]
     }
+  },
+  {
+    "name": "chinese_design_frontend_parallel",
+    "prompt": "我想请设计团队帮我设计一个比较fancy的ui然后前端团队来实现",
+    "expected": {
+      "selected": [{ "team": "design", "confidence": "medium" }, { "team": "frontend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "chinese_product_backend",
+    "prompt": "产品团队定义需求，后端团队来实现API",
+    "expected": {
+      "selected": [{ "team": "product", "confidence": "medium" }, { "team": "backend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "chinese_research_frontend",
+    "prompt": "调研团队研究一下竞品，然后前端团队来做界面",
+    "expected": {
+      "selected": [{ "team": "research", "confidence": "high" }],
+      "secondary": [{ "team": "frontend" }],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "chinese_design_ui_fancy",
+    "prompt": "设计团队设计一个fancy的UI界面",
+    "expected": {
+      "selected": [{ "team": "design", "confidence": "medium" }, { "team": "frontend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "chinese_frontend_webpage",
+    "prompt": "前端团队帮我做一个响应式的网页",
+    "expected": {
+      "selected": [{ "team": "frontend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "chinese_backend_api",
+    "prompt": "后端团队加一个用户认证的API",
+    "expected": {
+      "selected": [{ "team": "backend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "chinese_support_ticket",
+    "prompt": "客服团队处理一下这个工单",
+    "expected": {
+      "selected": [{ "team": "support", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
   }
 ]
