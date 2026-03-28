@@ -2672,6 +2672,47 @@ def _test_design_workflow_has_ui_design_section():
     )
 
 
+def _test_orchestrator_role_is_coordinator_not_creative():
+    """Orchestrator Role section must explicitly state it is a coordinator/router, not creative/implementation work."""
+    content = _read_orchestrator()
+
+    role_start = content.find("## Role")
+    role_end = content.find("\n## ", role_start + 1)
+    if role_end == -1:
+        role_end = content.find("\n## Skills", role_start)
+    role_section = content[role_start:role_end]
+
+    # Must state it's a coordinator/router
+    assert "coordinator" in role_section.lower() or "dispatcher" in role_section.lower(), (
+        "Orchestrator Role must identify as coordinator or dispatcher"
+    )
+    # Must explicitly say it does NOT do creative/implementation work
+    assert ("NOT" in role_section or "not" in role_section) and \
+           ("creative" in role_section.lower() or "implement" in role_section.lower()), (
+        "Orchestrator Role must explicitly state it does NOT do creative/implementation work"
+    )
+
+
+def _test_orchestrator_skills_clarifies_brainstorming():
+    """Orchestrator Skills section must clarify when to use superpowers:brainstorming vs normal routing."""
+    content = _read_orchestrator()
+
+    skills_start = content.find("## Skills")
+    skills_end = content.find("\n## ", skills_start + 1)
+    if skills_end == -1:
+        skills_end = len(content)
+    skills_section = content[skills_start:skills_end]
+
+    # Must mention brainstorming
+    assert "brainstorming" in skills_section.lower(), (
+        "Orchestrator Skills must address superpowers:brainstorming"
+    )
+    # Must clarify to skip for normal routing (not for every request)
+    assert "routing" in skills_section.lower() or "dispatch" in skills_section.lower(), (
+        "Orchestrator Skills must clarify brainstorming is skipped for normal routing"
+    )
+
+
 COORDINATOR_PROTOCOL_TESTS = [
     ("step_a_mandatory_protocol_exists", _test_step_a_has_mandatory_protocol),
     ("step_a_never_implement_rule", _test_step_a_never_implement_rule),
@@ -2680,6 +2721,8 @@ COORDINATOR_PROTOCOL_TESTS = [
     ("step_b_reinforces_coordinator_protocol", _test_step_b_reinforces_coordinator_protocol),
     ("frontend_lead_hard_coordinator_rules", _test_frontend_lead_has_hard_coordinator_rules),
     ("design_workflow_ui_design_section", _test_design_workflow_has_ui_design_section),
+    ("orchestrator_role_is_coordinator_not_creative", _test_orchestrator_role_is_coordinator_not_creative),
+    ("orchestrator_skills_clarifies_brainstorming", _test_orchestrator_skills_clarifies_brainstorming),
 ]
 
 
