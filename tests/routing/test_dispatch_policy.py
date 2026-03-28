@@ -1990,7 +1990,7 @@ def _test_step_a_uses_general_purpose_agent_type():
 
 
 def _test_step_a_reads_team_lead_agent_file():
-    """Step A dispatch must instruct agent to read aurorie-<team>-lead.md."""
+    """Step A must specify sub-agent names (aurorie-<team>-developer etc) for flat dispatch."""
     from pathlib import Path
     orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
     if not orchestrator_path.exists():
@@ -2001,9 +2001,12 @@ def _test_step_a_reads_team_lead_agent_file():
     step_b_start = content.find("### Step B — Parallel Dispatch")
     step_a_section = content[step_a_start:step_b_start]
 
-    # Must instruct reading the team lead agent description
-    assert "aurorie-<team>-lead.md" in step_a_section, (
-        "Step A must instruct reading aurorie-<team>-lead.md for team lead role"
+    # New model: Step A should name sub-agents for direct dispatch
+    # Accept either the old team lead file (nested) or sub-agent names (flat)
+    has_lead_file = "aurorie-<team>-lead.md" in step_a_section
+    has_subagent_names = "aurorie-<team>-developer" in step_a_section or "aurorie-<team>-qa" in step_a_section
+    assert has_lead_file or has_subagent_names, (
+        "Step A must specify either team lead files (old model) or sub-agent names (flat dispatch)"
     )
 
 
@@ -2040,7 +2043,7 @@ ORCHESTRATOR_STEP_B_TESTS = []
 
 
 def _test_step_b_uses_step_a_template():
-    """Step B must reference Step A prompt template for dispatch."""
+    """Step B must use flat dispatch — direct sub-agent dispatch, not nested team lead dispatch."""
     from pathlib import Path
     orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
     if not orchestrator_path.exists():
@@ -2052,9 +2055,14 @@ def _test_step_b_uses_step_a_template():
     assert step_b_start != -1, "Step B not found in orchestrator.md"
     step_b_section = content[step_b_start:step_c_start]
 
-    # Must use Step A template
-    assert "Step A prompt template" in step_b_section, (
-        "Step B must use the Step A prompt template for dispatch"
+    # New model: Step B should mention flat dispatch / direct dispatch / no nested
+    # Accept either "Step A prompt template" (old nested) or flat/no-nested (new)
+    has_template = "Step A prompt template" in step_b_section
+    has_flat = ("flat dispatch" in step_b_section.lower() or
+                "direct dispatch" in step_b_section.lower() or
+                "no nested" in step_b_section.lower())
+    assert has_template or has_flat, (
+        "Step B must use flat dispatch or reference Step A prompt template"
     )
 
 
@@ -2574,8 +2582,12 @@ def _test_step_a_has_mandatory_protocol():
     step_b_start = content.find("### Step B — Parallel Dispatch")
     step_a_section = content[step_a_start:step_b_start]
 
-    assert "MANDATORY PROTOCOL" in step_a_section, (
-        "Step A must contain MANDATORY PROTOCOL section"
+    # New model: flat dispatch with "no nested Agent dispatch" note
+    # Either MANDATORY PROTOCOL or flat dispatch note is acceptable
+    has_protocol = "MANDATORY PROTOCOL" in step_a_section
+    has_flat = "flat dispatch" in step_a_section.lower() or "no nested" in step_a_section.lower()
+    assert has_protocol or has_flat, (
+        "Step A must contain MANDATORY PROTOCOL or flat dispatch note"
     )
 
 
@@ -2586,9 +2598,11 @@ def _test_step_a_never_implement_rule():
     step_b_start = content.find("### Step B — Parallel Dispatch")
     step_a_section = content[step_a_start:step_b_start]
 
-    # Must have "NEVER" rule against direct implementation
-    assert "NEVER" in step_a_section and "implement" in step_a_section.lower(), (
-        "Step A must have a 'NEVER implement' rule in MANDATORY PROTOCOL"
+    # Must have "NEVER" rule against direct implementation, or flat dispatch note
+    has_never = "NEVER" in step_a_section and "implement" in step_a_section.lower()
+    has_flat = "flat dispatch" in step_a_section.lower() or "no nested" in step_a_section.lower()
+    assert has_never or has_flat, (
+        "Step A must have a 'NEVER implement' rule or flat dispatch note"
     )
 
 
@@ -2619,20 +2633,22 @@ def _test_step_a_reads_workflow_first():
 
 
 def _test_step_b_reinforces_coordinator_protocol():
-    """Step B must reinforce that team leads follow coordinator protocol."""
+    """Step B must reinforce coordinator protocol or flat dispatch model."""
     content = _read_orchestrator()
     step_b_start = content.find("### Step B — Parallel Dispatch")
     step_c_start = content.find("### Step C — DAG Dispatch Loop")
     step_b_section = content[step_b_start:step_c_start]
 
-    # Step B must mention coordinator protocol
-    assert "MANDATORY PROTOCOL" in step_b_section or "coordinator" in step_b_section.lower(), (
-        "Step B must reinforce coordinator protocol"
+    # Step B must mention coordinator protocol or flat dispatch
+    has_coord = "MANDATORY PROTOCOL" in step_b_section or "coordinator" in step_b_section.lower()
+    has_flat = "flat dispatch" in step_b_section.lower() or "no nested" in step_b_section.lower()
+    assert has_coord or has_flat, (
+        "Step B must reinforce coordinator protocol or flat dispatch model"
     )
 
 
 def _test_frontend_lead_has_hard_coordinator_rules():
-    """aurorie-frontend-lead must have hard rules making coordinator behavior non-negotiable."""
+    """aurorie-frontend-lead must have flat dispatch note, not nested dispatch."""
     from pathlib import Path
     lead_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-frontend-lead.md"
     if not lead_path.exists():
@@ -2644,13 +2660,9 @@ def _test_frontend_lead_has_hard_coordinator_rules():
     assert "COORDINATOR" in content, (
         "aurorie-frontend-lead must explicitly define role as COORDINATOR"
     )
-    # Must have NEVER implement rule
-    assert "NEVER" in content and ("implement" in content.lower() or "write" in content.lower()), (
-        "aurorie-frontend-lead must have NEVER implement/write rule"
-    )
-    # Must have ALWAYS dispatch rule
-    assert "ALWAYS" in content and "dispatch" in content.lower(), (
-        "aurorie-frontend-lead must have ALWAYS dispatch rule"
+    # Must have flat dispatch note (orchestrator dispatches sub-agents directly)
+    assert "flat dispatch" in content.lower() or "orchestrator dispatches" in content.lower(), (
+        "aurorie-frontend-lead must mention orchestrator dispatches sub-agents directly"
     )
 
 
@@ -2713,6 +2725,67 @@ def _test_orchestrator_skills_clarifies_brainstorming():
     )
 
 
+def _test_step_a_flat_dispatch_no_nested():
+    """Step A must use flat dispatch — orchestrator dispatches sub-agents directly, no nested Agent calls."""
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must mention flat dispatch / direct dispatch / no nested
+    flat_keywords = ["flat dispatch", "direct dispatch", "no nested", "dispatch sub-agents directly"]
+    has_flat = any(kw in step_a_section.lower() for kw in flat_keywords)
+    assert has_flat, (
+        "Step A must explicitly mention flat dispatch (orchestrator dispatches sub-agents directly)"
+    )
+    # Must name the sub-agent pattern: aurorie-<team>-developer
+    assert "aurorie-<team>-developer" in step_a_section or "aurorie-<team>-qa" in step_a_section, (
+        "Step A must specify sub-agent names like aurorie-<team>-developer"
+    )
+
+
+def _test_step_b_flat_dispatch_no_nested():
+    """Step B must use flat dispatch — orchestrator dispatches sub-agents directly per team."""
+    content = _read_orchestrator()
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    step_b_section = content[step_b_start:step_c_start]
+
+    # Must mention flat dispatch / direct dispatch
+    flat_keywords = ["flat dispatch", "direct dispatch", "no nested", "dispatch sub-agents directly"]
+    has_flat = any(kw in step_b_section.lower() for kw in flat_keywords)
+    assert has_flat, (
+        "Step B must explicitly mention flat dispatch model"
+    )
+
+
+def _test_team_leads_synthesize_only_no_nested_dispatch():
+    """All team lead agents must NOT instruct nested dispatch; they synthesize only."""
+    from pathlib import Path
+    agents_dir = Path(__file__).parent.parent.parent / ".claude" / "agents"
+    if not agents_dir.exists():
+        agents_dir = Path(__file__).parent.parent.parent / "shared" / "agents"
+
+    lead_files = sorted(agents_dir.glob("aurorie-*-lead.md"))
+    if not lead_files:
+        return  # skip if no team lead files
+
+    failures = []
+    for lead_file in lead_files:
+        content = lead_file.read_text()
+        exec_start = content.find("## Execution Protocol")
+        if exec_start == -1:
+            continue
+        exec_end = content.find("\n## ", exec_start + 1)
+        exec_section = content[exec_start:exec_end] if exec_end != -1 else content[exec_start:]
+
+        # Must contain flat dispatch note (orchestrator dispatches directly)
+        if "flat dispatch" not in exec_section.lower() and "orchestrator dispatches" not in exec_section.lower():
+            failures.append(f"{lead_file.name}: missing flat dispatch note")
+
+    assert not failures, "Team lead dispatch issues:\n  " + "\n  ".join(failures)
+
+
 COORDINATOR_PROTOCOL_TESTS = [
     ("step_a_mandatory_protocol_exists", _test_step_a_has_mandatory_protocol),
     ("step_a_never_implement_rule", _test_step_a_never_implement_rule),
@@ -2723,6 +2796,9 @@ COORDINATOR_PROTOCOL_TESTS = [
     ("design_workflow_ui_design_section", _test_design_workflow_has_ui_design_section),
     ("orchestrator_role_is_coordinator_not_creative", _test_orchestrator_role_is_coordinator_not_creative),
     ("orchestrator_skills_clarifies_brainstorming", _test_orchestrator_skills_clarifies_brainstorming),
+    ("step_a_flat_dispatch_no_nested", _test_step_a_flat_dispatch_no_nested),
+    ("step_b_flat_dispatch_no_nested", _test_step_b_flat_dispatch_no_nested),
+    ("team_leads_synthesize_only_no_nested_dispatch", _test_team_leads_synthesize_only_no_nested_dispatch),
 ]
 
 
