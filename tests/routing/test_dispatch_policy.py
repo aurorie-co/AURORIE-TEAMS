@@ -2553,6 +2553,137 @@ MILESTONE_TESTS = [
 ]
 
 # ---------------------------------------------------------------------------
+# Coordinator Protocol validation (fix for team-lead-implementing-directly bug)
+# ---------------------------------------------------------------------------
+
+COORDINATOR_PROTOCOL_TESTS = []
+
+
+def _read_orchestrator():
+    from pathlib import Path
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    if not orchestrator_path.exists():
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+    return orchestrator_path.read_text()
+
+
+def _test_step_a_has_mandatory_protocol():
+    """Step A must have MANDATORY PROTOCOL section with explicit coordinator rules."""
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    assert "MANDATORY PROTOCOL" in step_a_section, (
+        "Step A must contain MANDATORY PROTOCOL section"
+    )
+
+
+def _test_step_a_never_implement_rule():
+    """Step A must explicitly forbid the agent from implementing directly."""
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must have "NEVER" rule against direct implementation
+    assert "NEVER" in step_a_section and "implement" in step_a_section.lower(), (
+        "Step A must have a 'NEVER implement' rule in MANDATORY PROTOCOL"
+    )
+
+
+def _test_step_a_dispatch_via_agent_tool():
+    """Step A must instruct dispatch via Agent tool with subagent_type."""
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    assert 'Agent(subagent_type="general-purpose"' in step_a_section or \
+           "Agent tool" in step_a_section, (
+        "Step A must instruct dispatch via Agent tool"
+    )
+
+
+def _test_step_a_reads_workflow_first():
+    """Step A must instruct reading workflow file FIRST before any other action."""
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # The dispatch block must mention reading workflow file first
+    assert ".claude/workflows/" in step_a_section, (
+        "Step A must mention reading workflow file"
+    )
+
+
+def _test_step_b_reinforces_coordinator_protocol():
+    """Step B must reinforce that team leads follow coordinator protocol."""
+    content = _read_orchestrator()
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    step_b_section = content[step_b_start:step_c_start]
+
+    # Step B must mention coordinator protocol
+    assert "MANDATORY PROTOCOL" in step_b_section or "coordinator" in step_b_section.lower(), (
+        "Step B must reinforce coordinator protocol"
+    )
+
+
+def _test_frontend_lead_has_hard_coordinator_rules():
+    """aurorie-frontend-lead must have hard rules making coordinator behavior non-negotiable."""
+    from pathlib import Path
+    lead_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-frontend-lead.md"
+    if not lead_path.exists():
+        return  # skip if not present in this project
+
+    content = lead_path.read_text()
+
+    # Must define role as COORDINATOR
+    assert "COORDINATOR" in content, (
+        "aurorie-frontend-lead must explicitly define role as COORDINATOR"
+    )
+    # Must have NEVER implement rule
+    assert "NEVER" in content and ("implement" in content.lower() or "write" in content.lower()), (
+        "aurorie-frontend-lead must have NEVER implement/write rule"
+    )
+    # Must have ALWAYS dispatch rule
+    assert "ALWAYS" in content and "dispatch" in content.lower(), (
+        "aurorie-frontend-lead must have ALWAYS dispatch rule"
+    )
+
+
+def _test_design_workflow_has_ui_design_section():
+    """design.md must have UI Design section for design→frontend handoff."""
+    from pathlib import Path
+    workflow_path = Path(__file__).parent.parent.parent / ".claude" / "workflows" / "design.md"
+    if not workflow_path.exists():
+        return  # skip if not present in this project
+
+    content = workflow_path.read_text()
+
+    assert "## UI Design" in content, (
+        "design.md must have ## UI Design section"
+    )
+    # Must mention frontend team handoff
+    assert "frontend" in content.lower() and ("handoff" in content.lower() or "implement" in content.lower()), (
+        "design.md UI Design section must mention frontend team handoff or implementation"
+    )
+
+
+COORDINATOR_PROTOCOL_TESTS = [
+    ("step_a_mandatory_protocol_exists", _test_step_a_has_mandatory_protocol),
+    ("step_a_never_implement_rule", _test_step_a_never_implement_rule),
+    ("step_a_dispatch_via_agent_tool", _test_step_a_dispatch_via_agent_tool),
+    ("step_a_reads_workflow_first", _test_step_a_reads_workflow_first),
+    ("step_b_reinforces_coordinator_protocol", _test_step_b_reinforces_coordinator_protocol),
+    ("frontend_lead_hard_coordinator_rules", _test_frontend_lead_has_hard_coordinator_rules),
+    ("design_workflow_ui_design_section", _test_design_workflow_has_ui_design_section),
+]
+
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
@@ -2575,6 +2706,7 @@ def main():
         ("orchestrator_milestone", ORCHESTRATOR_MILESTONE_TESTS),
         ("orchestrator_dryrun", ORCHESTRATOR_DRYRUN_TESTS),
         ("orchestrator_feedback", ORCHESTRATOR_FEEDBACK_TESTS),
+        ("coordinator_protocol", COORDINATOR_PROTOCOL_TESTS),
     ]
 
     total_passed = total_failed = 0
