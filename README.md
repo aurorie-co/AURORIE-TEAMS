@@ -29,8 +29,8 @@
 ### Quick status
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-blue?style=flat-square&logo=apple&logoColor=white)
-![Version](https://img.shields.io/badge/version-v0.8.0-222?style=flat-square&logo=semantic-release&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-137%2F137%20green-222?style=flat-square&logo=github-actions&logoColor=white)
+![Version](https://img.shields.io/badge/version-v0.9.0-222?style=flat-square&logo=semantic-release&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-225%2F225%20green-222?style=flat-square&logo=github-actions&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
 
 ---
@@ -68,15 +68,15 @@
 
 ---
 
-## Five things that make it different
+## Six things that make it different
 
-| | | | | |
-|---|---|---|---|---|
-| **Decision-first** | **Graph-aware execution** | **Cross-task memory** | **Adaptive execution** | **Auto-retry** |
-| Every routing decision is scored and explainable. You see exactly why each team was selected, secondary, or filtered — before anything runs. | Teams run in wave-based DAG order. Dependencies are explicit. Partial failures are contained. Nothing runs blindly. | Milestones track progress across tasks and time. Replay inspects any past execution. Resume continues from where it left off. | The system learns from past execution — success_rate and template outcomes bias future routing decisions. Not ML, not autonomous: rule-based, explainable, conservative. | Failed nodes retry automatically — exactly once, next wave. No config files, no policy layer changes. `--no-auto-retry` to disable. |
-| `+API +endpoint +SaaS → score 4 → high → dispatched` | `product → backend → frontend` (linear) | `@orchestrator --replay <task-id>` | `--feedback-history` → see team stats | Wave 2: backend fails → retry → Wave 3: retried |
-| `+requirements +SaaS → score 2 → medium → secondary` | `research → [backend, frontend]` (parallel fan-out) | `@orchestrator --resume <task-id>` | `--feedback` → see bias in debug output | `retryable: true`, `retry_count` per node |
-| `+iOS → score −2 → filtered` | blocked nodes wait, done nodes stay done | `--milestone-status <id>` | runs < 5 → no bias applied | `@orchestrator --no-auto-retry` → partial_failed |
+| | | | | | |
+|---|---|---|---|---|---|
+| **Decision-first** | **Graph-aware execution** | **Cross-task memory** | **Adaptive execution** | **Auto-retry** | **Verified execution** |
+| Every routing decision is scored and explainable. You see exactly why each team was selected, secondary, or filtered — before anything runs. | Teams run in wave-based DAG order. Dependencies are explicit. Partial failures are contained. Nothing runs blindly. | Milestones track progress across tasks and time. Replay inspects any past execution. Resume continues from where it left off. | The system learns from past execution — success_rate and template outcomes bias future routing decisions. Not ML, not autonomous: rule-based, explainable, conservative. | Failed nodes retry automatically — exactly once, next wave. `--no-auto-retry` to disable. | `node = done` is not what the model says — it is what `verification_command` exit code confirms. |
+| `+API +endpoint → score 4 → high → dispatched` | `product → backend → frontend` (linear) | `@orchestrator --replay <task-id>` | `--feedback-history` → see team stats | Wave 2: fails → retry → Wave 3: retried | backend node: `pytest tests/` exit 0 → done |
+| `+requirements → score 2 → medium → secondary` | `research → [backend, frontend]` (parallel) | `@orchestrator --resume <task-id>` | `--feedback` → see bias in debug output | `retryable: true`, `retry_count` per node | verify failure → node failed → retry hook fires |
+| `+iOS → score −2 → filtered` | blocked nodes wait, done nodes stay done | `--milestone-status <id>` | runs < 5 → no bias applied | `@orchestrator --no-auto-retry` → partial_failed | whitelist: `python3`, `pytest`, `bash`, `sh` only |
 
 ---
 
@@ -167,6 +167,22 @@ Requirements: macOS or Linux · `jq` · `uuidgen` or `python3` · Node.js
 
 ## Demos
 
+### v0.9 — Verified Node Completion
+
+Terminal demo showing the v0.9 verification loop in action.
+
+```bash
+python3 demo/v0.9/demo_script.py
+```
+
+Covers:
+- Node with `verification_command`: exit 0 → done, non-zero → failed
+- Execution failure skips verification (priority: execution > verification)
+- Verification failure + retryable → retry fires once → retried node succeeds → `completed`
+- Verification failure + non-retryable → `partial_failed`
+
+Duration: ~30 seconds (terminal output, no recording needed)
+
 ### v0.8 — Auto-Retry Policy
 
 Deterministic Step C wave simulation showing retry behavior at the runtime level.
@@ -242,7 +258,15 @@ python3 tests/routing/test_step_c_simulation.py
 
 ## Roadmap
 
-### v0.8 — Auto-Retry Policy _(current)_
+### v0.9 — Verified Execution Runtime _(current)_
+- [x] `lib/verify.py` — `validate_verification_command()` + `run_verification()` (token-based allowlist)
+- [x] `verification_command` field on nodes (optional, additive)
+- [x] Execution failure vs verification failure — two distinct failure sources
+- [x] Step C: verification runs after node reports success; exit 0 → done, non-zero → failed
+- [x] Verification failure reuses existing `auto_retry` / `partial_failed` semantics
+- [x] 5 new Step C simulation tests (V9-1 through V9-5) — 225/225 total tests
+
+### v0.8 — Auto-Retry Policy
 - [x] Step C retry hook — integrated into wave dispatch loop, not a post-loop hook
 - [x] `retryable: true` + `retry_count: 0` fields on every node (all graph templates)
 - [x] `auto_retry_enabled` in `execution_graph.metadata` — readable in replay/debug

@@ -4,7 +4,10 @@ Feedback Event test suite — v0.7 Adaptive Execution Runtime.
 Tests build_feedback_event() pure function and JSONL store.
 """
 
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 from lib.feedback import build_feedback_event, append_event, load_events
 
 

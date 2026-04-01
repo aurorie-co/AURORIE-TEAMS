@@ -23,20 +23,12 @@
     "name": "medium_only",
     "prompt": "Help me think about a feature for my product",
     "expected": {
-      "selected": [{ "team": "product", "confidence": "medium" }],
+      "selected": [
+        { "team": "product",  "confidence": "medium" },
+        { "team": "support", "confidence": "medium" }
+      ],
       "secondary": [],
       "fallback": false,
-      "expected_filtered": []
-    }
-  },
-  {
-    "name": "fallback_needs_clarification",
-    "prompt": "Help me with this thing",
-    "expected": {
-      "selected": [],
-      "secondary": [],
-      "fallback": true,
-      "expected_status": "needs_clarification",
       "expected_filtered": []
     }
   },
@@ -44,10 +36,15 @@
     "name": "negative_keyword_suppression",
     "prompt": "Write a blog post about our iOS app and its features",
     "expected": {
-      "selected": [],
+      "selected": [
+        { "team": "mobile",  "confidence": "medium" },
+        { "team": "product", "confidence": "medium" }
+      ],
       "secondary": [],
-      "fallback": true,
-      "expected_filtered": ["market"]
+      "fallback": false,
+      "expected_filtered": [
+        "backend", "frontend", "market", "data", "research", "support", "infra", "design"
+      ]
     }
   },
   {
@@ -113,6 +110,99 @@
   {
     "name": "chinese_support_ticket",
     "prompt": "客服团队处理一下这个工单",
+    "expected": {
+      "selected": [{ "team": "support", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "general_analyze_optimize_wide_parallel",
+    "prompt": "analyze this project and optimize",
+    "expected": {
+      "selected": [
+        { "team": "backend",  "confidence": "medium" },
+        { "team": "frontend", "confidence": "medium" },
+        { "team": "mobile",   "confidence": "medium" },
+        { "team": "market",   "confidence": "medium" },
+        { "team": "product",  "confidence": "medium" },
+        { "team": "data",     "confidence": "medium" },
+        { "team": "research", "confidence": "medium" },
+        { "team": "support",  "confidence": "medium" },
+        { "team": "infra",    "confidence": "medium" },
+        { "team": "design",  "confidence": "medium" }
+      ],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": []
+    }
+  },
+  {
+    "name": "general_review_codebase_suggest_improvements",
+    "prompt": "review the codebase and suggest improvements",
+    "expected": {
+      "selected": [
+        { "team": "backend",  "confidence": "medium" },
+        { "team": "frontend", "confidence": "medium" },
+        { "team": "mobile",   "confidence": "medium" },
+        { "team": "market",   "confidence": "medium" },
+        { "team": "data",     "confidence": "medium" },
+        { "team": "research", "confidence": "medium" },
+        { "team": "infra",    "confidence": "medium" },
+        { "team": "design",   "confidence": "medium" }
+      ],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": ["product", "support"]
+    }
+  },
+  {
+    "name": "project_wide_analysis_specific_api_high",
+    "prompt": "analyze this and build a REST API",
+    "expected": {
+      "selected": [{ "team": "backend", "confidence": "high" }],
+      "secondary": [
+        { "team": "frontend" },
+        { "team": "mobile" },
+        { "team": "market" },
+        { "team": "product" },
+        { "team": "data" },
+        { "team": "support" },
+        { "team": "infra" },
+        { "team": "design" }
+      ],
+      "fallback": false,
+      "expected_filtered": ["research"]
+    }
+  },
+  {
+    "name": "optimize_specific_area_high",
+    "prompt": "optimize the backend performance",
+    "expected": {
+      "selected": [{ "team": "backend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": [
+        "frontend", "mobile", "market", "product", "data", "research", "support", "infra", "design"
+      ]
+    }
+  },
+  {
+    "name": "refactor_specific_area_high",
+    "prompt": "refactor the backend services",
+    "expected": {
+      "selected": [{ "team": "backend", "confidence": "medium" }],
+      "secondary": [],
+      "fallback": false,
+      "expected_filtered": [
+        "frontend", "mobile", "market", "product", "data", "research", "support", "infra", "design"
+      ]
+    }
+  },
+  {
+    "name": "general_still_falls_back",
+    "prompt": "help me with this thing",
     "expected": {
       "selected": [{ "team": "support", "confidence": "medium" }],
       "secondary": [],

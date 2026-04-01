@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """tests/routing/test_retry.py — Auto-retry test suite"""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 def _test_build_execution_graph_has_retryable_field():
     from tests.routing.test_dispatch_policy import build_execution_graph
     teams = [{"team": "backend"}, {"team": "frontend"}]

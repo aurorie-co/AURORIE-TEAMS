@@ -724,7 +724,7 @@ def select_graph_template(selected_teams):
     return "flat-parallel"
 
 
-def build_execution_graph(task_id, selected_teams):
+def build_execution_graph(task_id, selected_teams, verification_commands=None):
     """
     Builds execution_graph for selected_teams using the selected template.
     Pure function — no side effects.
@@ -732,6 +732,8 @@ def build_execution_graph(task_id, selected_teams):
     Args:
         task_id: str UUID for this task
         selected_teams: list of team dicts with 'team', 'score', 'confidence'
+        verification_commands: optional dict of {team_id: command_str}.
+                              Nodes without an entry have no verification.
 
     Returns:
         dict with keys: nodes[], edges[], status
@@ -744,20 +746,9 @@ def build_execution_graph(task_id, selected_teams):
     """
     template = select_graph_template(selected_teams)
     team_ids = [t["team"] for t in selected_teams]
+    vcmds = verification_commands or {}
     nodes = []
     edges = []
-
-    def make_node(team):
-        return {
-            "node_id": f"{team}-1",
-            "team": team,
-            "depends_on": [],
-            "status": "pending",
-            "artifacts_in": [],
-            "artifacts_out": [ARTIFACT_OUT.get(team, "").format(task_id=task_id)],
-            "retryable": True,
-            "retry_count": 0,
-        }
 
     if template == "data-first":
         # data → research → product → backend → frontend
@@ -831,6 +822,12 @@ def build_execution_graph(task_id, selected_teams):
             dep_node = node_map.get(dep_id)
             if dep_node:
                 node["artifacts_in"].extend(dep_node["artifacts_out"])
+
+    # Inject verification_command into each node if provided
+    for node in nodes:
+        vcmd = vcmds.get(node["team"])
+        if vcmd:
+            node["verification_command"] = vcmd
 
     return {
         "nodes": nodes,

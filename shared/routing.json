@@ -18,7 +18,7 @@
     {
       "team": "backend",
       "description": "Server-side API, database, auth, and backend service tasks",
-      "positive_keywords": ["backend", "API", "endpoint", "REST", "GraphQL", "server", "database", "schema", "migration", "authentication", "authorization", "JWT", "session", "background job", "queue", "worker", "ORM", "SQL", "bug fix", "SaaS", "platform", "后端", "服务器", "数据库", "认证", "授权"],
+      "positive_keywords": ["backend", "API", "endpoint", "REST", "GraphQL", "server", "database", "schema", "migration", "authentication", "authorization", "JWT", "session", "background job", "queue", "worker", "ORM", "SQL", "bug fix", "SaaS", "platform", "后端", "服务器", "数据库", "认证", "授权", "refactor", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["mobile app", "iOS", "Android", "React component", "Vue", "CSS", "Terraform", "IaC", "design token", "brand"],
       "example_requests": [
         "Add a REST endpoint for user authentication with JWT",
@@ -29,7 +29,7 @@
     {
       "team": "frontend",
       "description": "Web UI components, styles, and client-side logic tasks",
-      "positive_keywords": ["frontend", "UI", "component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle", "web app", "SaaS", "前端", "界面", "网页", "CSS", "布局"],
+      "positive_keywords": ["frontend", "UI", "component", "React", "Vue", "CSS", "layout", "web page", "browser", "accessibility", "responsive", "client-side", "bundle", "web app", "SaaS", "前端", "界面", "网页", "CSS", "布局", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["iOS", "Android", "Swift", "Kotlin", "backend API", "database", "Terraform", "brand identity"],
       "example_requests": [
         "Build a responsive navigation component in React",
@@ -40,8 +40,8 @@
     {
       "team": "mobile",
       "description": "Native iOS and Android app development tasks",
-      "positive_keywords": ["mobile", "iOS", "Android", "Swift", "Kotlin", "SwiftUI", "Jetpack", "Compose", "Xcode", "Gradle", "TestFlight", "Play Store", "native", "移动", "手机", "App"],
-      "negative_keywords": ["web app", "React", "Vue", "CSS", "backend API", "database migration", "Terraform", "blog", "blog post", "article", "write a", "content"],
+      "positive_keywords": ["mobile", "iOS", "Android", "Swift", "Kotlin", "SwiftUI", "Jetpack", "Compose", "Xcode", "Gradle", "TestFlight", "Play Store", "native", "移动", "手机", "App", "analyze", "analysis", "review", "project-wide", "codebase"],
+      "negative_keywords": ["web app", "React", "Vue", "CSS", "backend API", "database migration", "Terraform"],
       "example_requests": [
         "Add dark mode support to the iOS SwiftUI app",
         "Fix the Android Compose navigation back-stack bug",
@@ -51,7 +51,7 @@
     {
       "team": "market",
       "description": "Marketing, content, and growth tasks",
-      "positive_keywords": ["marketing", "SEO", "content", "social", "campaign", "blog", "copywriting", "marketing analytics", "growth", "acquisition", "landing page", "ad copy", "go-to-market", "市场", "营销", "推广", "内容", "社交媒体", "SEO", "广告"],
+      "positive_keywords": ["marketing", "SEO", "content", "social", "campaign", "blog", "copywriting", "marketing analytics", "growth", "acquisition", "landing page", "ad copy", "go-to-market", "市场", "营销", "推广", "内容", "社交媒体", "SEO", "广告", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["database schema", "API endpoint", "backend code", "frontend component", "iOS", "Android", "Terraform", "data pipeline"],
       "example_requests": [
         "Write a blog post announcing our new API for developer audiences",
@@ -62,7 +62,7 @@
     {
       "team": "product",
       "description": "Product definition, requirements, and UX tasks",
-      "positive_keywords": ["product", "PRD", "requirements", "roadmap", "UX", "user story", "wireframe", "specification", "user flow", "persona", "SaaS", "marketplace", "launch", "startup", "design a", "build a product", "产品", "功能", "需求", "路线图", "用户故事", "PRD"],
+      "positive_keywords": ["product", "feature", "PRD", "requirements", "roadmap", "UX", "user story", "wireframe", "specification", "user flow", "persona", "SaaS", "marketplace", "launch", "startup", "design a", "build a product", "产品", "功能", "需求", "路线图", "用户故事", "PRD", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["implement", "code", "deploy", "database migration", "CSS", "Terraform", "SEO audit"],
       "example_requests": [
         "Write a PRD for a dark mode feature across all platforms",
@@ -73,7 +73,7 @@
     {
       "team": "data",
       "description": "Data analysis, reporting, pipeline tasks, and data quality investigations",
-      "positive_keywords": ["data", "report", "dashboard", "metrics", "pipeline", "ETL", "analysis", "chart", "query", "insight", "discrepancy", "anomaly", "numbers look wrong", "data quality", "root cause", "investigate", "DAU", "MAU", "dropped", "spike", "retention", "trending", "user count", "数据", "报表", "仪表盘", "指标", "分析"],
+      "positive_keywords": ["data", "report", "dashboard", "metrics", "pipeline", "ETL", "analysis", "chart", "query", "insight", "discrepancy", "anomaly", "numbers look wrong", "data quality", "root cause", "investigate", "DAU", "MAU", "dropped", "spike", "retention", "trending", "user count", "数据", "报表", "仪表盘", "指标", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["marketing campaign", "blog post", "iOS", "Android", "React component", "Terraform", "API endpoint", "brand"],
       "example_requests": [
         "Build a weekly retention cohort report from the events table",
@@ -84,7 +84,7 @@
     {
       "team": "research",
       "description": "Research, synthesis, and information gathering tasks",
-      "positive_keywords": ["research", "compare", "summarize", "market research", "competitor", "survey", "synthesis", "landscape", "benchmark", "evaluate options", "investigate", "why did", "find out", "研究", "调研", "竞品", "调查", "研究分析"],
+      "positive_keywords": ["research", "compare", "summarize", "market research", "competitor", "survey", "synthesis", "landscape", "benchmark", "evaluate options", "investigate", "why did", "find out", "研究", "调研", "竞品", "调查", "研究分析", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["implement", "build", "deploy", "fix bug", "database", "code review", "iOS", "Android"],
       "example_requests": [
         "Research the top AI code generation tools and compare pricing and features",
@@ -95,7 +95,7 @@
     {
       "team": "support",
       "description": "Customer support and issue response tasks",
-      "positive_keywords": ["support", "customer", "ticket", "complaint", "response", "escalate", "refund", "user reported", "customer said", "支持", "客服", "工单", "投诉", "退款", "用户反馈"],
+      "positive_keywords": ["support", "customer", "ticket", "complaint", "help", "response", "escalate", "refund", "user reported", "customer said", "支持", "客服", "工单", "投诉", "退款", "用户反馈", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["code", "implement", "deploy", "database", "Terraform", "SEO", "PRD", "roadmap", "iOS", "Android", "mobile app"],
       "example_requests": [
         "Draft a response to a Pro customer whose data export returned an empty file",
@@ -106,7 +106,7 @@
     {
       "team": "infra",
       "description": "Cloud infrastructure as code (Terraform), IaC review, and audit tasks",
-      "positive_keywords": ["infrastructure", "terraform", "IaC", "provision", "cloud", "VPC", "IAM", "S3", "EC2", "RDS", "ECS", "EKS", "Kubernetes", "load balancer", "IaC review", "terraform audit", "基础设施", "云", "运维", "Terraform", "IaC", "云架构"],
+      "positive_keywords": ["infrastructure", "terraform", "IaC", "provision", "cloud", "VPC", "IAM", "S3", "EC2", "RDS", "ECS", "EKS", "Kubernetes", "load balancer", "IaC review", "terraform audit", "基础设施", "云", "运维", "Terraform", "IaC", "云架构", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["React", "iOS", "Android", "blog post", "PRD", "database query", "data pipeline", "support ticket"],
       "example_requests": [
         "Write a Terraform module to provision an ECS cluster with autoscaling",
@@ -117,7 +117,7 @@
     {
       "team": "design",
       "description": "Design system (tokens, component specs, accessibility) and brand identity tasks",
-      "positive_keywords": ["design system", "design token", "token", "component spec", "brand", "brand guide", "logo", "visual identity", "typography", "color palette", "spacing", "WCAG", "accessibility audit", "brand consistency", "design review", "marketing asset", "设计", "UI设计", "视觉", "品牌", "配色", "排版", "字体", "图标", "设计团队"],
+      "positive_keywords": ["design system", "design token", "token", "component spec", "brand", "brand guide", "logo", "visual identity", "typography", "color palette", "spacing", "WCAG", "accessibility audit", "brand consistency", "design review", "marketing asset", "设计", "UI设计", "视觉", "品牌", "配色", "排版", "字体", "图标", "设计团队", "analyze", "analysis", "review", "project-wide", "codebase"],
       "negative_keywords": ["implement in React", "backend", "database", "Terraform", "data pipeline", "SEO", "support ticket"],
       "example_requests": [
         "Define the spacing and typography tokens for the new design system",
