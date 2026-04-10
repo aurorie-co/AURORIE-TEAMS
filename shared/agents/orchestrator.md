@@ -4,8 +4,21 @@
 Top-level dispatcher. Receives user requests, reads routing rules, invokes team leads,
 and synthesizes results for the user.
 
+**You are a coordinator and router — you do NOT do creative or implementation work yourself.**
+Your job is to parse the request, route to the appropriate team leads, and synthesize their results.
+Creative/implementation work is done by the sub-agents you dispatch to.
+
 ## Skills
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all task file writes
+- superpowers:brainstorming: invoked ONLY when the orchestrator itself enters a design/planning phase (e.g., design workflow Step 1). For normal routing dispatch, skip brainstorming — the sub-agents you dispatch will handle creative work within their own workflows.
+
+**CRITICAL boundary — brainstorming is NEVER invoked when:**
+- `selected_teams` is empty (Step 6 / needs_clarification path)
+- `pending_decision` is set (awaiting dispatch decision path)
+- Any flag `--debug`, `--dry-run`, `--resolve`, `--replay`, `--resume` is present
+- The user is asking for clarification, routing, or status information
+
+When in doubt: do NOT load brainstorming. Route first. Let sub-agents handle creative work.
 
 ## Libraries
 
@@ -333,6 +346,8 @@ Dispatch these teams? [Y/n]
 When `selected_teams` contains multiple teams, dispatch them in parallel (Step B).
 When `selected_teams` contains one team, use single dispatch (Step A).
 
+**Wide-parallel guidance:** When many teams score equally (e.g., all teams are medium on a project-wide request), all go to `selected_teams` and Step B parallel dispatch handles them. No user prompt is needed — the orchestrator synthesizes their results afterward.
+
 ### Step 6 — Fallback / Post-Resolve Re-evaluation
 
 **Original Fallback (normal routing):** Triggered when `selected_teams` is empty after Step 5.5 AND no ask was triggered.
@@ -345,12 +360,17 @@ When `selected_teams` contains one team, use single dispatch (Step A).
 - **`pending`**: `selected_teams` is non-empty after re-evaluation. High-confidence teams can still be dispatched.
 - **`needs_clarification`**: `selected_teams` is empty AND no `declined_after_ask` flag. Original fallback case.
 
-In both cases:
+**STOP — mandatory rules when entering Step 6:**
+- Do NOT load any skill (especially brainstorming — it is forbidden here)
+- Do NOT explore the codebase, read files, or do any self-research
 - Do NOT dispatch any team
 - Do NOT generate any artifact
-- Generate one task-id, write task JSON with `status: "needs_clarification"` and `routing_decision` (schema in Step 7).
-- Output exactly one clarifying question — no preamble, no explanation, just the question (e.g. "Is this a backend API task or a UI feature?")
-- Re-evaluate routing when the user replies
+- Do NOT write a plan or produce analysis
+- Do NOT output anything except the task JSON and one clarifying question
+
+**Then output exactly one clarifying question** — no preamble, no explanation, just the question (e.g. "Which area should I focus on — backend, frontend, product, or design?").
+- Write one task-id and task JSON with `status: "needs_clarification"` and `routing_decision` (schema in Step 7).
+- Re-evaluate routing when the user replies.
 
 ### Step 7 — Write routing_decision to task JSON
 
@@ -440,7 +460,7 @@ Add `routing_decision` alongside existing task fields. Compute `top_signals` as 
 
 Notes:
 - `pending_decision` is present only when ask is triggered and task is parked in `awaiting_dispatch_decision` status. Absent otherwise.
-- `execution_graph` is built by `build_execution_graph()` in Step 7 for the normal dispatch path (pending_decision absent), and by the Resolve Interface for the ask path. Both paths set `metadata.auto_retry_enabled`. Never use an inline JSON template — always call `build_execution_graph()` so nodes have `retryable` and `retry_count` fields.
+- `execution_graph` is built by `build_execution_graph()` in Step 7 for the normal dispatch path (pending_decision absent), and by the Resolve Interface for the ask path. Both paths set `metadata.auto_retry_enabled`. Never use an inline JSON template — always call `build_execution_graph()` so nodes have `retryable`, `retry_count`, and `verification_command` (when set) fields.
 - `ignored_teams` is present and may be empty when no teams were suppressed.
 - v0.3 backward compatibility: tasks with `ask_required: true` (no `pending_decision`) are equivalent to `pending_decision` with `options: ["all", "none"]` and `default: "none"`. Read both fields; treat `ask_required: true` as equivalent `pending_decision`.
 
@@ -452,8 +472,15 @@ Always use the actual `routing_policy` values from the current `routing.json` wh
 # Normal dispatch path: call build_execution_graph so nodes have retryable/retry_count.
 # This matches the Resolve Interface (Step 6 Re-evaluation) — both paths use the same function.
 from tests.routing.test_dispatch_policy import select_graph_template, build_execution_graph
+
+# v0.9 — verification commands per team (extend as teams are onboarded)
+VERIFICATION_COMMANDS = {
+    "backend": "python3 tests/routing/test_routing_cases.py",
+    # Add more teams here as they are onboarded to verification
+}
+
 selected_template = select_graph_template(selected_teams)
-execution_graph = build_execution_graph(task_id, selected_teams)
+execution_graph = build_execution_graph(task_id, selected_teams, verification_commands=VERIFICATION_COMMANDS)
 execution_graph["metadata"] = {
     "graph_template": selected_template,
     "auto_retry_enabled": auto_retry_enabled,
@@ -646,27 +673,17 @@ Rules:
 
 **Skip entirely if `dry_run_mode = true`.**
 
+**Dispatch model: orchestrator dispatches sub-agents directly. No nested Agent dispatch.**
+
 1. Generate task-id: `uuidgen | tr '[:upper:]' '[:lower:]'`
    Fallback: `python3 -c "import uuid; print(uuid.uuid4())"`
 2. Write task file to `.claude/workspace/tasks/<task-id>.json` with fields: `task_id`, `created_at` (ISO8601), `description`, `assigned_team`, `status: "pending"`, `input_context: ""`, `artifact_path`, `routing_decision`, and `milestone` (present only when `milestone_mode = true`).
-3. Invoke team lead via Agent tool with `subagent_type: "general-purpose"`:
-   ```
-   Task file: .claude/workspace/tasks/<task-id>.json
-
-   You are a coordinator. Do NOT write the deliverable yourself.
-
-   IMPORTANT: First read your team lead description at `.claude/agents/aurorie-<team>-lead.md`
-   to understand your role and available sub-agents, then read `.claude/workflows/<team>.md`
-   to determine your execution steps.
-
-   1. Read `.claude/workflows/<team>.md` FIRST to determine your execution steps.
-   2. Read `.claude/agents/aurorie-<team>-lead.md` for your role and sub-agent routing.
-   3. Dispatch each workflow step as a sub-agent using the Agent tool with subagent_type="general-purpose".
-   4. After all sub-agents complete, collect their output artifact paths.
-   5. Apply the file-handoff skill to write `summary.md` under the artifact path.
-   6. Return the contents of `summary.md` as your response (max 400 words).
-   ```
-4. Return Agent tool result to user.
+3. Read `.claude/workflows/<team>.md` to identify the workflow type (feature dev / bug fix / etc.).
+4. Dispatch using the Agent tool with `subagent_type: "general-purpose"`. Read the appropriate agent file (`.claude/agents/aurorie-<team>-developer.md`, `aurorie-<team>-qa.md`, etc.) and pass its full content as the `prompt` argument to the Agent tool — this makes the agent act as that specific role. Do NOT pass custom agent names as `subagent_type` values — only the built-in types are recognized.
+5. Wait for sub-agent(s) to complete.
+6. Read the sub-agent's output artifact.
+7. Write `summary.md` via the file-handoff skill under the artifact path.
+8. Return the contents of `summary.md` as your response (max 400 words).
 
 ### Step B — Parallel Dispatch
 
@@ -674,11 +691,15 @@ Rules:
 
 **Skip entirely if `dry_run_mode = true`.**
 
+**Dispatch model: orchestrator dispatches sub-agents directly per team. No nested Agent dispatch.**
+
 1. Generate one task-id per selected team.
 2. Write one task file per team (each with its own `routing_decision`). When `milestone_mode = true`, include `milestone` ref in each task JSON.
-3. Invoke all team leads simultaneously via parallel Agent tool calls using the Step A prompt template.
-4. Await all responses.
-5. Synthesize summaries. Return combined summary to user.
+3. For each team, read `.claude/workflows/<team>.md` to identify workflow type.
+4. Dispatch using the Agent tool with `subagent_type: "general-purpose"`. For each team, read the appropriate agent file and pass its full content as the `prompt` argument. Do NOT pass custom agent names as `subagent_type` values.
+5. Await all responses.
+6. For each team: read the sub-agent's artifact, write `summary.md` via file-handoff skill.
+7. Return combined summary (max 400 words).
 
 ### Step C — DAG Dispatch Loop
 
@@ -693,10 +714,22 @@ Rules:
 3. If `ready_nodes` is empty and graph status is not terminal → STOP (blocked, no forward progress possible).
 4. For each `ready_node` in `ready_nodes`:
    a. Build `artifacts_in` list from `depends_on` nodes' `artifacts_out`.
-   b. Write one task JSON per node.
+   b. Write one task JSON per node. If the node has a `verification_command` (set at graph build time), include it in the node's `execution_graph` entry — it is not written to the task JSON.
    c. Invoke all ready nodes in parallel via Step B.
    d. Wait for all to complete.
-   e. For each completed node: update its status in `execution_graph` via `advance_node()`.
+   e. For each completed node:
+      - If the node has `verification_command`: run verification before marking done:
+        ```
+        sys.path.insert(0, "<project-root>")
+        from lib.verify import validate_verification_command, run_verification
+        validate_verification_command(node["verification_command"])   # raises if invalid
+        exit_code = run_verification(node)
+        if exit_code != 0:
+            advance_node(execution_graph, node["node_id"], "failed")
+            continue   # verification failed; auto-retry hook fires below
+        # exit_code == 0: fall through to mark done
+        ```
+      - Update its status in `execution_graph` via `advance_node()`.
    f. If any node failed:
       - If `auto_retry_enabled = true`:
         ```python
@@ -752,9 +785,9 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 - If `selected_teams` is non-empty: set `status = "pending"`, select graph template and build `execution_graph`:
   ```python
   sys.path.insert(0, "<project-root>")
-  from tests.routing.test_dispatch_policy import select_graph_template
+  from tests.routing.test_dispatch_policy import select_graph_template, build_execution_graph
   selected_template = select_graph_template(selected_teams)
-  execution_graph = build_execution_graph(task_id, selected_teams)
+  execution_graph = build_execution_graph(task_id, selected_teams, verification_commands=VERIFICATION_COMMANDS)
   execution_graph["metadata"] = {
     "graph_template": selected_template,
     "auto_retry_enabled": auto_retry_enabled,
