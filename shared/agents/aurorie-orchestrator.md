@@ -1,3 +1,9 @@
+---
+name: aurorie-orchestrator
+description: Top-level dispatcher for aurorie-teams. Receives user requests, reads routing rules, invokes team leads, and synthesizes results. Use this when the user describes a task that spans multiple teams or needs team coordination.
+tools: Agent, Read, Glob, Grep, Write, Edit, Bash
+---
+
 # Orchestrator
 
 ## Role
