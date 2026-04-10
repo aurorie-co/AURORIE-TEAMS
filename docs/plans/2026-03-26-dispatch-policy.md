@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add `dispatch_policy` to `routing.json` and `orchestrator.md` so users can control per-confidence-band dispatch behavior (auto/ask/ignore), with ask mode triggering a Y/n prompt before dispatching medium-confidence teams.
+**Goal:** Add `dispatch_policy` to `routing.json` and `aurorie-orchestrator.md` so users can control per-confidence-band dispatch behavior (auto/ask/ignore), with ask mode triggering a Y/n prompt before dispatching medium-confidence teams.
 
 **Architecture:** Insert Step 5.5 (policy enforcement) between Step 5 (classification) and Step 6 (fallback). Step 5 is updated to output `high_candidates[]` and `medium_candidates[]` rather than `selected_teams` directly. Step 5.5 reads `dispatch_policy`, handles ask mode interaction, and produces `selected_teams`, `secondary_teams`, `ignored_teams`. A Python mirror of the algorithm in `tests/routing/test_dispatch_policy.py` verifies the logic deterministically. Existing tests must continue to pass.
 
@@ -15,7 +15,7 @@
 | File | Action | Responsibility |
 |------|--------|----------------|
 | `shared/routing.json` | Modify | Add `dispatch_policy` block inside `routing_policy` |
-| `shared/agents/orchestrator.md` | Modify | Step 1 normalization; Step 5 classification rename; insert Step 5.5; Step 6 fallback status; Step 7 routing_decision schema; Steps A/B secondary constraint |
+| `shared/agents/aurorie-orchestrator.md` | Modify | Step 1 normalization; Step 5 classification rename; insert Step 5.5; Step 6 fallback status; Step 7 routing_decision schema; Steps A/B secondary constraint |
 | `tests/routing/test_dispatch_policy.py` | Create | Python evaluator + 10 test cases for Step 5.5 state machine |
 | `tests/lint.test.sh` | Modify | Run dispatch policy test suite after existing routing tests |
 
@@ -122,7 +122,7 @@
   ```python
   #!/usr/bin/env python3
   """
-  Dispatch policy test suite — mirrors Step 5.5 of orchestrator.md.
+  Dispatch policy test suite — mirrors Step 5.5 of aurorie-orchestrator.md.
   Tests normalize_dispatch_policy and apply_dispatch_policy.
   """
 
@@ -589,14 +589,14 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 
 ---
 
-### Task 5: Update orchestrator.md — Step 1 + Step 5
+### Task 5: Update aurorie-orchestrator.md — Step 1 + Step 5
 
 **Files:**
-- Modify: `shared/agents/orchestrator.md`
+- Modify: `shared/agents/aurorie-orchestrator.md`
 
-- [ ] **Step 1: Read orchestrator.md and locate Step 1**
+- [ ] **Step 1: Read aurorie-orchestrator.md and locate Step 1**
 
-  Read `shared/agents/orchestrator.md`. Find Step 1:
+  Read `shared/agents/aurorie-orchestrator.md`. Find Step 1:
 
   ```
   ### Step 1 — Read policy
@@ -691,7 +691,7 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 
   Run:
   ```bash
-  grep -n "### Step" shared/agents/orchestrator.md
+  grep -n "### Step" shared/agents/aurorie-orchestrator.md
   ```
 
   Expected output shows: Step 0, Step 1, Step 2, Step 3, Step 3.5, Step 4, Step 5, Step 6, Step 7, Step 7.5, Step 8, Step A, Step B. (Step 5.5 comes in Task 6.)
@@ -708,16 +708,16 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 - [ ] **Step 7: Commit**
 
   ```bash
-  git add shared/agents/orchestrator.md
+  git add shared/agents/aurorie-orchestrator.md
   git commit -m "feat(orchestrator): update Step 1 (dispatch_policy normalization) and Step 5 (classification rename)"
   ```
 
 ---
 
-### Task 6: Insert Step 5.5 into orchestrator.md
+### Task 6: Insert Step 5.5 into aurorie-orchestrator.md
 
 **Files:**
-- Modify: `shared/agents/orchestrator.md`
+- Modify: `shared/agents/aurorie-orchestrator.md`
 
 - [ ] **Step 1: Locate the insertion point**
 
@@ -822,7 +822,7 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 
   Run:
   ```bash
-  grep -n "### Step" shared/agents/orchestrator.md
+  grep -n "### Step" shared/agents/aurorie-orchestrator.md
   ```
 
   Expected: Step 0, Step 1, Step 2, Step 3, Step 3.5, Step 4, Step 5, **Step 5.5**, Step 6, Step 7, Step 7.5, Step 8, Step A, Step B.
@@ -839,7 +839,7 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 - [ ] **Step 5: Commit**
 
   ```bash
-  git add shared/agents/orchestrator.md
+  git add shared/agents/aurorie-orchestrator.md
   git commit -m "feat(orchestrator): insert Step 5.5 — dispatch_policy enforcement"
   ```
 
@@ -848,7 +848,7 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 ### Task 7: Update Step 6, Step 7, Steps A/B
 
 **Files:**
-- Modify: `shared/agents/orchestrator.md`
+- Modify: `shared/agents/aurorie-orchestrator.md`
 
 - [ ] **Step 1: Update Step 6 fallback status**
 
@@ -1074,7 +1074,7 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 
   Run:
   ```bash
-  grep -n "routing_schema_version" shared/agents/orchestrator.md
+  grep -n "routing_schema_version" shared/agents/aurorie-orchestrator.md
   ```
 
   Expected: all occurrences show `"v0.3"`, none show `"v0.2"`.
@@ -1091,7 +1091,7 @@ Each candidate is a dict with keys: `team`, `score`, `confidence`, `matched_posi
 - [ ] **Step 6: Commit**
 
   ```bash
-  git add shared/agents/orchestrator.md
+  git add shared/agents/aurorie-orchestrator.md
   git commit -m "feat(orchestrator): update Step 6 fallback status, Step 7 schema v0.3, Steps A/B constraint"
   ```
 

@@ -38,7 +38,7 @@
 ## What it does
 
 ```
-@orchestrator "Build a SaaS for AI agents marketplace"
+@aurorie-orchestrator "Build a SaaS for AI agents marketplace"
 
   → routes:    backend ■■■■■■■■■■■■■■■■■■■■■■■ high
                product ■■■■■■ medium
@@ -55,7 +55,7 @@
 **That's not a one-shot.** If `backend-1` fails:
 
 ```
-@orchestrator --resume <task-id>
+@aurorie-orchestrator --resume <task-id>
 
   partial_failed detected — retrying failed nodes only
 
@@ -74,9 +74,9 @@
 |---|---|---|---|---|---|
 | **Decision-first** | **Graph-aware execution** | **Cross-task memory** | **Adaptive execution** | **Auto-retry** | **Verified execution** |
 | Every routing decision is scored and explainable. You see exactly why each team was selected, secondary, or filtered — before anything runs. | Teams run in wave-based DAG order. Dependencies are explicit. Partial failures are contained. Nothing runs blindly. | Milestones track progress across tasks and time. Replay inspects any past execution. Resume continues from where it left off. | The system learns from past execution — success_rate and template outcomes bias future routing decisions. Not ML, not autonomous: rule-based, explainable, conservative. | Failed nodes retry automatically — exactly once, next wave. `--no-auto-retry` to disable. | `node = done` is not what the model says — it is what `verification_command` exit code confirms. |
-| `+API +endpoint → score 4 → high → dispatched` | `product → backend → frontend` (linear) | `@orchestrator --replay <task-id>` | `--feedback-history` → see team stats | Wave 2: fails → retry → Wave 3: retried | backend node: `pytest tests/` exit 0 → done |
-| `+requirements → score 2 → medium → secondary` | `research → [backend, frontend]` (parallel) | `@orchestrator --resume <task-id>` | `--feedback` → see bias in debug output | `retryable: true`, `retry_count` per node | verify failure → node failed → retry hook fires |
-| `+iOS → score −2 → filtered` | blocked nodes wait, done nodes stay done | `--milestone-status <id>` | runs < 5 → no bias applied | `@orchestrator --no-auto-retry` → partial_failed | whitelist: `python3`, `pytest`, `bash`, `sh` only |
+| `+API +endpoint → score 4 → high → dispatched` | `product → backend → frontend` (linear) | `@aurorie-orchestrator --replay <task-id>` | `--feedback-history` → see team stats | Wave 2: fails → retry → Wave 3: retried | backend node: `pytest tests/` exit 0 → done |
+| `+requirements → score 2 → medium → secondary` | `research → [backend, frontend]` (parallel) | `@aurorie-orchestrator --resume <task-id>` | `--feedback` → see bias in debug output | `retryable: true`, `retry_count` per node | verify failure → node failed → retry hook fires |
+| `+iOS → score −2 → filtered` | blocked nodes wait, done nodes stay done | `--milestone-status <id>` | runs < 5 → no bias applied | `@aurorie-orchestrator --no-auto-retry` → partial_failed | whitelist: `python3`, `pytest`, `bash`, `sh` only |
 
 ---
 
@@ -84,17 +84,17 @@
 
 | Command | What it does |
 |---------|--------------|
-| `@orchestrator "prompt"` | Full routing + dispatch + artifact output |
-| `@orchestrator --debug "prompt"` | See every score, evaluation, and decision before anything runs |
-| `@orchestrator --dry-run "prompt"` | Preview routing + graph without dispatching |
-| `@orchestrator --milestone "Goal" "prompt"` | Run with milestone tracking attached |
-| `@orchestrator --milestone-status <id>` | Query aggregated milestone progress |
-| `@orchestrator --resolve <task-id> all\|none\|selective` | Resolve a paused decision (idempotent) |
-| `@orchestrator --replay <task-id>` | Read-only: inspect past routing + execution graph |
-| `@orchestrator --resume <task-id>` | Resume: `in_progress` · `partial_failed` · `blocked` |
-| `@orchestrator --feedback "prompt"` | Run with feedback bias debug output (shows adjusted scores) |
-| `@orchestrator --feedback-history` | Print team/template stats from execution history and exit |
-| `@orchestrator --no-auto-retry "prompt"` | Run with auto-retry disabled — failed nodes stay failed |
+| `@aurorie-orchestrator "prompt"` | Full routing + dispatch + artifact output |
+| `@aurorie-orchestrator --debug "prompt"` | See every score, evaluation, and decision before anything runs |
+| `@aurorie-orchestrator --dry-run "prompt"` | Preview routing + graph without dispatching |
+| `@aurorie-orchestrator --milestone "Goal" "prompt"` | Run with milestone tracking attached |
+| `@aurorie-orchestrator --milestone-status <id>` | Query aggregated milestone progress |
+| `@aurorie-orchestrator --resolve <task-id> all\|none\|selective` | Resolve a paused decision (idempotent) |
+| `@aurorie-orchestrator --replay <task-id>` | Read-only: inspect past routing + execution graph |
+| `@aurorie-orchestrator --resume <task-id>` | Resume: `in_progress` · `partial_failed` · `blocked` |
+| `@aurorie-orchestrator --feedback "prompt"` | Run with feedback bias debug output (shows adjusted scores) |
+| `@aurorie-orchestrator --feedback-history` | Print team/template stats from execution history and exit |
+| `@aurorie-orchestrator --no-auto-retry "prompt"` | Run with auto-retry disabled — failed nodes stay failed |
 
 ---
 
@@ -137,7 +137,7 @@ git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
 cd /path/to/your-project
 /tmp/aurorie-teams/install.sh
 
-@orchestrator "Build me a SaaS product from scratch"
+@aurorie-orchestrator "Build me a SaaS product from scratch"
 ```
 
 Requirements: macOS or Linux · `jq` · `uuidgen` or `python3` · Node.js
@@ -148,19 +148,19 @@ Requirements: macOS or Linux · `jq` · `uuidgen` or `python3` · Node.js
 
 ```bash
 # 1. Build a product (triggers Product + Backend + Frontend)
-@orchestrator "Create a SaaS for AI agents marketplace"
+@aurorie-orchestrator "Create a SaaS for AI agents marketplace"
 ```
 
 ```bash
 # 2. Investigate a drop (triggers Data + Research)
-@orchestrator "Investigate why our DAU dropped 30% last week"
+@aurorie-orchestrator "Investigate why our DAU dropped 30% last week"
 ```
 
 ```bash
 # 3. Coordinate a milestone across multiple tasks
-@orchestrator --milestone "Launch v1.0" "Build the crypto trading platform"
+@aurorie-orchestrator --milestone "Launch v1.0" "Build the crypto trading platform"
 # ... then attach more tasks to the same milestone
-@orchestrator --milestone-status ms_abc123
+@aurorie-orchestrator --milestone-status ms_abc123
 ```
 
 ---

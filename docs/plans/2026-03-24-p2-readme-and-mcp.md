@@ -203,7 +203,7 @@
 
   **Input** (in Claude Code):
   ```
-  @orchestrator Write a landing page for our new mobile SDK.
+  @aurorie-orchestrator Write a landing page for our new mobile SDK.
   Audience: iOS and Android developers. Goal: trial signups.
   ```
 
@@ -245,7 +245,7 @@
 
   **输入**（在 Claude Code 中）：
   ```
-  @orchestrator 为我们的移动端 SDK 写一个落地页。
+  @aurorie-orchestrator 为我们的移动端 SDK 写一个落地页。
   目标受众：iOS 和 Android 开发者。目标：试用注册。
   ```
 
@@ -317,7 +317,7 @@
       D -- "Customer ticket / support" --> SUP[support team]
   ```
 
-  Not sure? Use `@orchestrator` — it reads `routing.json` and routes automatically.
+  Not sure? Use `@aurorie-orchestrator` — it reads `routing.json` and routes automatically.
   ````
 
 - [ ] **Step 2: Mirror in README.zh.md**
@@ -346,7 +346,7 @@
       D -- "客户工单 / 支持" --> SUP[support 团队]
   ```
 
-  不确定用哪个团队？使用 `@orchestrator` — 它会自动读取 `routing.json` 并路由。
+  不确定用哪个团队？使用 `@aurorie-orchestrator` — 它会自动读取 `routing.json` 并路由。
   ````
 
 - [ ] **Step 3: Commit**
@@ -380,7 +380,7 @@
 
   **Multiple teams matched — parallel dispatch is not what I wanted**
   Make your request more specific, or invoke the team lead directly:
-  `@aurorie-backend-lead Fix the authentication bug` instead of `@orchestrator Fix the bug`.
+  `@aurorie-backend-lead Fix the authentication bug` instead of `@aurorie-orchestrator Fix the bug`.
 
   **MCP server not available after install**
   Check that the required env var is set before starting Claude Code:
@@ -414,7 +414,7 @@
 
   **命中了多个团队，不想要并行派发**
   把请求写得更具体，或直接调用对应团队 Lead：
-  `@aurorie-backend-lead 修复认证 bug`，而不是 `@orchestrator 修复 bug`。
+  `@aurorie-backend-lead 修复认证 bug`，而不是 `@aurorie-orchestrator 修复 bug`。
 
   **安装后 MCP 服务器不可用**
   确认启动 Claude Code 前已设置所需环境变量：

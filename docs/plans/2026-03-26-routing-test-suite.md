@@ -120,7 +120,7 @@
   """
   Routing test suite for aurorie-teams.
 
-  Matching rules (must stay in sync with shared/agents/orchestrator.md Step 2):
+  Matching rules (must stay in sync with shared/agents/aurorie-orchestrator.md Step 2):
   - Case-insensitive
   - Token-based prefix match: keyword matches any word that starts with it
     e.g. "auth" matches "authentication"; "api" does NOT match "capability"

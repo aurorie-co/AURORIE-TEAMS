@@ -15,7 +15,7 @@
 | File | Action | What changes |
 |------|--------|-------------|
 | `shared/routing.json` | Modify | Upgrade to v2 schema: add `positive_keywords`, `negative_keywords`, `example_requests`; bump `version` to `"2"` |
-| `shared/agents/orchestrator.md` | Modify | Update routing instructions to explain positive/negative scoring and `primary_intent` disambiguation |
+| `shared/agents/aurorie-orchestrator.md` | Modify | Update routing instructions to explain positive/negative scoring and `primary_intent` disambiguation |
 | `tests/install.test.sh` | Modify | Update `routing.json` version assertion from `"1"` to `"2"` |
 | `tests/lint.test.sh` | Create | New contract test: validates agents, workflows, skills, routing consistency |
 
@@ -153,7 +153,7 @@
         ]
       }
     ],
-    "fallback": "orchestrator-clarify"
+    "fallback": "aurorie-orchestrator-clarify"
   }
   ```
 
@@ -173,14 +173,14 @@
 
 ---
 
-### Task 2: Update `shared/agents/orchestrator.md` routing instructions
+### Task 2: Update `shared/agents/aurorie-orchestrator.md` routing instructions
 
 **Files:**
-- Modify: `shared/agents/orchestrator.md`
+- Modify: `shared/agents/aurorie-orchestrator.md`
 
 - [ ] **Step 1: Read the current file**
 
-  Read `shared/agents/orchestrator.md` and note the Routing section.
+  Read `shared/agents/aurorie-orchestrator.md` and note the Routing section.
 
 - [ ] **Step 2: Update the Routing section**
 
@@ -197,7 +197,7 @@
   3. Use `example_requests` to break ties: if two teams have equal scores, pick the one whose examples most closely match the request's intent.
   4. If one candidate: single dispatch (Step A).
   5. If multiple candidates with similar scores: parallel dispatch (Step B).
-  6. If no candidates (`fallback: "orchestrator-clarify"`): ask the user one clarifying question, then re-evaluate.
+  6. If no candidates (`fallback: "aurorie-orchestrator-clarify"`): ask the user one clarifying question, then re-evaluate.
 
   **Disambiguation rule:** When a request mixes signals (e.g., "investigate why our React component is slow"), identify the *primary intent* (performance investigation → data/research) vs. *secondary intent* (React → frontend) and route to the primary intent team only.
   ```
@@ -205,7 +205,7 @@
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add shared/agents/orchestrator.md
+  git add shared/agents/aurorie-orchestrator.md
   git commit -m "feat(routing): update orchestrator to use positive/negative scoring with primary intent disambiguation"
   ```
 

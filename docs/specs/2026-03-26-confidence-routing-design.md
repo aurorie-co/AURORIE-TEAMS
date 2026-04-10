@@ -116,7 +116,7 @@ If `routing_policy` is missing or incomplete, apply defaults:
 
 ## Orchestrator Decision Flow
 
-Replaces the existing Routing section of `orchestrator.md`.
+Replaces the existing Routing section of `aurorie-orchestrator.md`.
 
 ### Step 1 — Read policy
 
@@ -231,7 +231,7 @@ Reason: matched "<signal1>", "<signal2>".
 | File | Change type | Scope |
 |---|---|---|
 | `.claude/routing.json` | New field | Top-level `routing_policy` block |
-| `.claude/agents/orchestrator.md` | Replace section | Full Routing section (Steps 1–8) |
+| `.claude/agents/aurorie-orchestrator.md` | Replace section | Full Routing section (Steps 1–8) |
 
 **Not changed:** all team lead agents, workflow files, install scripts, README, CHANGELOG.
 

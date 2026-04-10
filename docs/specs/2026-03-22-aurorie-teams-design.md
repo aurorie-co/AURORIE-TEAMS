@@ -110,7 +110,7 @@ aurorie-teams/
 │
 ├── shared/
 │   ├── agents/
-│   │   └── orchestrator.md
+│   │   └── aurorie-orchestrator.md
 │   ├── skills/
 │   │   └── file-handoff/SKILL.md
 │   ├── routing.json                    # default routing rules (machine-readable)
@@ -133,7 +133,7 @@ my-project/
 └── .claude/
     ├── .aurorie-teams-version          # installed version string, e.g. "1.0.0"
     ├── agents/
-    │   ├── orchestrator.md
+    │   ├── aurorie-orchestrator.md
     │   ├── aurorie-engineer-lead.md
     │   └── ... (all team agents)
     ├── skills/
@@ -311,7 +311,7 @@ Default `shared/routing.json` installed as `.claude/routing.json`:
       "description": "Customer support and issue response tasks"
     }
   ],
-  "fallback": "orchestrator-clarify"
+  "fallback": "aurorie-orchestrator-clarify"
 }
 ```
 
@@ -319,7 +319,7 @@ Routing behavior:
 1. The orchestrator matches the user request against `keywords` in each rule using LLM judgment (keywords are hints, not exact matches).
 2. If one team clearly matches: dispatch to that team's lead.
 3. If multiple teams match: dispatch in parallel.
-4. If no rule matches (`fallback: "orchestrator-clarify"`): ask the user a clarifying question before routing.
+4. If no rule matches (`fallback: "aurorie-orchestrator-clarify"`): ask the user a clarifying question before routing.
 5. `routing.json` is skipped on reinstall (`cp -n`). Developers edit `.claude/routing.json` to customize routing without losing changes.
 
 ---
@@ -347,7 +347,7 @@ At runtime, the agent reads the listed skill files before executing the relevant
 
 ## Orchestrator Agent Content
 
-The `shared/agents/orchestrator.md` file (installed as `.claude/agents/orchestrator.md`):
+The `shared/agents/aurorie-orchestrator.md` file (installed as `.claude/agents/aurorie-orchestrator.md`):
 
 ```markdown
 # Orchestrator

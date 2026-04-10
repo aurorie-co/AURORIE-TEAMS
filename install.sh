@@ -43,7 +43,7 @@ mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/workflows" \
          "$TARGET/workspace/tasks" "$TARGET/workspace/artifacts"
 
 # ── install agents (always overwrite) ────────────────────────────────────────
-cp "$REPO_ROOT/shared/agents/orchestrator.md" "$TARGET/agents/"
+cp "$REPO_ROOT/shared/agents/aurorie-orchestrator.md" "$TARGET/agents/"
 for team in backend frontend mobile market product data research support infra design; do
   for agent_file in "$REPO_ROOT/teams/$team/agents/"*.md; do
     cp "$agent_file" "$TARGET/agents/"
@@ -184,7 +184,7 @@ if [[ "$DETECT_ORPHANS" == true ]]; then
   echo "Checking for orphaned files..."
 
   # build list of expected agent basenames
-  repo_agents=("orchestrator.md")
+  repo_agents=("aurorie-orchestrator.md")
   for team in backend frontend mobile market product data research support infra design; do
     for f in "$REPO_ROOT/teams/$team/agents/"*.md; do
       [[ -f "$f" ]] && repo_agents+=("$(basename "$f")")

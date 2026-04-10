@@ -4,7 +4,7 @@
 
 **Goal:** Add `--debug` flag support to the orchestrator so users can see a full per-team routing trace in the terminal without changing routing decisions or dispatch behavior.
 
-**Architecture:** Two insertions into `shared/agents/orchestrator.md` only — a new Step 0 (flag detection and stripping) and a new Step 7.5 (debug trace rendered from the already-computed `routing_decision`). Steps 1–7 and Step 8 are untouched. Debug output is a pure projection of `routing_decision`; no re-evaluation occurs.
+**Architecture:** Two insertions into `shared/agents/aurorie-orchestrator.md` only — a new Step 0 (flag detection and stripping) and a new Step 7.5 (debug trace rendered from the already-computed `routing_decision`). Steps 1–7 and Step 8 are untouched. Debug output is a pure projection of `routing_decision`; no re-evaluation occurs.
 
 **Tech Stack:** Markdown (orchestrator instruction file). No new code files. No new dependencies.
 
@@ -14,18 +14,18 @@
 
 | File | Action | Responsibility |
 |---|---|---|
-| `shared/agents/orchestrator.md` | Modify | Insert Step 0 + Step 7.5 |
+| `shared/agents/aurorie-orchestrator.md` | Modify | Insert Step 0 + Step 7.5 |
 
 ---
 
 ## Task 1: Insert Step 0 — Flag parsing
 
 **Files:**
-- Modify: `shared/agents/orchestrator.md` (insert after `## Routing\n\n`, before `### Step 1`)
+- Modify: `shared/agents/aurorie-orchestrator.md` (insert after `## Routing\n\n`, before `### Step 1`)
 
 - [ ] **Step 1: Read the current file and locate the insertion point**
 
-  Read `shared/agents/orchestrator.md`. Find the exact text:
+  Read `shared/agents/aurorie-orchestrator.md`. Find the exact text:
 
   ```
   ## Routing
@@ -72,7 +72,7 @@
 
   Run:
   ```bash
-  grep -n "Step 0\|Step 1\|Step 7\|Step 8" shared/agents/orchestrator.md
+  grep -n "Step 0\|Step 1\|Step 7\|Step 8" shared/agents/aurorie-orchestrator.md
   ```
 
   Expected output should show Step 0 appearing before Step 1, and steps numbered in correct order.
@@ -106,7 +106,7 @@
 - [ ] **Step 5: Commit**
 
   ```bash
-  git add shared/agents/orchestrator.md
+  git add shared/agents/aurorie-orchestrator.md
   git commit -m "feat(orchestrator): add Step 0 — debug flag parsing"
   ```
 
@@ -115,7 +115,7 @@
 ## Task 2: Insert Step 7.5 — Debug render
 
 **Files:**
-- Modify: `shared/agents/orchestrator.md` (insert between Step 7 closing paragraph and `### Step 8`)
+- Modify: `shared/agents/aurorie-orchestrator.md` (insert between Step 7 closing paragraph and `### Step 8`)
 
 - [ ] **Step 1: Locate the insertion point**
 
@@ -200,7 +200,7 @@
 - [ ] **Step 3: Verify step ordering**
 
   ```bash
-  grep -n "### Step" shared/agents/orchestrator.md
+  grep -n "### Step" shared/agents/aurorie-orchestrator.md
   ```
 
   Expected order: Step 0, Step 1, Step 2, Step 3, Step 3.5, Step 4, Step 5, Step 6, Step 7, **Step 7.5**, Step 8, Step A, Step B.
@@ -222,7 +222,7 @@
 - [ ] **Step 5: Commit**
 
   ```bash
-  git add shared/agents/orchestrator.md
+  git add shared/agents/aurorie-orchestrator.md
   git commit -m "feat(orchestrator): add Step 7.5 — debug trace render from routing_decision"
   ```
 
@@ -239,7 +239,7 @@
   grep -n "orchestrator" install.sh | head -10
   ```
 
-  This shows the copy command. Run it to sync the updated orchestrator.md to your local `.claude/agents/`.
+  This shows the copy command. Run it to sync the updated aurorie-orchestrator.md to your local `.claude/agents/`.
 
 - [ ] **Step 2: Smoke test — normal prompt (no --debug)**
 
@@ -247,13 +247,13 @@
   - No debug block appears in the output
   - Routing and dispatch work as before
 
-  Example prompt: `@orchestrator "Add a REST endpoint for user authentication with JWT"`
+  Example prompt: `@aurorie-orchestrator "Add a REST endpoint for user authentication with JWT"`
 
   Expected: normal `Routed to: backend (high)` summary, no `=== ROUTING DEBUG ===` block.
 
 - [ ] **Step 3: Smoke test — debug prompt, high confidence**
 
-  Invoke: `@orchestrator --debug "Build a SaaS platform with user requirements and API endpoints"`
+  Invoke: `@aurorie-orchestrator --debug "Build a SaaS platform with user requirements and API endpoints"`
 
   Expected output (order: debug block → normal summary → dispatch):
 
@@ -292,7 +292,7 @@
 
 - [ ] **Step 4: Smoke test — debug prompt, fallback**
 
-  Invoke: `@orchestrator --debug "Help me with this thing"`
+  Invoke: `@aurorie-orchestrator --debug "Help me with this thing"`
 
   Expected: debug block shows `Selected: (none)`, `Secondary: (none)`, all teams under `Filtered`. Normal fallback clarifying question follows.
 

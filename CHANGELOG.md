@@ -145,8 +145,8 @@ v0.7 — learn     feedback loop
 ```
 
 ### Orchestrator Files
-- `shared/agents/orchestrator.md` — updated with all v0.7 integration points
-- `.claude/agents/orchestrator.md` — same content (local config, gitignored)
+- `shared/agents/aurorie-orchestrator.md` — updated with all v0.7 integration points
+- `.claude/agents/aurorie-orchestrator.md` — same content (local config, gitignored)
 
 ### Adaptive Runtime Principles
 1. **Feedback is additive, not authoritative** — historical data biases, never overrides
@@ -167,14 +167,14 @@ v0.7 — learn     feedback loop
 ### Added
 
 #### Replay Interface
-- `@orchestrator --replay <task-id>` — read-only inspection of past task execution
+- `@aurorie-orchestrator --replay <task-id>` — read-only inspection of past task execution
 - `format_replay_output(task)` — pure function producing structured replay output
 - `reconstruct_waves(nodes)` — pure function reconstructing wave order from `depends_on` depth
 - Handles old task JSONs gracefully: missing `waves`, `started_at`, `completed_at` display as `—`
 - Output includes: prompt, status, routing (selected/secondary/ignored), wave timeline, final status, milestone ref
 
 #### Resume Interface
-- `@orchestrator --resume <task-id>` — continue DAG execution from partial state
+- `@aurorie-orchestrator --resume <task-id>` — continue DAG execution from partial state
 - `validate_resume(task)` — pure function enforcing strict state priority:
   - `pending_decision` present → NOT resumable (must `--resolve` first)
   - `execution_graph` absent → no graph found
@@ -195,7 +195,7 @@ v0.7 — learn     feedback loop
 ### Changed
 
 - Orchestrator Step 0 extended with `--replay <task-id>` and `--resume <task-id>` flag parsing
-- `shared/agents/orchestrator.md` and `.claude/agents/orchestrator.md` kept in sync
+- `shared/agents/aurorie-orchestrator.md` and `.claude/agents/aurorie-orchestrator.md` kept in sync
 
 ### Test Coverage
 - 17 new replay/resume tests: 5 replay + 7 resume validation + 2 reconstruct_waves + 1 reset_partial_failed_graph + 2 unblock_graph
@@ -228,7 +228,7 @@ v0.7 — learn     feedback loop
 
 #### Selective Interactive Routing
 - Extend resolve interface: `all | none | selective`
-- CLI: `@orchestrator --resolve <task-id> selective <team1,team2,...>`
+- CLI: `@aurorie-orchestrator --resolve <task-id> selective <team1,team2,...>`
 - `pending_decision.options` extends to `["all", "none", "selective"]`
 - User picks which medium teams to approve — partial dispatch
 - `resolve_task()` handles selective: confirmed → selected_teams (or secondary when high exists), unconfirmed → ignored_teams
@@ -285,15 +285,15 @@ v0.7 — learn     feedback loop
 - `ask_required` in `routing_decision` — deferred ask marker for dry-run mode
 - 5 dry-run test cases — total dispatch policy suite now 18 cases (normalize 4, auto/ignore 4, ask 5, dry-run 5)
 - `--dry-run` section in README.md with example output
-- `.claude/agents/orchestrator.md` synced with shared Step 0 flag parsing
+- `.claude/agents/aurorie-orchestrator.md` synced with shared Step 0 flag parsing
 
 ### Changed
-- orchestrator.md Step 0 — `--dry-run` parsed as standalone flag, sets `dry_run_mode = true`
-- orchestrator.md Step 5.5 — ask defers to `ask_required` dict when `dry_run_mode = true`
-- orchestrator.md Step 6 — `ask_required` included in fallback `routing_decision`
-- orchestrator.md Step 7.5 — debug trace shows `dry_run: true` line when applicable
-- orchestrator.md Step 8 — dry-run appends "Dry run — no teams were dispatched." and ask deferral note
-- orchestrator.md Steps A/B — skipped entirely when `dry_run_mode = true`
+- aurorie-orchestrator.md Step 0 — `--dry-run` parsed as standalone flag, sets `dry_run_mode = true`
+- aurorie-orchestrator.md Step 5.5 — ask defers to `ask_required` dict when `dry_run_mode = true`
+- aurorie-orchestrator.md Step 6 — `ask_required` included in fallback `routing_decision`
+- aurorie-orchestrator.md Step 7.5 — debug trace shows `dry_run: true` line when applicable
+- aurorie-orchestrator.md Step 8 — dry-run appends "Dry run — no teams were dispatched." and ask deferral note
+- aurorie-orchestrator.md Steps A/B — skipped entirely when `dry_run_mode = true`
 - Tests paragraph updated — 73 total (50 lint + 5 routing + 18 dispatch)
 - RELEASE.md — test counts updated to 73 / 18
 
@@ -317,7 +317,7 @@ v0.7 — learn     feedback loop
 - Step 6 fallback now distinguishes `user_declined_dispatch` vs `needs_clarification`
 - `routing_schema_version` bumped to `"v0.3"` in `routing_decision`
 - Steps A/B constraint clarified — `secondary_teams` are informational only, never dispatched
-- orchestrator.md (shared + .claude) fully updated to v0.3 step architecture
+- aurorie-orchestrator.md (shared + .claude) fully updated to v0.3 step architecture
 
 ### Fixed
 - Ask mode guard: prevents ask trigger when `medium_candidates` is empty

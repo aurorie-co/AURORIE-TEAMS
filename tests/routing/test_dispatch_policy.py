@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dispatch policy test suite — mirrors Step 5.5 of orchestrator.md.
+Dispatch policy test suite — mirrors Step 5.5 of aurorie-orchestrator.md.
 Tests normalize_dispatch_policy (this file) and apply_dispatch_policy (added in later tasks).
 """
 
@@ -1969,15 +1969,15 @@ ORCHESTRATOR_DISPATCH_TESTS = []
 def _test_step_a_uses_general_purpose_agent_type():
     """Step A dispatch must use subagent_type='general-purpose' (only available type)."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     # Find Step A dispatch block
     step_a_start = content.find("### Step A — Single Dispatch")
     step_b_start = content.find("### Step B — Parallel Dispatch")
-    assert step_a_start != -1, "Step A not found in orchestrator.md"
+    assert step_a_start != -1, "Step A not found in aurorie-orchestrator.md"
     step_a_section = content[step_a_start:step_b_start]
 
     # Must specify subagent_type: "general-purpose"
@@ -1989,9 +1989,9 @@ def _test_step_a_uses_general_purpose_agent_type():
 def _test_step_a_reads_team_lead_agent_file():
     """Step A must specify sub-agent names (aurorie-<team>-developer etc) for flat dispatch."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_a_start = content.find("### Step A — Single Dispatch")
@@ -2010,9 +2010,9 @@ def _test_step_a_reads_team_lead_agent_file():
 def _test_step_a_reads_workflow_file():
     """Step A dispatch must instruct agent to read .claude/workflows/<team>.md."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_a_start = content.find("### Step A — Single Dispatch")
@@ -2042,14 +2042,14 @@ ORCHESTRATOR_STEP_B_TESTS = []
 def _test_step_b_uses_step_a_template():
     """Step B must use flat dispatch — direct sub-agent dispatch, not nested team lead dispatch."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_b_start = content.find("### Step B — Parallel Dispatch")
     step_c_start = content.find("### Step C — DAG Dispatch Loop")
-    assert step_b_start != -1, "Step B not found in orchestrator.md"
+    assert step_b_start != -1, "Step B not found in aurorie-orchestrator.md"
     step_b_section = content[step_b_start:step_c_start]
 
     # New model: Step B should mention flat dispatch / direct dispatch / no nested
@@ -2066,9 +2066,9 @@ def _test_step_b_uses_step_a_template():
 def _test_step_b_parallels_dispatch():
     """Step B must indicate parallel dispatch of multiple team leads."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_b_start = content.find("### Step B — Parallel Dispatch")
@@ -2084,9 +2084,9 @@ def _test_step_b_parallels_dispatch():
 def _test_step_b_respects_selected_teams_only():
     """Step B must dispatch only selected_teams, never secondary_teams."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_b_start = content.find("### Step B — Parallel Dispatch")
@@ -2119,9 +2119,9 @@ ORCHESTRATOR_STEP_C_TESTS = []
 def _test_step_c_uses_step_b_for_ready_nodes():
     """Step C must dispatch ready nodes via Step B."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_c_start = content.find("### Step C — DAG Dispatch Loop")
@@ -2141,9 +2141,9 @@ def _test_step_c_uses_step_b_for_ready_nodes():
 def _test_step_c_handles_auto_retry():
     """Step C must handle auto-retry when nodes fail."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_c_start = content.find("### Step C — DAG Dispatch Loop")
@@ -2161,9 +2161,9 @@ def _test_step_c_handles_auto_retry():
 def _test_step_c_checks_terminal_status():
     """Step C must STOP when graph reaches terminal state."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_c_start = content.find("### Step C — DAG Dispatch Loop")
@@ -2195,9 +2195,9 @@ ORCHESTRATOR_RESOLVE_TESTS = []
 def _test_resolve_accepts_all_none_selective():
     """Resolve interface must accept all/none/selective actions."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     resolve_start = content.find("### Resolve Interface")
@@ -2212,9 +2212,9 @@ def _test_resolve_accepts_all_none_selective():
 def _test_resolve_validates_pending_decision():
     """Resolve must validate pending_decision is present."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     resolve_start = content.find("### Resolve Interface")
@@ -2241,9 +2241,9 @@ ORCHESTRATOR_REPLAY_TESTS = []
 def _test_replay_has_interface():
     """Orchestrator must have Replay Interface section."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     assert "### Replay Interface" in content, (
@@ -2254,9 +2254,9 @@ def _test_replay_has_interface():
 def _test_replay_is_read_only():
     """Replay must be read-only with no state mutation."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     replay_start = content.find("### Replay Interface")
@@ -2286,9 +2286,9 @@ ORCHESTRATOR_RESUME_TESTS = []
 def _test_resume_has_interface():
     """Orchestrator must have Resume Interface section."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     assert "### Resume Interface" in content, (
@@ -2299,9 +2299,9 @@ def _test_resume_has_interface():
 def _test_resume_handles_partial_failed():
     """Resume must handle partial_failed state."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     resume_start = content.find("### Resume Interface")
@@ -2315,9 +2315,9 @@ def _test_resume_handles_partial_failed():
 def _test_resume_increments_run_n():
     """Resume must increment run_n for tracking."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     resume_start = content.find("### Resume Interface")
@@ -2345,9 +2345,9 @@ ORCHESTRATOR_MILESTONE_TESTS = []
 def _test_milestone_has_interface():
     """Orchestrator must have Milestone Interface section."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     assert "## Milestone Interface" in content, (
@@ -2358,9 +2358,9 @@ def _test_milestone_has_interface():
 def _test_milestone_status_mode():
     """Orchestrator must support --milestone-status flag."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step0_start = content.find("### Step 0")
@@ -2375,9 +2375,9 @@ def _test_milestone_status_mode():
 def _test_milestone_mode():
     """Orchestrator must support --milestone flag."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step0_start = content.find("### Step 0")
@@ -2406,9 +2406,9 @@ ORCHESTRATOR_DRYRUN_TESTS = []
 def _test_dry_run_flag_in_step0():
     """Orchestrator must support --dry-run flag in Step 0."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step0_start = content.find("### Step 0")
@@ -2423,9 +2423,9 @@ def _test_dry_run_flag_in_step0():
 def _test_dry_run_skips_dispatch():
     """Dry-run mode must skip Steps A/B dispatch."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step_a_start = content.find("### Step A")
@@ -2461,9 +2461,9 @@ ORCHESTRATOR_FEEDBACK_TESTS = []
 def _test_feedback_flag_in_step0():
     """Orchestrator must support --feedback and --feedback-history flags."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step0_start = content.find("### Step 0")
@@ -2481,9 +2481,9 @@ def _test_feedback_flag_in_step0():
 def _test_feedback_bias_applied_in_step3_6():
     """Step 3.6 must apply feedback bias to candidate scores."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step3_6_start = content.find("### Step 3.6 — Apply Feedback Bias")
@@ -2500,9 +2500,9 @@ def _test_feedback_bias_applied_in_step3_6():
 def _test_feedback_mode_shows_debug_output():
     """Step 7.6 must render feedback bias debug when feedback_mode is true."""
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     content = orchestrator_path.read_text()
 
     step7_6_start = content.find("### Step 7.6 — Feedback Bias Debug")
@@ -2566,9 +2566,9 @@ COORDINATOR_PROTOCOL_TESTS = []
 
 def _read_orchestrator():
     from pathlib import Path
-    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "orchestrator.md"
+    orchestrator_path = Path(__file__).parent.parent.parent / ".claude" / "agents" / "aurorie-orchestrator.md"
     if not orchestrator_path.exists():
-        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "orchestrator.md"
+        orchestrator_path = Path(__file__).parent.parent.parent / "shared" / "agents" / "aurorie-orchestrator.md"
     return orchestrator_path.read_text()
 
 

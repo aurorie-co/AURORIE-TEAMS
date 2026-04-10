@@ -36,7 +36,7 @@ This writes 17 events to `.claude/workspace/execution_history.jsonl`:
 **Action:**
 ```bash
 # First, clear history to start fresh
-@orchestrator --feedback "Build a SaaS landing page"
+@aurorie-orchestrator --feedback "Build a SaaS landing page"
 ```
 
 > "No history yet. Every team starts with bias = 1.0."
@@ -64,7 +64,7 @@ backend:
 
 **Action:**
 ```bash
-@orchestrator --feedback-history
+@aurorie-orchestrator --feedback-history
 ```
 
 > "Here's what's accumulated since then:"
@@ -96,7 +96,7 @@ Templates:
 
 **Action:**
 ```bash
-@orchestrator --feedback "Build a SaaS landing page"
+@aurorie-orchestrator --feedback "Build a SaaS landing page"
 ```
 
 > "Same prompt. Same teams. But now history exists."

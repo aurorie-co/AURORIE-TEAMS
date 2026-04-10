@@ -13,7 +13,7 @@ This project uses aurorie-teams. Agents are in `.claude/agents/`.
 Routing rules are in `.claude/routing.json` — edit to customize which keywords
 route to which team.
 
-To invoke: use the `orchestrator` agent for most tasks, or invoke a team lead
+To invoke: use the `aurorie-orchestrator` agent for most tasks, or invoke a team lead
 directly (e.g., `aurorie-backend-lead`) for single-team work.
 
 ## Sequential Workflows

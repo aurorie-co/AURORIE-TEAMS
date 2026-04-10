@@ -197,7 +197,7 @@ Step 0 already strips both flags. No other changes are needed now; this is a pla
 The existing 5 routing cases in `tests/routing/test_routing_cases.py` remain unchanged. Debug mode does not affect `selected`, `secondary`, `fallback`, or `filtered` results — the routing evaluator is not modified.
 
 No automated snapshot test for debug output is required in v0.2.x. Manual verification:
-- Run `@orchestrator --debug "Build a SaaS platform..."` and confirm all three sections appear
+- Run `@aurorie-orchestrator --debug "Build a SaaS platform..."` and confirm all three sections appear
 - Confirm routing result matches non-debug invocation of the same prompt
 - Confirm `--debug "Help me with this thing"` shows fallback with Filtered listing all teams
 
@@ -207,6 +207,6 @@ No automated snapshot test for debug output is required in v0.2.x. Manual verifi
 
 | File | Action | Change |
 |---|---|---|
-| `shared/agents/orchestrator.md` | Modify | Add Step 0 (flag parse) + Step 7.5 (debug render) |
+| `shared/agents/aurorie-orchestrator.md` | Modify | Add Step 0 (flag parse) + Step 7.5 (debug render) |
 
 No changes to `shared/routing.json`, team workflows, or existing tests.

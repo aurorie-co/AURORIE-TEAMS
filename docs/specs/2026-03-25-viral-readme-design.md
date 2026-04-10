@@ -62,7 +62,7 @@ cd /path/to/your-project
 
 Then just ask:
 
-@orchestrator "Build me a SaaS product from scratch"
+@aurorie-orchestrator "Build me a SaaS product from scratch"
 (or simply: "Build me a SaaS product from scratch" — the system routes automatically)
 ```
 
@@ -70,7 +70,7 @@ Then just ask:
 - Badge URLs copied verbatim from `README.md` lines 3–6 of the current file
 - Language switcher placed immediately below badges (same position as current README)
 - Install commands use the actual 3-step flow (clone to tmp → cd to project → run install.sh) to match real behavior
-- Dual-layer syntax: `@orchestrator` for Claude Code users, plain prompt line for newcomers
+- Dual-layer syntax: `@aurorie-orchestrator` for Claude Code users, plain prompt line for newcomers
 - "The system routes automatically" removes the 0.5-second comprehension cost
 
 ---
@@ -85,7 +85,7 @@ Render as three titled subsections:
 ## 🎬 What it actually does
 
 ### Input
-@orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
+@aurorie-orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
 
 ### What happens internally
 
@@ -243,7 +243,7 @@ export EXA_API_KEY=...
 export FIRECRAWL_API_KEY=...
 
 # 4. Verify
-# In Claude Code: @orchestrator "Test the system"
+# In Claude Code: @aurorie-orchestrator "Test the system"
 # You should see routing + task output.
 ```
 
@@ -280,7 +280,7 @@ Four prompts in this exact format:
 
 ### Prompt 1: Build a product
 ```
-@orchestrator "Create a SaaS for AI agents marketplace"
+@aurorie-orchestrator "Create a SaaS for AI agents marketplace"
 
 Triggers:
 - Product Team
@@ -297,7 +297,7 @@ Copy and run this — you'll get real artifacts.
 
 ### Prompt 2: Analyze data
 ```
-@orchestrator "Investigate why our DAU dropped 30% last week"
+@aurorie-orchestrator "Investigate why our DAU dropped 30% last week"
 
 Triggers:
 - Data Team
@@ -312,7 +312,7 @@ Copy and run this — you'll get real artifacts.
 
 ### Prompt 3: Build an app
 ```
-@orchestrator "Design a mobile app for habit tracking with iOS and Android support"
+@aurorie-orchestrator "Design a mobile app for habit tracking with iOS and Android support"
 
 Triggers:
 - Mobile Team
@@ -329,7 +329,7 @@ Copy and run this — you'll get real artifacts.
 
 ### Prompt 4: Research a market
 ```
-@orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
+@aurorie-orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
 
 Triggers:
 - Research Team

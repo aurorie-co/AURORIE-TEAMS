@@ -55,7 +55,7 @@ echo ""
 echo "=== Test: default install ==="
 "$REPO_ROOT/install.sh" > /dev/null
 
-assert_file_exists "orchestrator.md installed"      ".claude/agents/orchestrator.md"
+assert_file_exists "aurorie-orchestrator.md installed"  ".claude/agents/aurorie-orchestrator.md"
 assert_file_exists "aurorie-backend-lead.md installed"      ".claude/agents/aurorie-backend-lead.md"
 assert_file_exists "aurorie-frontend-lead.md installed"     ".claude/agents/aurorie-frontend-lead.md"
 assert_file_exists "aurorie-infra-lead.md installed"         ".claude/agents/aurorie-infra-lead.md"

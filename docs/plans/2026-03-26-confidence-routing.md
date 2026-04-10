@@ -4,7 +4,7 @@
 
 **Goal:** Add confidence bands, conditional dispatch, and structured routing explanation to the orchestrator so routing decisions are explainable, observable, and policy-driven.
 
-**Architecture:** `routing.json` gains a `routing_policy` block that defines candidate and confidence thresholds. `orchestrator.md` replaces its Routing section with an 8-step decision pipeline: read policy → score → filter → sort → band → dispatch → record → summarize. Every task JSON gains an optional `routing_decision` field with the full decision record.
+**Architecture:** `routing.json` gains a `routing_policy` block that defines candidate and confidence thresholds. `aurorie-orchestrator.md` replaces its Routing section with an 8-step decision pipeline: read policy → score → filter → sort → band → dispatch → record → summarize. Every task JSON gains an optional `routing_decision` field with the full decision record.
 
 **Tech Stack:** JSON (routing config), Markdown (agent prompt), no external dependencies.
 
@@ -15,7 +15,7 @@
 | File | Action | Responsibility |
 |---|---|---|
 | `.claude/routing.json` | Modify | Add `routing_policy` top-level block |
-| `.claude/agents/orchestrator.md` | Modify | Replace Routing section with 8-step pipeline |
+| `.claude/agents/aurorie-orchestrator.md` | Modify | Replace Routing section with 8-step pipeline |
 
 ---
 
@@ -55,7 +55,7 @@
       }
     },
     "rules": [ ... ],
-    "fallback": "orchestrator-clarify"
+    "fallback": "aurorie-orchestrator-clarify"
   }
   ```
 
@@ -76,14 +76,14 @@
 
 ---
 
-## Task 2: Replace Routing section in orchestrator.md
+## Task 2: Replace Routing section in aurorie-orchestrator.md
 
 **Files:**
-- Modify: `.claude/agents/orchestrator.md`
+- Modify: `.claude/agents/aurorie-orchestrator.md`
 
-- [ ] **Step 1: Read the current orchestrator.md**
+- [ ] **Step 1: Read the current aurorie-orchestrator.md**
 
-  Open `.claude/agents/orchestrator.md`. The section to replace starts at `## Routing` and ends before `## Sequential Cross-Team Workflows`. Everything between those headers gets replaced.
+  Open `.claude/agents/aurorie-orchestrator.md`. The section to replace starts at `## Routing` and ends before `## Sequential Cross-Team Workflows`. Everything between those headers gets replaced.
 
 - [ ] **Step 2: Replace the Routing section**
 
@@ -289,7 +289,7 @@
 - [ ] **Step 4: Commit**
 
   ```bash
-  git add .claude/agents/orchestrator.md
+  git add .claude/agents/aurorie-orchestrator.md
   git commit -m "feat(orchestrator): confidence-based routing pipeline (v0.2.0)"
   ```
 
@@ -297,7 +297,7 @@
 
 ## Task 3: Validate all 5 routing cases
 
-Run each prompt via `@orchestrator` and verify both the terminal summary and the task JSON written to `.claude/workspace/tasks/`.
+Run each prompt via `@aurorie-orchestrator` and verify both the terminal summary and the task JSON written to `.claude/workspace/tasks/`.
 
 - [ ] **Case 1 — High only**
 

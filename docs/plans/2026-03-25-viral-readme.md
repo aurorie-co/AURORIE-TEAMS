@@ -67,7 +67,7 @@
   Then just ask:
 
   ```
-  @orchestrator "Build me a SaaS product from scratch"
+  @aurorie-orchestrator "Build me a SaaS product from scratch"
   ```
 
   _(or simply: "Build me a SaaS product from scratch" — the system routes automatically)_
@@ -79,7 +79,7 @@
   ### Input
 
   ```
-  @orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
+  @aurorie-orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
   ```
 
   ### What happens internally
@@ -293,7 +293,7 @@
   export FIRECRAWL_API_KEY=...
 
   # 4. Verify
-  # In Claude Code: @orchestrator "Test the system"
+  # In Claude Code: @aurorie-orchestrator "Test the system"
   # You should see routing + task output.
   ```
 
@@ -323,7 +323,7 @@
   ### Build a product
 
   ```
-  @orchestrator "Create a SaaS for AI agents marketplace"
+  @aurorie-orchestrator "Create a SaaS for AI agents marketplace"
   ```
 
   Triggers:
@@ -345,7 +345,7 @@
   ### Analyze data
 
   ```
-  @orchestrator "Investigate why our DAU dropped 30% last week"
+  @aurorie-orchestrator "Investigate why our DAU dropped 30% last week"
   ```
 
   Triggers:
@@ -365,7 +365,7 @@
   ### Build an app
 
   ```
-  @orchestrator "Design a mobile app for habit tracking with iOS and Android support"
+  @aurorie-orchestrator "Design a mobile app for habit tracking with iOS and Android support"
   ```
 
   Triggers:
@@ -387,7 +387,7 @@
   ### Research a market
 
   ```
-  @orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
+  @aurorie-orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
   ```
 
   Triggers:
@@ -622,7 +622,7 @@
   然后直接说：
 
   ```
-  @orchestrator "Build me a SaaS product from scratch"
+  @aurorie-orchestrator "Build me a SaaS product from scratch"
   ```
 
   _（或者直接说："Build me a SaaS product from scratch"——系统会自动路由）_
@@ -634,7 +634,7 @@
   ### 输入
 
   ```
-  @orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
+  @aurorie-orchestrator "Build a crypto trading dashboard with real-time data and mobile support"
   ```
 
   ### 内部流程
@@ -811,7 +811,7 @@
   export FIRECRAWL_API_KEY=...
 
   # 4. 验证
-  # 在 Claude Code 中：@orchestrator "Test the system"
+  # 在 Claude Code 中：@aurorie-orchestrator "Test the system"
   # 你应该能看到路由 + 任务输出。
   ```
 
@@ -841,7 +841,7 @@
   ### 构建产品
 
   ```
-  @orchestrator "Create a SaaS for AI agents marketplace"
+  @aurorie-orchestrator "Create a SaaS for AI agents marketplace"
   ```
 
   触发团队：
@@ -863,7 +863,7 @@
   ### 分析数据
 
   ```
-  @orchestrator "Investigate why our DAU dropped 30% last week"
+  @aurorie-orchestrator "Investigate why our DAU dropped 30% last week"
   ```
 
   触发团队：
@@ -883,7 +883,7 @@
   ### 构建 App
 
   ```
-  @orchestrator "Design a mobile app for habit tracking with iOS and Android support"
+  @aurorie-orchestrator "Design a mobile app for habit tracking with iOS and Android support"
   ```
 
   触发团队：
@@ -905,7 +905,7 @@
   ### 市场调研
 
   ```
-  @orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
+  @aurorie-orchestrator "Compare the top 5 AI code generation tools — pricing, features, positioning"
   ```
 
   触发团队：

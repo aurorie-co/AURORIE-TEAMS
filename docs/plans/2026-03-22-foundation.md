@@ -21,7 +21,7 @@
 | `README.md` | Install instructions and quickstart |
 | `tests/install.test.sh` | Bash tests for install.sh (written first — TDD) |
 | `install.sh` | Installer: copies agents/skills/workflows, merges MCP configs, manages versions |
-| `shared/agents/orchestrator.md` | Top-level dispatcher agent definition |
+| `shared/agents/aurorie-orchestrator.md` | Top-level dispatcher agent definition |
 | `shared/skills/file-handoff/SKILL.md` | Inter-agent artifact protocol (required by all agents) |
 | `shared/routing.json` | Machine-readable team routing rules |
 | `shared/mcp.json` | Global MCP server definitions |
@@ -323,7 +323,7 @@ git commit -m "chore: add team directory stubs for install.sh testing"
 
 ## Task 3: Shared Layer Files
 
-**Files:** `shared/routing.json`, `shared/mcp.json`, `shared/agents/orchestrator.md`, `shared/skills/file-handoff/SKILL.md`, `templates/CLAUDE.md.template`, `templates/.gitignore.template`
+**Files:** `shared/routing.json`, `shared/mcp.json`, `shared/agents/aurorie-orchestrator.md`, `shared/skills/file-handoff/SKILL.md`, `templates/CLAUDE.md.template`, `templates/.gitignore.template`
 
 - [ ] **Step 1: Write shared/routing.json**
 
@@ -362,7 +362,7 @@ git commit -m "chore: add team directory stubs for install.sh testing"
       "description": "Customer support and issue response tasks"
     }
   ],
-  "fallback": "orchestrator-clarify"
+  "fallback": "aurorie-orchestrator-clarify"
 }
 ```
 
@@ -374,7 +374,7 @@ git commit -m "chore: add team directory stubs for install.sh testing"
 }
 ```
 
-- [ ] **Step 3: Write shared/agents/orchestrator.md**
+- [ ] **Step 3: Write shared/agents/aurorie-orchestrator.md**
 
 ```markdown
 # Orchestrator
@@ -392,7 +392,7 @@ and synthesizes results for the user.
 2. Match user request intent against rules (keywords are hints, not exact matches).
 3. If one team matches: single dispatch (Step A).
 4. If multiple teams match: parallel dispatch (Step B).
-5. If no team matches (`fallback: "orchestrator-clarify"`): ask the user one clarifying
+5. If no team matches (`fallback: "aurorie-orchestrator-clarify"`): ask the user one clarifying
    question, then re-evaluate.
 
 ### Step A — Single Dispatch
@@ -587,7 +587,7 @@ echo ""
 echo "=== Test: default install ==="
 "$REPO_ROOT/install.sh" > /dev/null
 
-assert_file_exists "orchestrator.md installed"      ".claude/agents/orchestrator.md"
+assert_file_exists "aurorie-orchestrator.md installed"      ".claude/agents/aurorie-orchestrator.md"
 assert_file_exists "aurorie-engineer-lead.md installed"     ".claude/agents/aurorie-engineer-lead.md"
 assert_file_exists "tdd skill installed"            ".claude/skills/tdd/SKILL.md"
 assert_file_exists "file-handoff skill installed"   ".claude/skills/file-handoff/SKILL.md"
@@ -747,7 +747,7 @@ mkdir -p "$TARGET/agents" "$TARGET/skills" "$TARGET/workflows" \
          "$TARGET/workspace/tasks" "$TARGET/workspace/artifacts"
 
 # ── install agents (always overwrite) ────────────────────────────────────────
-cp "$REPO_ROOT/shared/agents/orchestrator.md" "$TARGET/agents/"
+cp "$REPO_ROOT/shared/agents/aurorie-orchestrator.md" "$TARGET/agents/"
 for team in engineer market product data research support; do
   for agent_file in "$REPO_ROOT/teams/$team/agents/"*.md; do
     cp "$agent_file" "$TARGET/agents/"
@@ -886,7 +886,7 @@ if [[ "$DETECT_ORPHANS" == true ]]; then
   echo "Checking for orphaned files..."
 
   # build list of expected agent basenames
-  repo_agents=("orchestrator.md")
+  repo_agents=("aurorie-orchestrator.md")
   for team in engineer market product data research support; do
     for f in "$REPO_ROOT/teams/$team/agents/"*.md; do
       [[ -f "$f" ]] && repo_agents+=("$(basename "$f")")
@@ -993,7 +993,7 @@ aurorie-teams 1.0.0 installed to <path>/.claude/
 find .claude -not -path "*/workspace/*" | sort
 ```
 
-Expected: orchestrator.md, all team agents, all skills, all workflows, routing.json, settings.json, .aurorie-teams-version all present.
+Expected: aurorie-orchestrator.md, all team agents, all skills, all workflows, routing.json, settings.json, .aurorie-teams-version all present.
 
 - [ ] **Step 3: Verify settings.json is valid JSON with mcpServers**
 

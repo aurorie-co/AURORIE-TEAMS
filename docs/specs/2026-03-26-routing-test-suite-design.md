@@ -152,7 +152,7 @@ Implemented in `test_routing_cases.py`. Pure Python, no external deps.
 ### Matching rules (source of truth for test evaluator)
 
 ```
-# Matching rules (must stay in sync with orchestrator.md Step 2):
+# Matching rules (must stay in sync with aurorie-orchestrator.md Step 2):
 # - Case-insensitive
 # - Token-based prefix match: keyword matches any word that starts with it
 #   e.g. "auth" matches "authentication"; "api" does NOT match "capability"

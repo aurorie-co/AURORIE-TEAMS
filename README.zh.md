@@ -38,7 +38,7 @@
 ## 它做什么
 
 ```
-@orchestrator "Build a SaaS for AI agents marketplace"
+@aurorie-orchestrator "Build a SaaS for AI agents marketplace"
 
   → 路由:    backend ■■■■■■■■■■■■■■■■■■■■■ high
              product ■■■■■■ medium
@@ -55,7 +55,7 @@
 **不是一次性的。** 如果 `backend-1` 失败了：
 
 ```
-@orchestrator --resume <task-id>
+@aurorie-orchestrator --resume <task-id>
 
   检测到 partial_failed — 仅重试失败的节点
 
@@ -74,8 +74,8 @@
 |---|---|---|
 | **先决策** | **图感知执行** | **跨任务记忆** |
 | 每条路由决策都有分数、可解释、可编程。运行前你能看到每个团队为什么被选中、是次要还是被过滤。 | 团队按 wave-based DAG 顺序执行。依赖关系显式声明。部分失败被隔离。不会盲目跑。 | Milestone 跨任务和时间追踪进度。Replay 检查任何历史执行。Resume 从中断处继续。 |
-| `+API +endpoint +SaaS → score 4 → high → dispatched` | `product → backend → frontend` (线性) | `@orchestrator --replay <task-id>` |
-| `+requirements +SaaS → score 2 → medium → secondary` | `research → [backend, frontend]` (并行扇出) | `@orchestrator --resume <task-id>` |
+| `+API +endpoint +SaaS → score 4 → high → dispatched` | `product → backend → frontend` (线性) | `@aurorie-orchestrator --replay <task-id>` |
+| `+requirements +SaaS → score 2 → medium → secondary` | `research → [backend, frontend]` (并行扇出) | `@aurorie-orchestrator --resume <task-id>` |
 | `+iOS → score −2 → filtered` | 阻塞节点等待，done 节点保持 | `--milestone-status <id>` |
 
 ---
@@ -84,14 +84,14 @@
 
 | 命令 | 功能 |
 |------|------|
-| `@orchestrator "prompt"` | 完整路由 + 分派 + artifact 输出 |
-| `@orchestrator --debug "prompt"` | 运行前查看每条分数、评估和决策 |
-| `@orchestrator --dry-run "prompt"` | 预览路由 + 图，但不实际分派 |
-| `@orchestrator --milestone "目标" "prompt"` | 运行并附加 milestone 追踪 |
-| `@orchestrator --milestone-status <id>` | 查询聚合 milestone 进度 |
-| `@orchestrator --resolve <task-id> all\|none\|selective` | 解决暂停的决策（幂等） |
-| `@orchestrator --replay <task-id>` | 只读：检查历史路由 + 执行图 |
-| `@orchestrator --resume <task-id>` | 继续：`in_progress` · `partial_failed` · `blocked` |
+| `@aurorie-orchestrator "prompt"` | 完整路由 + 分派 + artifact 输出 |
+| `@aurorie-orchestrator --debug "prompt"` | 运行前查看每条分数、评估和决策 |
+| `@aurorie-orchestrator --dry-run "prompt"` | 预览路由 + 图，但不实际分派 |
+| `@aurorie-orchestrator --milestone "目标" "prompt"` | 运行并附加 milestone 追踪 |
+| `@aurorie-orchestrator --milestone-status <id>` | 查询聚合 milestone 进度 |
+| `@aurorie-orchestrator --resolve <task-id> all\|none\|selective` | 解决暂停的决策（幂等） |
+| `@aurorie-orchestrator --replay <task-id>` | 只读：检查历史路由 + 执行图 |
+| `@aurorie-orchestrator --resume <task-id>` | 继续：`in_progress` · `partial_failed` · `blocked` |
 
 ---
 
@@ -134,7 +134,7 @@ git clone https://github.com/aurorie-co/AURORIE-TEAMS.git /tmp/aurorie-teams
 cd /path/to/your-project
 /tmp/aurorie-teams/install.sh
 
-@orchestrator "Build me a SaaS product from scratch"
+@aurorie-orchestrator "Build me a SaaS product from scratch"
 ```
 
 环境要求：macOS 或 Linux · `jq` · `uuidgen` 或 `python3` · Node.js
@@ -145,19 +145,19 @@ cd /path/to/your-project
 
 ```bash
 # 1. 构建产品 (触发 Product + Backend + Frontend)
-@orchestrator "Create a SaaS for AI agents marketplace"
+@aurorie-orchestrator "Create a SaaS for AI agents marketplace"
 ```
 
 ```bash
 # 2. 分析下跌 (触发 Data + Research)
-@orchestrator "Investigate why our DAU dropped 30% last week"
+@aurorie-orchestrator "Investigate why our DAU dropped 30% last week"
 ```
 
 ```bash
 # 3. 协调多任务里程碑
-@orchestrator --milestone "Launch v1.0" "Build the crypto trading platform"
+@aurorie-orchestrator --milestone "Launch v1.0" "Build the crypto trading platform"
 # ... 然后继续附加更多任务到同一个 milestone
-@orchestrator --milestone-status ms_abc123
+@aurorie-orchestrator --milestone-status ms_abc123
 ```
 
 ---

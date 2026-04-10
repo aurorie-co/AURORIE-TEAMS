@@ -64,11 +64,11 @@ from lib.feedback import (
 
 Inspect the raw user input before any routing begins.
 
-**If `--debug` appears as a standalone space-separated token** (e.g. `@orchestrator --debug "Build a SaaS platform..."` — not when it appears as part of a phrase like "build a debug mode feature"):
+**If `--debug` appears as a standalone space-separated token** (e.g. `@aurorie-orchestrator --debug "Build a SaaS platform..."` — not when it appears as part of a phrase like "build a debug mode feature"):
 - Set `debug_mode = true`
 - Strip `--debug` from the input.
 
-**If `--dry-run` appears as a standalone space-separated token** (e.g. `@orchestrator --dry-run "Build a SaaS platform..."`):
+**If `--dry-run` appears as a standalone space-separated token** (e.g. `@aurorie-orchestrator --dry-run "Build a SaaS platform..."`):
 - Set `dry_run_mode = true`
 - Strip `--dry-run` from the input.
 - `--dry-run` does NOT set `debug_mode = true` by itself.
@@ -641,8 +641,8 @@ Medium-confidence teams awaiting your decision:
 - <team> (medium, score <N>)
 - <team> (medium, score <N>)
 
-Confirm: @orchestrator --resolve <task-id> all
-Decline: @orchestrator --resolve <task-id> none
+Confirm: @aurorie-orchestrator --resolve <task-id> all
+Decline: @aurorie-orchestrator --resolve <task-id> none
 ```
 
 Rules:
@@ -654,9 +654,9 @@ Rules:
 
   ```
   Awaiting your decision on medium-confidence teams.
-  Confirm:   @orchestrator --resolve <task-id> all
-  Decline:   @orchestrator --resolve <task-id> none
-  Selective: @orchestrator --resolve <task-id> selective backend,product
+  Confirm:   @aurorie-orchestrator --resolve <task-id> all
+  Decline:   @aurorie-orchestrator --resolve <task-id> none
+  Selective: @aurorie-orchestrator --resolve <task-id> selective backend,product
   ```
 
 - **In dry-run mode (`dry_run_mode = true`):** after the normal summary, append:
@@ -767,7 +767,7 @@ Rules:
 
 Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action>`).
 
-**CLI:** `@orchestrator --resolve <task-id> all` or `@orchestrator --resolve <task-id> none` or `@orchestrator --resolve <task-id> selective <team1,team2,...>`
+**CLI:** `@aurorie-orchestrator --resolve <task-id> all` or `@aurorie-orchestrator --resolve <task-id> none` or `@aurorie-orchestrator --resolve <task-id> selective <team1,team2,...>`
 
 **Precondition:** Task JSON exists at `.claude/workspace/tasks/<resolve_task_id>.json` with `status: "awaiting_dispatch_decision"` and `routing_decision.pending_decision`.
 
@@ -812,7 +812,7 @@ Triggered when `resolve_mode = true` (Step 0 parsed `--resolve <task-id> <action
 
 Triggered when `replay_mode = true` (Step 0 parsed `--replay <task-id>`).
 
-**CLI:** `@orchestrator --replay <task-id>`
+**CLI:** `@aurorie-orchestrator --replay <task-id>`
 
 **Behavior:** Read-only inspection of a past task execution. No state mutation, no dispatch.
 
@@ -854,7 +854,7 @@ Milestone: Launch SaaS (ms_abc123)
 
 Triggered when `resume_mode = true` (Step 0 parsed `--resume <task-id>`).
 
-**CLI:** `@orchestrator --resume <task-id>`
+**CLI:** `@aurorie-orchestrator --resume <task-id>`
 
 **Pre-conditions (checked in order via `validate_resume(task)`):**
 
@@ -900,7 +900,7 @@ Triggered when `resume_mode = true` (Step 0 parsed `--resume <task-id>`).
 
 ### Milestone Status Query (`milestone_status_mode = true`)
 
-**CLI:** `@orchestrator --milestone-status <milestone-id>`
+**CLI:** `@aurorie-orchestrator --milestone-status <milestone-id>`
 
 **Steps:**
 
@@ -923,7 +923,7 @@ Tasks: <N> total
 
 ### Milestone Creation and Task Attachment (`milestone_mode = true`)
 
-**CLI:** `@orchestrator --milestone "<title>" "<prompt>"`
+**CLI:** `@aurorie-orchestrator --milestone "<title>" "<prompt>"`
 
 Milestone is a coordination label — it does NOT affect routing decisions. Routing runs normally (Steps 1–7). Milestone is attached *after* the task is successfully created.
 
