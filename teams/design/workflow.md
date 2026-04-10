@@ -18,6 +18,17 @@ Steps:
 3. aurorie-design-brand writes `brand-guide.md`: Brand Foundation (purpose, vision, mission, values, personality, promise), color palette, typography hierarchy, logo usage rules, brand voice across contexts, visual asset specs by platform, and inclusive representation notes.
 4. aurorie-design-lead reads `brand-guide.md`. Writes `summary.md`: Brand Foundation summary, key visual rules established, asset specifications produced per platform, brand voice highlights, how market team should use this.
 
+## UI Design
+Trigger: design a new UI, page layout, visual component, or pixel-style interface
+
+Steps:
+1. aurorie-design-lead reads task and `input_context`. If `artifact:` references a PRD or product brief, reads it.
+2. Dispatch aurorie-design-system to create the UI design spec.
+3. aurorie-design-system writes `design-spec.md`: pixel-perfect visual spec including layout structure, color palette (with hex codes), typography (font family/size/weight), spacing system, component states, interaction behaviors, and asset references (icons, images, sprites if pixel art).
+4. aurorie-design-lead reads `design-spec.md`. Writes `summary.md`: design decisions made, visual approach, color palette summary, typography choices, component inventory, and engineering handoff notes (e.g. "pass design-spec.md to frontend team for implementation").
+
+**Handoff to frontend:** After design-lead writes `summary.md`, the orchestrator reads the design artifact and routes to the frontend team with `input_context: "artifact: <design-artifact-path>"`. The frontend team implements based on the design spec — do NOT produce an implementation plan in the design workflow.
+
 ## Design Review
 Trigger: audit existing design for system consistency, brand compliance, or accessibility issues
 

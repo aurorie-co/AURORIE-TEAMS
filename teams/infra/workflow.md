@@ -26,7 +26,7 @@ Steps:
 Trigger: audit existing Terraform codebase for issues
 
 Steps:
-1. aurorie-infra-lead routes directly to aurorie-infra-reviewer.
+1. Dispatch aurorie-infra-reviewer via Agent tool.
 2. aurorie-infra-reviewer scans specified Terraform files/modules. Writes `review.md` with findings across security, reliability, cost, and best practices.
 3. aurorie-infra-lead reads `review.md`. Writes `summary.md`: total findings by severity, top priority items, recommended remediation order.
 
@@ -34,6 +34,6 @@ Steps:
 Trigger: review a pull request containing IaC changes
 
 Steps:
-1. aurorie-infra-lead routes directly to aurorie-infra-reviewer.
+1. Dispatch aurorie-infra-reviewer via Agent tool.
 2. aurorie-infra-reviewer uses the `github` MCP to read the PR diff. Reviews for security, reliability, cost, correctness, and best practices. Writes `review.md`.
 3. aurorie-infra-lead reads `review.md`. Writes `summary.md`: overall verdict (approve / request changes), blocker count, key findings, merge readiness.
