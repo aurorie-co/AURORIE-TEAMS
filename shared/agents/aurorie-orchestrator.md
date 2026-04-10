@@ -691,7 +691,16 @@ Rules:
    Fallback: `python3 -c "import uuid; print(uuid.uuid4())"`
 2. Write task file to `.claude/workspace/tasks/<task-id>.json` with fields: `task_id`, `created_at` (ISO8601), `description`, `assigned_team`, `status: "pending"`, `input_context: ""`, `artifact_path`, `routing_decision`, and `milestone` (present only when `milestone_mode = true`).
 3. Read `.claude/workflows/<team>.md` to identify the workflow type (feature dev / bug fix / etc.).
-4. Dispatch using the Agent tool with `subagent_type: "general-purpose"`. Read the appropriate agent file (`.claude/agents/aurorie-<team>-developer.md`, `aurorie-<team>-qa.md`, etc.) and pass its full content as the `prompt` argument to the Agent tool — this makes the agent act as that specific role. Do NOT pass custom agent names as `subagent_type` values — only the built-in types are recognized.
+4. Read the team agent file using its **relative path** from the current working directory:
+   - Developer: `.claude/agents/aurorie-<team>-developer.md`
+   - QA: `.claude/agents/aurorie-<team>-qa.md`
+   - DevOps: `.claude/agents/aurorie-<team>-devops.md`
+   - Use the appropriate agent based on the workflow step (e.g., developer for implementation).
+5. Call the Agent tool with:
+   - `subagent_type: "general-purpose"`
+   - `prompt`: the **full content** of the agent file (as system prompt — paste the entire file content)
+   - `input_context`: include the task description, routing_decision, and any artifact references
+   **Important:** Use relative paths (`.claude/agents/...`). The agent file content is the system prompt that defines the sub-agent's role — pass it exactly as read, do not summarize or truncate.
 5. Wait for sub-agent(s) to complete.
 6. Read the sub-agent's output artifact.
 7. Write `summary.md` via the file-handoff skill under the artifact path.
@@ -708,10 +717,18 @@ Rules:
 1. Generate one task-id per selected team.
 2. Write one task file per team (each with its own `routing_decision`). When `milestone_mode = true`, include `milestone` ref in each task JSON.
 3. For each team, read `.claude/workflows/<team>.md` to identify workflow type.
-4. Dispatch using the Agent tool with `subagent_type: "general-purpose"`. For each team, read the appropriate agent file and pass its full content as the `prompt` argument. Do NOT pass custom agent names as `subagent_type` values.
-5. Await all responses.
-6. For each team: read the sub-agent's artifact, write `summary.md` via file-handoff skill.
-7. Return combined summary (max 400 words).
+4. For each team, read the team agent file using its **relative path**:
+   - Developer: `.claude/agents/aurorie-<team>-developer.md`
+   - QA: `.claude/agents/aurorie-<team>-qa.md`
+   - DevOps: `.claude/agents/aurorie-<team>-devops.md`
+5. For each team, call the Agent tool with:
+   - `subagent_type: "general-purpose"`
+   - `prompt`: the **full content** of the agent file (as system prompt — paste the entire file content)
+   - `input_context`: include the task description, routing_decision, and any artifact references
+   **Important:** Use relative paths. Pass the full agent file content exactly as read.
+6. Await all responses.
+7. For each team: read the sub-agent's artifact, write `summary.md` via file-handoff skill.
+8. Return combined summary (max 400 words).
 
 ### Step C — DAG Dispatch Loop
 
