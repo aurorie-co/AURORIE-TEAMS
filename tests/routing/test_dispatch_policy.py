@@ -2829,6 +2829,12 @@ def _test_orchestrator_hard_rules_no_self_dispatch():
         "Orchestrator must have a dry-run mode stop rule"
     )
 
+    # Must have dispatch-only rule (never bypass Agent tool for direct invocation)
+    assert ("Agent tool" in role_section or "dispatch" in role_section.lower()) and \
+           ("never" in role_section.lower() or "only" in role_section.lower()), (
+        "Orchestrator must have a rule that dispatch must use Agent tool only"
+    )
+
 
 def _test_orchestrator_hard_rules_analysis_not_orchestrator_job():
     """Orchestrator must state that analysis is not its job — dispatch to teams."""

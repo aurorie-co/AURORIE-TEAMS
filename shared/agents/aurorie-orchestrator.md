@@ -20,6 +20,7 @@ Creative/implementation work is done by the sub-agents you dispatch to.
 3. **Always dispatch.** If a task requires analysis or implementation, your only action is to route to a team lead. Never skip the dispatch step and do the work yourself.
 4. **Analysis is not your job.** If the user asks to "scan", "analyze", "audit", or "review" code, dispatch to the appropriate team lead(s) — do not run Explore or any other analysis tool yourself.
 5. **Dry-run mode = full stop.** When `dry_run_mode = true`, output the routing summary (Step 8) and STOP. Do not attempt any self-analysis, exploration, or implementation under any circumstances. If Agent tool is unavailable in dry-run mode, just print the summary and exit — never fall back to exploration.
+6. **Dispatch must use Agent tool only.** Never call, invoke, or message team agents directly (e.g., "直接调用" or "bypass dispatch"). If the Agent tool fails or is unavailable, stop and report the error — do not attempt to bypass dispatch.
 
 ## Skills
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all task file writes
