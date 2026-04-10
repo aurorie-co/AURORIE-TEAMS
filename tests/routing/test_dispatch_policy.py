@@ -2783,6 +2783,138 @@ def _test_team_leads_synthesize_only_no_nested_dispatch():
     assert not failures, "Team lead dispatch issues:\n  " + "\n  ".join(failures)
 
 
+# ---------------------------------------------------------------------------
+# Case 1: Orchestrator must NOT self-dispatch (no analysis/implementation)
+# ---------------------------------------------------------------------------
+
+def _test_orchestrator_hard_rules_no_self_dispatch():
+    """Orchestrator Role section must have hard rules forbidding self-dispatch.
+
+    The orchestrator must NEVER:
+    - Run analysis tools (Explore, Read, Grep, Glob, Bash) directly
+    - Implement or write code itself
+    - Skip dispatch and do the work itself
+    """
+    content = _read_orchestrator()
+    role_start = content.find("## Role")
+    role_end = content.find("\n## ", role_start + 1)
+    if role_end == -1:
+        role_end = content.find("\n## Skills", role_start)
+    role_section = content[role_start:role_end]
+
+    # Must have "Hard rules" section
+    assert "Hard rules" in role_section, (
+        "Orchestrator Role must have 'Hard rules' section"
+    )
+
+    # Must explicitly forbid self-implementation
+    assert "Never implement" in role_section or "NEVER" in role_section and "implement" in role_section.lower(), (
+        "Orchestrator must have 'Never implement' rule"
+    )
+
+    # Must forbid running analysis tools directly
+    assert ("Never run" in role_section and "analysis" in role_section.lower()) or \
+           ("not" in role_section and "analyze" in role_section.lower()), (
+        "Orchestrator must forbid running analysis tools directly"
+    )
+
+    # Must require dispatch for any task needing work
+    assert "Always dispatch" in role_section or "always dispatch" in role_section.lower(), (
+        "Orchestrator must have 'Always dispatch' rule"
+    )
+
+
+def _test_orchestrator_hard_rules_analysis_not_orchestrator_job():
+    """Orchestrator must state that analysis is not its job — dispatch to teams."""
+    content = _read_orchestrator()
+    role_start = content.find("## Role")
+    role_end = content.find("\n## ", role_start + 1)
+    if role_end == -1:
+        role_end = content.find("\n## Skills", role_start)
+    role_section = content[role_start:role_end]
+
+    # Must explicitly say analysis is not orchestrator's job
+    assert ("analysis" in role_section.lower() and "not" in role_section.lower() and "your job" in role_section.lower()) or \
+           ("scan" in role_section.lower() and "analyze" in role_section.lower() and "dispatch" in role_section.lower()), (
+        "Orchestrator must state analysis is not its job — dispatch to teams"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Case 2: Orchestrator dispatch must use relative paths (not absolute)
+# ---------------------------------------------------------------------------
+
+def _test_step_a_uses_relative_agent_paths():
+    """Step A must instruct using relative paths for agent files, not absolute paths.
+
+    Dispatch must use patterns like:
+    - .claude/agents/aurorie-<team>-developer.md
+    NOT:
+    - /Users/.../workspace/.../.claude/agents/...
+    """
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must mention relative path pattern
+    assert ".claude/agents/" in step_a_section, (
+        "Step A must reference agent files with .claude/agents/ path pattern"
+    )
+
+    # Must not use absolute path patterns (e.g. /Users/... or /workspace/... as a path prefix)
+    # Note: .claude/workspace/ is a relative path, not absolute
+    import re
+    absolute_path_pattern = re.compile(r'^/Users/|^/workspace/|^/home/')
+    lines_with_absolute = [line for line in step_a_section.split('\n') if absolute_path_pattern.match(line.strip())]
+    assert not lines_with_absolute, (
+        f"Step A must not use absolute paths for agent files, found: {lines_with_absolute}"
+    )
+
+
+def _test_step_a_agent_tool_prompt_is_full_content():
+    """Step A must specify that the Agent tool prompt contains the FULL agent file content.
+
+    The orchestrator should pass the full agent file content as prompt, not a reference.
+    """
+    content = _read_orchestrator()
+    step_a_start = content.find("### Step A — Single Dispatch")
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_a_section = content[step_a_start:step_b_start]
+
+    # Must specify that prompt = full agent file content
+    assert "full content" in step_a_section.lower() or "entire file" in step_a_section.lower(), (
+        "Step A must specify that Agent tool prompt = full agent file content"
+    )
+
+    # Must mention input_context for task details
+    assert "input_context" in step_a_section, (
+        "Step A must specify input_context for task description"
+    )
+
+
+def _test_step_b_uses_relative_agent_paths():
+    """Step B must instruct using relative paths for agent files, not absolute paths."""
+    content = _read_orchestrator()
+    step_b_start = content.find("### Step B — Parallel Dispatch")
+    step_c_start = content.find("### Step C — DAG Dispatch Loop")
+    step_b_section = content[step_b_start:step_c_start if step_c_start != -1 else len(content)]
+
+    # Must mention relative path pattern
+    assert ".claude/agents/" in step_b_section, (
+        "Step B must reference agent files with .claude/agents/ path pattern"
+    )
+
+    # Must not use absolute path patterns (e.g. /Users/... or /workspace/... as a path prefix)
+    # Note: .claude/workspace/ is a relative path, not absolute
+    import re
+    absolute_path_pattern = re.compile(r'^/Users/|^/workspace/|^/home/')
+    lines_with_absolute = [line for line in step_b_section.split('\n') if absolute_path_pattern.match(line.strip())]
+    assert not lines_with_absolute, (
+        f"Step B must not use absolute paths for agent files, found: {lines_with_absolute}"
+    )
+
+
 COORDINATOR_PROTOCOL_TESTS = [
     ("step_a_mandatory_protocol_exists", _test_step_a_has_mandatory_protocol),
     ("step_a_never_implement_rule", _test_step_a_never_implement_rule),
@@ -2796,6 +2928,11 @@ COORDINATOR_PROTOCOL_TESTS = [
     ("step_a_flat_dispatch_no_nested", _test_step_a_flat_dispatch_no_nested),
     ("step_b_flat_dispatch_no_nested", _test_step_b_flat_dispatch_no_nested),
     ("team_leads_synthesize_only_no_nested_dispatch", _test_team_leads_synthesize_only_no_nested_dispatch),
+    ("orchestrator_hard_rules_no_self_dispatch", _test_orchestrator_hard_rules_no_self_dispatch),
+    ("orchestrator_hard_rules_analysis_not_orchestrator_job", _test_orchestrator_hard_rules_analysis_not_orchestrator_job),
+    ("step_a_uses_relative_agent_paths", _test_step_a_uses_relative_agent_paths),
+    ("step_a_agent_tool_prompt_is_full_content", _test_step_a_agent_tool_prompt_is_full_content),
+    ("step_b_uses_relative_agent_paths", _test_step_b_uses_relative_agent_paths),
 ]
 
 
