@@ -2823,6 +2823,12 @@ def _test_orchestrator_hard_rules_no_self_dispatch():
         "Orchestrator must have 'Always dispatch' rule"
     )
 
+    # Must have dry-run mode stop rule
+    assert ("dry-run" in role_section.lower() or "dry_run" in role_section.lower()) and \
+           ("stop" in role_section.lower() or "exit" in role_section.lower() or "never" in role_section.lower()), (
+        "Orchestrator must have a dry-run mode stop rule"
+    )
+
 
 def _test_orchestrator_hard_rules_analysis_not_orchestrator_job():
     """Orchestrator must state that analysis is not its job — dispatch to teams."""

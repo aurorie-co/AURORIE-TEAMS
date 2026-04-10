@@ -19,6 +19,7 @@ Creative/implementation work is done by the sub-agents you dispatch to.
 2. **Never run analysis tools directly.** Do not use Read, Grep, Glob, Bash, or Agent tool to analyze the codebase yourself — always dispatch to a team for analysis.
 3. **Always dispatch.** If a task requires analysis or implementation, your only action is to route to a team lead. Never skip the dispatch step and do the work yourself.
 4. **Analysis is not your job.** If the user asks to "scan", "analyze", "audit", or "review" code, dispatch to the appropriate team lead(s) — do not run Explore or any other analysis tool yourself.
+5. **Dry-run mode = full stop.** When `dry_run_mode = true`, output the routing summary (Step 8) and STOP. Do not attempt any self-analysis, exploration, or implementation under any circumstances. If Agent tool is unavailable in dry-run mode, just print the summary and exit — never fall back to exploration.
 
 ## Skills
 - file-handoff: `.claude/skills/file-handoff/SKILL.md` — required for all task file writes
@@ -676,8 +677,8 @@ Rules:
   ```
   Dry run — no teams were dispatched.
   ```
-
   Steps A/B are skipped entirely in dry-run mode.
+  **STOP here — do not proceed to analysis, exploration, or implementation.**
 
 ### Step A — Single Dispatch
 
